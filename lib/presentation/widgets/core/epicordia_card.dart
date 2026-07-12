@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class EpicordiaCard extends StatelessWidget {
@@ -15,30 +16,48 @@ class EpicordiaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    Widget content = Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (indicatorColor != null)
-              Container(
-                width: 4,
-                color: indicatorColor,
-              ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: child,
-              ),
+    final isDark = theme.brightness == Brightness.dark;
+
+    Widget cardBody = ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: isDark ? 0.45 : 0.65),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark 
+                  ? Colors.white.withValues(alpha: 0.08) 
+                  : Colors.white.withValues(alpha: 0.4),
+              width: 1.5,
             ),
-          ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (indicatorColor != null)
+                  Container(
+                    width: 4,
+                    color: indicatorColor,
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: child,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -46,11 +65,11 @@ class EpicordiaCard extends StatelessWidget {
     if (onTap != null) {
       return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: content,
+        borderRadius: BorderRadius.circular(16),
+        child: cardBody,
       );
     }
     
-    return content;
+    return cardBody;
   }
 }

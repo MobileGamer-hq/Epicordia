@@ -13,7 +13,8 @@ class NavigationItem {
 }
 
 const List<NavigationItem> appNavItems = [
-  NavigationItem(label: 'Home', icon: Icons.home_outlined, route: '/'),
-  NavigationItem(label: 'Inbox', icon: Icons.inbox_outlined, route: '/inbox'),
-  // Add other roots like Calendar, etc. later when built
+  NavigationItem(label: 'Today', icon: Icons.wb_sunny_outlined, route: '/'),
+  NavigationItem(label: 'Boards', icon: Icons.space_dashboard_outlined, route: '/boards'),
+  NavigationItem(label: 'Notes', icon: Icons.description_outlined, route: '/notes'),
+  NavigationItem(label: 'Tasks', icon: Icons.check_circle_outline, route: '/tasks'),
 ];

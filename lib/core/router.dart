@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../presentation/screens/dashboard_screen.dart';
+import '../presentation/screens/today_dashboard.dart';
+import '../presentation/screens/boards_tab.dart';
+import '../presentation/screens/notes_tab.dart';
+import '../presentation/screens/tasks_tab.dart';
 import '../presentation/screens/board_screen.dart';
-import '../presentation/screens/inbox_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -11,7 +13,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const DashboardScreen(),
+        builder: (context, state) => const TodayDashboard(),
+      ),
+      GoRoute(
+        path: '/boards',
+        builder: (context, state) => const BoardsTab(),
       ),
       GoRoute(
         path: '/board/:id',
@@ -21,8 +27,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '/inbox',
-        builder: (context, state) => const InboxScreen(),
+        path: '/notes',
+        builder: (context, state) => const NotesTab(),
+      ),
+      GoRoute(
+        path: '/tasks',
+        builder: (context, state) => const TasksTab(),
       ),
     ],
   );

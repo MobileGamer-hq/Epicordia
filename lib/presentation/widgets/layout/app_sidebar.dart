@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'navigation_item.dart';
@@ -10,14 +11,25 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final location = GoRouterState.of(context).uri.path;
 
-    return Container(
-      width: isTablet ? 72 : 240,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(right: BorderSide(color: theme.dividerColor)),
-      ),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: isTablet ? 72 : 240,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: isDark ? 0.45 : 0.65),
+            border: Border(
+              right: BorderSide(
+                color: isDark 
+                    ? Colors.white.withValues(alpha: 0.08) 
+                    : Colors.white.withValues(alpha: 0.4),
+                width: 1.5,
+              ),
+            ),
+          ),
       child: Column(
         children: [
           const SizedBox(height: 16),
@@ -99,6 +111,8 @@ class AppSidebar extends StatelessWidget {
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 }

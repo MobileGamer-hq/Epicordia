@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EpicordiaColors {
-  // Primary
-  static const Color blue50 = Color(0xFFEEF3FF);
-  static const Color blue100 = Color(0xFFDCE6FF);
-  static const Color blue200 = Color(0xFFB7CCFF);
-  static const Color blue300 = Color(0xFF8FAEFF);
-  static const Color blue400 = Color(0xFF5C87F7);
-  static const Color blue500 = Color(0xFF3D68EE);
-  static const Color blue600 = Color(0xFF2F53DB);
-  static const Color blue700 = Color(0xFF243FB0);
-  static const Color blue800 = Color(0xFF1C3186);
-  static const Color blue900 = Color(0xFF152660);
+  // Primary Palette
+  static const Color blue50 = Color(0xFFCAF0F8);
+  static const Color blue100 = Color(0xFF90E0EF);
+  static const Color blue200 = Color(0xFF90E0EF);
+  static const Color blue300 = Color(0xFF00B4D8);
+  static const Color blue400 = Color(0xFF00B4D8);
+  static const Color blue500 = Color(0xFF0077B6);
+  static const Color blue600 = Color(0xFF0077B6);
+  static const Color blue700 = Color(0xFF03045E);
+  static const Color blue800 = Color(0xFF03045E);
+  static const Color blue900 = Color(0xFF03045E);
 
   // Dark mode primary
-  static const Color darkPrimary = Color(0xFF6E96FF);
+  static const Color darkPrimary = Color(0xFF00B4D8);
 
   // Semantic
   static const Color successLight = Color(0xFF1A9A5B);

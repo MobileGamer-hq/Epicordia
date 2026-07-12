@@ -1,13 +1,12 @@
-import 'dart:io';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
-
 import 'schema.dart';
 import '../dao/board_dao.dart';
 import '../dao/pin_dao.dart';
 import '../dao/task_dao.dart';
+
+import 'connection/connection_stub.dart'
+    if (dart.library.io) 'connection/connection_native.dart'
+    if (dart.library.html) 'connection/connection_web.dart';
 
 part 'database.g.dart';
 
@@ -16,7 +15,7 @@ part 'database.g.dart';
   daos: [BoardDao, PinDao, TaskDao],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
   @override
   int get schemaVersion => 1;
@@ -34,16 +33,11 @@ class AppDatabase extends _$AppDatabase {
         }
       },
       beforeOpen: (details) async {
-        await customStatement('PRAGMA foreign_keys = ON;');
+        // foreign keys logic might fail on web, so wrap it or handle conditionally
+        try {
+          await customStatement('PRAGMA foreign_keys = ON;');
+        } catch (_) {}
       },
     );
   }
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'epicordia.sqlite'));
-    return NativeDatabase.createInBackground(file);
-  });
 }

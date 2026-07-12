@@ -1,20 +1,32 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/native.dart';
 import 'package:app/main.dart';
+import 'package:app/data/providers.dart';
+import 'package:app/data/database/database.dart';
 
 void main() {
-  testWidgets('App launches and shows placeholder', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: EpicordiaApp()));
+  testWidgets('App launches and shows Today dashboard', (WidgetTester tester) async {
+    final testDb = AppDatabase(NativeDatabase.memory());
+    addTearDown(() async {
+      await testDb.close();
+    });
 
-    // Wait for routing to complete
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: const EpicordiaApp(),
+      ),
+    );
 
-    // Verify that our app shows the AppBar title
-    expect(find.text('Epicordia'), findsOneWidget);
+    // Wait for routing and database stream to emit
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
-    // Verify the compact layout text is visible by default (mobile resolution in test)
-    expect(find.textContaining('Hello world'), findsOneWidget);
+    // Verify that our app shows the Today screen header
+    expect(find.text('Good morning'), findsOneWidget);
   });
 }
