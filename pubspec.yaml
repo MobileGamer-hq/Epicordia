@@ -43,6 +43,7 @@ dependencies:
   home_widget: ^0.9.3
   infinite_canvas: ^0.0.10
   google_fonts: ^8.1.0
+  riverpod_annotation: ^4.0.3
 
 dev_dependencies:
   flutter_test:

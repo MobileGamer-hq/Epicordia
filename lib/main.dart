@@ -16,6 +16,8 @@ class EpicordiaApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final goRouter = ref.watch(routerProvider);
+
     return MaterialApp.router(
       title: 'Epicordia',
       theme: EpicordiaTheme.lightTheme,
