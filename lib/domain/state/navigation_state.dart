@@ -1,12 +1,12 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-part 'navigation_state.g.dart';
+final navigationStateProvider = NotifierProvider<NavigationState, String?>(() {
+  return NavigationState();
+});
 
-@riverpod
-class NavigationState extends _$NavigationState {
+class NavigationState extends Notifier<String?> {
   @override
   String? build() {
-    // Null indicates we are not on a specific board (e.g. Dashboard or Inbox)
     return null;
   }
 

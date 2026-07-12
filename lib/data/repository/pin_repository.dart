@@ -1,14 +1,16 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../providers.dart';
 
-part 'pin_repository.g.dart';
+final pinRepositoryProvider = Provider<PinRepository>((ref) => PinRepository(ref));
 
-@riverpod
-class PinRepository extends _$PinRepository {
-  @override
-  Stream<List<PinEntity>> build(String boardId) {
+class PinRepository {
+  final Ref ref;
+
+  PinRepository(this.ref);
+
+  Stream<List<PinEntity>> watchPinsForBoard(String boardId) {
     return ref.watch(pinDaoProvider).watchPinsForBoard(boardId);
   }
 

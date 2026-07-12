@@ -1,21 +1,16 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../providers.dart';
 
-part 'task_repository.g.dart';
+final taskRepositoryProvider = Provider<TaskRepository>((ref) => TaskRepository(ref));
 
-@riverpod
-class TaskRepository extends _$TaskRepository {
-  @override
-  Stream<List<TaskEntity>> build() {
-    // Default build just watches all tasks due today as an example, 
-    // but typically we might watch a specific board or inbox.
-    return ref.watch(taskDaoProvider).watchTasksDueToday();
-  }
+class TaskRepository {
+  final Ref ref;
+
+  TaskRepository(this.ref);
 
   Stream<List<TaskEntity>> watchInboxTasks() {
-    // Inbox tasks are tasks without a boardId
     final taskDao = ref.read(taskDaoProvider);
     return taskDao.select(taskDao.tasks)
       ..where((t) => t.boardId.isNull())

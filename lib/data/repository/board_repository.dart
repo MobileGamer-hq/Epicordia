@@ -1,14 +1,16 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../providers.dart';
 
-part 'board_repository.g.dart';
+final boardRepositoryProvider = Provider<BoardRepository>((ref) => BoardRepository(ref));
 
-@riverpod
-class BoardRepository extends _$BoardRepository {
-  @override
-  Stream<List<BoardEntity>> build() {
+class BoardRepository {
+  final Ref ref;
+
+  BoardRepository(this.ref);
+
+  Stream<List<BoardEntity>> watchAllBoards() {
     return ref.watch(boardDaoProvider).watchAllBoards();
   }
 

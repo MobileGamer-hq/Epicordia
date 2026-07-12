@@ -26,11 +26,11 @@ void main() {
     expect(container.read(navigationStateProvider), 'board_123');
 
     // Create a board via the repository
-    final boardRepo = container.read(boardRepositoryProvider.notifier);
+    final boardRepo = container.read(boardRepositoryProvider);
     await boardRepo.createBoard(BoardsCompanion.insert(id: 'b1', title: 'Repo Board'));
 
     // Verify the board was created and is emitted by the stream
-    final stream = container.read(boardRepositoryProvider);
+    final stream = container.read(boardRepositoryProvider).watchAllBoards();
     final boards = await stream.first;
     expect(boards.length, 1);
     expect(boards.first.id, 'b1');
