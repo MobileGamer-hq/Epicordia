@@ -1,72 +1,105 @@
 import 'package:flutter/material.dart';
-import '../widgets/responsive_layout.dart';
+import '../widgets/layout/responsive_scaffold.dart';
+import '../widgets/core/epicordia_button.dart';
+import '../widgets/core/epicordia_text_field.dart';
+import '../widgets/core/epicordia_card.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Epicordia'),
-      ),
-      body: ResponsiveLayout(
-        compact: _buildCompact(context),
-        medium: _buildMedium(context),
-        expanded: _buildExpanded(context),
-      ),
-    );
-  }
+    final theme = Theme.of(context);
 
-  Widget _buildCompact(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return ResponsiveScaffold(
+      child: ListView(
+        padding: const EdgeInsets.all(24),
         children: [
-          const Text('Hello world (Compact Layout)'),
+          Text('Widget Gallery', style: theme.textTheme.displayLarge),
+          const SizedBox(height: 8),
+          Text('Testing the UI foundations for Phase 3', style: theme.textTheme.bodyLarge),
+          const Divider(height: 48),
+
+          // Typography
+          Text('Typography', style: theme.textTheme.titleLarge),
           const SizedBox(height: 16),
-          Text(
-            'Bottom Navigation will go here.',
-            style: Theme.of(context).textTheme.bodySmall,
+          Text('Display Large 32/700', style: theme.textTheme.displayLarge),
+          Text('Display Medium 24/700', style: theme.textTheme.displayMedium),
+          Text('Title Large 20/600', style: theme.textTheme.titleLarge),
+          Text('Body Large 15/400', style: theme.textTheme.bodyLarge),
+          Text('Body Medium 15/600', style: theme.textTheme.bodyMedium),
+          Text('Body Small 13/400', style: theme.textTheme.bodySmall),
+          Text('LABEL SMALL 12/600', style: theme.textTheme.labelSmall),
+          const Divider(height: 48),
+
+          // Buttons
+          Text('Buttons', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              EpicordiaButton(label: 'Primary Button', onPressed: () {}),
+              EpicordiaButton(label: 'Secondary Button', type: EpicordiaButtonType.secondary, onPressed: () {}),
+              EpicordiaButton(label: 'Destructive Button', type: EpicordiaButtonType.destructive, onPressed: () {}),
+              EpicordiaButton(label: 'Ghost Button', type: EpicordiaButtonType.ghost, onPressed: () {}),
+              EpicordiaButton(label: 'With Icon', icon: Icons.star, onPressed: () {}),
+            ],
+          ),
+          const Divider(height: 48),
+
+          // Inputs
+          Text('Inputs', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 16),
+          const EpicordiaTextField(
+            labelText: 'STANDARD INPUT',
+            hintText: 'Enter some text...',
+          ),
+          const SizedBox(height: 16),
+          const EpicordiaTextField(
+            labelText: 'MULTILINE INPUT',
+            hintText: 'Type a longer description here...',
+            maxLines: 3,
+          ),
+          const Divider(height: 48),
+
+          // Cards
+          Text('Cards', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: EpicordiaCard(
+                  onTap: () {},
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Standard Card', style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 4),
+                      Text('Just a normal card on the canvas', style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: EpicordiaCard(
+                  indicatorColor: theme.colorScheme.error,
+                  onTap: () {},
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Urgent Card', style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 4),
+                      Text('Has an error-colored stripe', style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMedium(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 72,
-          color: Theme.of(context).cardColor,
-          child: const Center(child: Text('Nav Rail', textAlign: TextAlign.center,)),
-        ),
-        const VerticalDivider(width: 1),
-        const Expanded(
-          child: Center(
-            child: Text('Hello world (Medium Layout)'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExpanded(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 240,
-          color: Theme.of(context).cardColor,
-          child: const Center(child: Text('Sidebar')),
-        ),
-        const VerticalDivider(width: 1),
-        const Expanded(
-          child: Center(
-            child: Text('Hello world (Expanded Layout)'),
-          ),
-        ),
-      ],
     );
   }
 }

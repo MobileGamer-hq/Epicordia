@@ -1,14 +1,11 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../presentation/screens/dashboard_screen.dart';
 import '../presentation/screens/board_screen.dart';
 import '../presentation/screens/inbox_screen.dart';
 
-part 'router.g.dart';
-
-@riverpod
-GoRouter router(RouterRef ref) {
+final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     routes: [
@@ -29,4 +26,4 @@ GoRouter router(RouterRef ref) {
       ),
     ],
   );
-}
+});

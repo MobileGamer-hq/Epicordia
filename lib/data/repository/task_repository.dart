@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart';
+
 import '../database/database.dart';
 import '../providers.dart';
 
@@ -12,9 +12,8 @@ class TaskRepository {
 
   Stream<List<TaskEntity>> watchInboxTasks() {
     final taskDao = ref.read(taskDaoProvider);
-    return taskDao.select(taskDao.tasks)
-      ..where((t) => t.boardId.isNull())
-      .watch();
+    final query = taskDao.select(taskDao.tasks)..where((t) => t.boardId.isNull());
+    return query.watch();
   }
 
   Stream<List<TaskEntity>> watchTasksForBoard(String boardId) {
