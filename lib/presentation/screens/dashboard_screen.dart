@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/layout/responsive_scaffold.dart';
+import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_button.dart';
-import '../widgets/core/epicordia_text_field.dart';
 import '../widgets/core/epicordia_card.dart';
+
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -12,6 +13,7 @@ class DashboardScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ResponsiveScaffold(
+      appBar: const EpicordiaAppBar(),
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -51,14 +53,12 @@ class DashboardScreen extends StatelessWidget {
           // Inputs
           Text('Inputs', style: theme.textTheme.titleLarge),
           const SizedBox(height: 16),
-          const EpicordiaTextField(
-            labelText: 'STANDARD INPUT',
-            hintText: 'Enter some text...',
+          TextField(
+            decoration: const InputDecoration(labelText: 'STANDARD INPUT', hintText: 'Enter some text...'),
           ),
           const SizedBox(height: 16),
-          const EpicordiaTextField(
-            labelText: 'MULTILINE INPUT',
-            hintText: 'Type a longer description here...',
+          TextField(
+            decoration: const InputDecoration(labelText: 'MULTILINE INPUT', hintText: 'Type a longer description here...'),
             maxLines: 3,
           ),
           const Divider(height: 48),

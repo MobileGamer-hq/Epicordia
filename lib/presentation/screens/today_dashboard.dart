@@ -14,6 +14,10 @@ class TodayDashboard extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         children: [
+          // ── Activity Heatmap ─────────────────────────────────
+          const _ActivityHeatmap(),
+          const SizedBox(height: 28),
+
           // ── Unsorted Tray ───────────────────────────────────
           _SectionHeader(title: 'Unsorted Tray', actionLabel: 'View All', onAction: () {}),
           const SizedBox(height: 12),
@@ -43,49 +47,22 @@ class TodayDashboard extends StatelessWidget {
           // ── Today Tasks ─────────────────────────────────────
           _SectionHeader(title: 'Today', actionLabel: null, onAction: null),
           const SizedBox(height: 12),
-          _TodayTaskItem(
-            title: 'Review Q3 Vision Board',
-            meta: 'Due 4:00 PM',
-            isCompleted: false,
-            isInProgress: false,
-          ),
+          const _TodayTaskItem(title: 'Review Q3 Vision Board',    meta: 'Due 4:00 PM', isCompleted: false, isInProgress: false),
           const SizedBox(height: 8),
-          _TodayTaskItem(
-            title: 'Update project timeline',
-            meta: 'Completed',
-            isCompleted: true,
-            isInProgress: true,
-          ),
+          const _TodayTaskItem(title: 'Update project timeline',   meta: 'Completed',   isCompleted: true,  isInProgress: true),
           const SizedBox(height: 8),
-          _TodayTaskItem(
-            title: 'Call with Product Team',
-            meta: 'Due 6:30 PM',
-            isCompleted: false,
-            isInProgress: false,
-          ),
+          const _TodayTaskItem(title: 'Call with Product Team',    meta: 'Due 6:30 PM', isCompleted: false, isInProgress: false),
 
           const SizedBox(height: 28),
 
           // ── Recent Boards ────────────────────────────────────
           _SectionHeader(title: 'Recent Boards', actionLabel: null, onAction: null),
           const SizedBox(height: 12),
-          _BoardCard(
-            title: '2024 Product Launch',
-            meta: '14 items • Modified 10m ago',
-            color: const Color(0xFF8B9DC3),
-          ),
+          const _BoardCard(title: '2024 Product Launch',  meta: '14 items • Modified 10m ago', color: Color(0xFF8B9DC3)),
           const SizedBox(height: 12),
-          _BoardCard(
-            title: 'Design System Sync',
-            meta: '32 items • Modified 1h ago',
-            color: const Color(0xFFA8B4C8),
-          ),
+          const _BoardCard(title: 'Design System Sync',   meta: '32 items • Modified 1h ago',  color: Color(0xFFA8B4C8)),
           const SizedBox(height: 12),
-          _BoardCard(
-            title: 'Inspiration Canvas',
-            meta: '8 items • Modified 3h ago',
-            color: const Color(0xFF6B7FA0),
-          ),
+          const _BoardCard(title: 'Inspiration Canvas',   meta: '8 items • Modified 3h ago',   color: Color(0xFF6B7FA0)),
           const SizedBox(height: 32),
         ],
       ),
@@ -94,9 +71,115 @@ class TodayDashboard extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────
-// Helper widgets
+// Activity Heatmap
 // ────────────────────────────────────────────────────────────
+class _ActivityHeatmap extends StatelessWidget {
+  const _ActivityHeatmap();
 
+  // 7 weeks × 7 days = 49 cells. 0=none, 1–4 = activity levels
+  static final List<List<int>> _data = [
+    [0, 1, 0, 2, 0, 1, 0],
+    [1, 2, 3, 1, 0, 2, 1],
+    [0, 1, 4, 3, 2, 1, 0],
+    [2, 3, 2, 4, 3, 2, 1],
+    [1, 0, 3, 2, 4, 3, 2],
+    [0, 2, 1, 3, 2, 1, 0],
+    [1, 1, 2, 1, 0, 2, 1],
+  ];
+
+  static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  Color _cellColor(int level) {
+    switch (level) {
+      case 1: return EpicordiaColors.blue200;
+      case 2: return EpicordiaColors.blue300;
+      case 3: return EpicordiaColors.blue400;
+      case 4: return EpicordiaColors.blue500;
+      default: return EpicordiaColors.borderSubtleLight;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('Activity', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EpicordiaColors.textPrimaryLight)),
+            const Spacer(),
+            _HeatmapLegend(),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Day labels
+            Column(
+              children: _dayLabels.map((d) => SizedBox(
+                height: 14,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(d, style: const TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
+                ),
+              )).toList(),
+            ),
+            const SizedBox(width: 6),
+            // Grid
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: _data.map((week) {
+                  return Column(
+                    children: week.asMap().entries.map((entry) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: AnimatedContainer(
+                          duration: Duration(milliseconds: 200 + entry.key * 30),
+                          width: double.infinity,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: _cellColor(entry.value),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _HeatmapLegend extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Text('Less', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
+        const SizedBox(width: 4),
+        ...([EpicordiaColors.borderSubtleLight, EpicordiaColors.blue200, EpicordiaColors.blue300, EpicordiaColors.blue400, EpicordiaColors.blue500].map((c) =>
+          Padding(
+            padding: const EdgeInsets.only(left: 3),
+            child: Container(width: 10, height: 10, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
+          ),
+        )),
+        const SizedBox(width: 4),
+        const Text('More', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
+      ],
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// Section header
+// ────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String title;
   final String? actionLabel;
@@ -120,6 +203,9 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// ────────────────────────────────────────────────────────────
+// Quick capture card
+// ────────────────────────────────────────────────────────────
 class _QuickCaptureCard extends StatelessWidget {
   final String category;
   final String title;
@@ -161,6 +247,9 @@ class _QuickCaptureCard extends StatelessWidget {
   }
 }
 
+// ────────────────────────────────────────────────────────────
+// Today task item
+// ────────────────────────────────────────────────────────────
 class _TodayTaskItem extends StatelessWidget {
   final String title;
   final String meta;
@@ -214,6 +303,9 @@ class _TodayTaskItem extends StatelessWidget {
   }
 }
 
+// ────────────────────────────────────────────────────────────
+// Board card
+// ────────────────────────────────────────────────────────────
 class _BoardCard extends StatelessWidget {
   final String title;
   final String meta;
@@ -228,7 +320,6 @@ class _BoardCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image area
           Container(
             height: 110,
             decoration: BoxDecoration(
@@ -239,7 +330,6 @@ class _BoardCard extends StatelessWidget {
               child: Icon(Icons.dashboard_outlined, size: 36, color: Colors.white.withValues(alpha: 0.5)),
             ),
           ),
-          // Info
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(

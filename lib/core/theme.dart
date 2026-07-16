@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EpicordiaColors {
-  // Primary Palette (user-specified)
-  static const Color blue50  = Color(0xFFCAF0F8);
-  static const Color blue100 = Color(0xFF90E0EF);
-  static const Color blue200 = Color(0xFF90E0EF);
-  static const Color blue300 = Color(0xFF00B4D8);
-  static const Color blue400 = Color(0xFF00B4D8);
-  static const Color blue500 = Color(0xFF0077B6);
-  static const Color blue600 = Color(0xFF0077B6); // Interactive primary
-  static const Color blue700 = Color(0xFF03045E); // Brand deep navy
-  static const Color blue800 = Color(0xFF03045E);
-  static const Color blue900 = Color(0xFF03045E);
+  // Primary Palette — Epicordia Blue (per UI design doc §1.1)
+  static const Color blue50  = Color(0xFFEEF3FF);
+  static const Color blue100 = Color(0xFFDCE6FF);
+  static const Color blue200 = Color(0xFFB7CCFF); // Heatmap level 1
+  static const Color blue300 = Color(0xFF8FAEFF); // Heatmap level 2
+  static const Color blue400 = Color(0xFF5C87F7); // Heatmap level 3
+  static const Color blue500 = Color(0xFF3D68EE); // Heatmap level 4 (max)
+  static const Color blue600 = Color(0xFF2F53DB); // Primary accent — light mode
+  static const Color blue700 = Color(0xFF243FB0); // Pressed/active, brand navy
+  static const Color blue800 = Color(0xFF1C3186);
+  static const Color blue900 = Color(0xFF152660);
+
 
   // Dark mode primary
   static const Color darkPrimary = Color(0xFF00B4D8);
