@@ -1,0 +1,11 @@
+-I don't like the name inbox where the new stuff (Tasks and Notes) are kept.
+
+--Today's Dashboard -> should be renamed cos it doesn't only show stuff for the day but also the newest stuff being worked on like boards and notes.
+-The greeting should be based on the time of the day and there should be variations to it.
+-There should be some sort of placeholder for when there is no content to display
+-This is for upcoming task only then new notes. so there should be 2 groups (For Tasks and Notes) the ui for Notes and Tasks as a lists.
+
+-Tasks should be able to be held and a popup not a bottom to top pop up but a floating pop up that has some options for it.
+-The app designs should have a glass like designs on cards and ui for buttons and all make it look nice.
+-on the dashboard there should be a settings button that will link tot the settings screen.
+

@@ -12,9 +12,11 @@ class NavigationItem {
   });
 }
 
+/// The 4 main nav destinations (Home, Boards, Notes, Tasks)
+/// The 5th center slot is the "Create" button, handled separately
 const List<NavigationItem> appNavItems = [
-  NavigationItem(label: 'Today', icon: Icons.wb_sunny_outlined, route: '/'),
+  NavigationItem(label: 'Home',   icon: Icons.home_outlined,            route: '/'),
   NavigationItem(label: 'Boards', icon: Icons.space_dashboard_outlined, route: '/boards'),
-  NavigationItem(label: 'Notes', icon: Icons.description_outlined, route: '/notes'),
-  NavigationItem(label: 'Tasks', icon: Icons.check_circle_outline, route: '/tasks'),
+  NavigationItem(label: 'Notes',  icon: Icons.description_outlined,     route: '/notes'),
+  NavigationItem(label: 'Tasks',  icon: Icons.check_circle_outline,     route: '/tasks'),
 ];

@@ -18,7 +18,7 @@ Core non-negotiables: works 100% offline, no account/login ever, data stored loc
 
 ### 2.1 Dashboard (Home) — the landing screen
 Sections, top to bottom (order can adapt per breakpoint, but all sections present on every device):
-1. **Today strip** — tasks due today/overdue, quick-complete checkboxes, tap to open.
+1. **Today strip** — tasks due today/overdue, each with a tappable animated status control (not a checkbox — see UI doc §5.4), tap the row to open.
 2. **Boards** — all top-level boards as cards, with an **Important/Urgent** grouping surfaced above the general list. A board is flagged Important/Urgent automatically if it has an overdue task, a milestone within the next 3 days, or a blocked task chain nearing its dependency deadline — plus a manual "pin as important" override the user can set per board.
 3. **Calendar Heatmap** — a GitHub-contributions-style grid showing activity density (notes/tasks created or completed) per day over the last ~3–6 months; tapping a day jumps to that day's Calendar view.
 4. **Mini calendar** — current month, dots on days with due tasks/events; "View full calendar" opens the Calendar screen.
@@ -30,20 +30,27 @@ Functional rules:
 ### 2.2 Boards Hub
 - Grid or list (user-togglable) of every top-level board.
 - Each board card shows: title, a live thumbnail/preview matching its **default view mode**, item count, and last-modified time.
-- "+ New board" prompts for a title and asks whether it starts as Canvas or List (mapping to `defaultViewMode`), and whether kanban is enabled for it (default: off).
+- New boards are created via the global **Create** button (§2.11) — there is no separate local "+ New board" control here; tapping it opens the Type Selector pre-focused on the Board option.
+
+### 2.11 Create button & Type Selector
+A single, deliberate, always-visible creation entry point — separate in purpose from Quick Capture (§2.7): Quick Capture is for capturing a stray thought instantly with zero decisions; Create is for intentionally starting a specific thing.
+- The Create button opens a **custom floating popover** (never a native OS dropdown, per UI doc §5.2/§4.9) offering three choices: **To-do list**, **Note**, **Board**.
+- Selecting one animates directly into the matching creation page (continuity/morph transition, not a plain screen swap): a To-do list creation page, a Note creation page, or the New Board page (title, Canvas/List default, kanban opt-in toggle).
+- A newly created to-do list or note can be assigned to a board at creation time, or left unfiled — in which case it appears in the Unsorted tray exactly like a Quick Capture item, using the same underlying null-`boardId` mechanism (§2.7).
+- A newly created board opens directly onto itself (empty), ready for the user to start adding pins.
 
 ### 2.3 Board screen
 - One screen, three renderers driven by `Board.defaultViewMode`/user-selected mode: **Canvas**, **List**, **Focus**.
 - **Canvas**: infinite pan/zoom; pins placed by `x,y`; drag-drop from the pin tray; multi-select via marquee/shift-click; snapping guides; nested board pins open child boards; connectors drawn between pins; frames group pins so dragging a frame moves its contents.
-- **List**: same pins, reflowed top-to-bottom in manual/last-edited order; tasks render as checklist rows; notes as stacked cards; images as thumbnails with captions; drawings as thumbnail previews.
-- **Focus**: task pins only. If `Board.kanbanEnabled` is true, shown as To Do/Doing/Done columns (drag between columns updates `Task.status`). If false, shown as a plain checklist grouped by scheduled/due date — no columns.
+- **List**: same pins, reflowed top-to-bottom in manual/last-edited order; tasks render as rows with the animated status control (§5.4 of the UI doc) in place of a checkbox; notes as stacked cards; images as thumbnails with captions; drawings as thumbnail previews.
+- **Focus**: task pins only. If `Board.kanbanEnabled` is true, shown as To Do/Doing/Done columns — these columns are simply a grouped view of each task's status-control state (§5.4 of the UI doc), not a separate field. If false, shown as a plain grouped list (by scheduled/due date) with the same status control, no columns.
 - Breadcrumb bar always reflects the nesting path and supports jumping to any ancestor directly, not just one level back.
 - Switching between Canvas/List/Focus must never create, delete, or duplicate data — only change rendering.
 
 ### 2.4 Pin Editor
-- Type-specific form/editor (see pin type table in §3), opened as a **side panel** on tablet/desktop (board remains visible/interactive behind it) and a **full-screen modal sheet** on phone.
+- Type-specific form/editor (see pin type table in §3). Overlay weight follows the UI doc's §5.2 system: quick edits (status, priority, due date, color tag) open as a **floating popover anchored to the pin**, not a full editor; opening a pin's full content (editing a note's text, a task's description, a drawing) opens the **medium-weight** side panel on tablet/desktop (board stays visible behind it) or bottom sheet on phone.
 - Every pin editor supports: delete, duplicate, change color/tag, and (for task pins) all task-specific fields from §4.
-- Closing the editor auto-saves (no separate "Save" button required for simple edits — this reinforces the zero-friction principle); destructive actions (delete) always require a confirm step.
+- Closing the editor auto-saves (no separate "Save" button required for simple edits — this reinforces the zero-friction principle); destructive actions (delete) always require a confirm step, shown as a floating popover, not a full-screen alert.
 
 ### 2.5 Notes tab / Tasks tab
 - Flat, cross-board lists. Notes: searchable, inline-editable. Tasks: filterable by board, due date, priority, kanban stage (only for kanban-enabled boards), blocked/unblocked state, and scheduled date.
@@ -55,8 +62,8 @@ Functional rules:
 
 ### 2.7 Quick Capture (Zen mode)
 - Single text field + Save. No board picker, no metadata fields visible at capture time.
-- A small toggle (e.g. a checkbox icon) lets the user mark it as a task vs. a note at the moment of capture, but nothing else is exposed here — everything else is added later by editing the item from the Inbox board.
-- Always lands in a system-managed **Inbox board** (auto-created on first launch, cannot be deleted, can be renamed).
+- A small toggle (e.g. a checkbox icon) lets the user mark it as a task vs. a note at the moment of capture, but nothing else is exposed here — everything else is added later from the Unsorted tray.
+- Never lands in a hidden "Inbox board" the user has to learn to navigate into. Instead, captured items appear directly as small unfiled cards in the **Unsorted tray** (a shelf on the Dashboard, mirrored by the existing Unsorted counter badge on Boards Hub/Board screens) — see UI doc §4.6a. From there, an item is filed by dragging it onto a board thumbnail or by tapping it for a floating "Move to board…" popover. There is no separate Inbox screen to visit.
 
 ### 2.8 Search
 - Full-text (SQLite FTS5) across note content, task titles/notes, and board titles.
@@ -77,8 +84,8 @@ Sections: Appearance (theme, accent), Default view mode, App Lock, Calendar sync
 |---|---|---|---|---|
 | Board (nested) | title, thumbnail, childBoardId | Tile/folder card | Row with chevron to open | — |
 | Note | rich text, color | Sticky card | Stacked card | — |
-| Task card | see §4 | Card with checklist | Checklist row | Column card or grouped row |
-| Task list | multiple checklist items | Grouped card | Grouped rows | Individual tasks flattened |
+| Task card | see §4 | Card with animated status control | Row with animated status control | Column card or grouped row |
+| Task list | multiple sub-items, each with its own status control | Grouped card | Grouped rows | Individual tasks flattened |
 | Image | local file path, caption | Resizable image card | Thumbnail + caption | — |
 | Drawing/Sketch | vector stroke data | Freeform overlay-capable card | Thumbnail preview | — |
 | Handwriting | vector stroke data, optional recognized text | Ink card | Thumbnail + recognized text if available | — |
@@ -87,7 +94,7 @@ Sections: Appearance (theme, accent), Default view mode, App Lock, Calendar sync
 | Audio/Voice memo | local file path, duration | Waveform card | Row with play button | — |
 | Color swatch | hex/RGB | Small swatch card | Swatch chip | — |
 | Heading/Divider | text or none | Section label | Section header | — |
-| Checklist (lightweight) | items, no task metadata | Simple list card | Rows | — |
+| Checklist (lightweight) | items, each with its own status control, no full task metadata | Simple list card | Rows | — |
 | Connector/Arrow | fromPinId, toPinId | Drawn line/arrow | Not applicable (canvas-only concept) | — |
 | Group/Frame | contained pin IDs, bounds | Resizable container | Not applicable | — |
 | Table | rows/columns of cells | Grid card | Rendered as a simple table | — |
@@ -100,7 +107,7 @@ Sections: Appearance (theme, accent), Default view mode, App Lock, Calendar sync
 - `dueDate` — a hard deadline
 - `scheduledDate` — separate "plan to work on this" date; UI must always label these distinctly and never let one silently double as the other
 - `priority`
-- `status`/kanban stage — **only meaningful and only shown when the parent board has kanban enabled**
+- `status`/kanban stage — a 3-state field (Not started / In progress / Done) always present and always shown via the animated **status control** (UI doc §5.4), never a plain checkbox. When `Board.kanbanEnabled` is true, this exact field is what places the task in its To Do/Doing/Done column — kanban is a grouped view of this field, not a separate one.
 - `recurrenceRule` — in-app recurrence, independently generates future instances
 - `calendarEventId` — link to a synced device calendar event, nullable
 - `dependencies` — list of task IDs this task depends on; a task with unmet dependencies is **blocked**: visually greyed/locked on Canvas, badge in Focus/List/Tasks tab; completing a blocked task is prevented with a clear inline message pointing to the blocking task(s)

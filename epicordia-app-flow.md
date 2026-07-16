@@ -60,13 +60,17 @@ This document maps every screen and the paths between them. It should be read al
 |---|---|---|---|
 | 1 | **First-run setup** | App's very first launch only | Set visual-vs-list default, optional PIN/biometric lock, nothing account-related |
 | 2 | **Dashboard (Home)** | App launch (every subsequent time), sidebar "Home" | Landing screen: today's tasks, all boards grouped with Important/Urgent surfaced, Calendar Heatmap, mini calendar |
-| 3 | **Boards Hub** | Sidebar "Boards" | Full grid/list of all top-level boards, "+ New board" |
+| 3 | **Boards Hub** | Sidebar "Boards" | Full grid/list of all top-level boards; new boards are made via the global **Create** button's Type Selector (§3.3a), not a separate local button |
 | 4 | **Board screen** | Boards Hub, Dashboard board cards, nested board pin, Notes/Tasks tab item tap | The core workspace: Canvas / List / Focus toggle over one board's content |
 | 5 | **Pin Editor** | Tapping/opening any pin on a board | Type-specific editing surface (note text, task detail, image, drawing, etc.) — opens as a side panel on tablet/desktop, full-screen sheet on phone |
 | 6 | **Notes tab** | Sidebar "Notes" | Flat, searchable list of every note pin across all boards |
 | 7 | **Tasks tab** | Sidebar "Tasks" | Flat, filterable list of every task across all boards, with blocked/unblocked and kanban-stage filters where applicable |
 | 8 | **Calendar view** | Sidebar "Calendar", Dashboard mini calendar "expand" | Month/week grid combining app tasks/milestones and synced device calendar events |
-| 9 | **Quick Capture** | FAB (bottom-right on phone/tablet, near sidebar on desktop), home-screen widget | Zen/Focus capture: text field + save only, lands in Inbox board |
+| 9 | **Quick Capture** | FAB (bottom-right on phone/tablet, near sidebar on desktop), home-screen widget | Zen/Focus capture: text field + save only, item appears in the Unsorted tray on Dashboard — no separate Inbox screen |
+| 9a | **Create button + Type Selector** | Persistent "Create" pill button (top bar on tablet/desktop, elevated center of bottom nav on phone) | Deliberate creation entry point: opens a custom floating popover to choose **To-do list**, **Note**, or **Board**, then morphs into the matching creation page |
+| 9b | **To-do list creation page** | Type Selector → "To-do list" | Title + first items, choose a destination board or leave Unsorted |
+| 9c | **Note creation page** | Type Selector → "Note" | Rich text editor, choose a destination board or leave Unsorted |
+| 9d | **New Board page** | Type Selector → "Board" (also replaces the old standalone "+ New board" action) | Title, Canvas/List default view, kanban opt-in toggle |
 | 10 | **Search** | Sidebar/top-bar search icon, keyboard shortcut on desktop | Full-text search across boards, notes, tasks |
 | 11 | **Settings** | Sidebar "Settings" | Theme, default view mode, app lock, backup/export/import, calendar sync, notification preferences, storage |
 | 12 | **App Lock screen** | App resume/launch, if enabled | PIN/biometric gate before Dashboard loads |
@@ -95,11 +99,18 @@ This document maps every screen and the paths between them. It should be read al
 5. Double-tapping/clicking a nested board pin pushes into that child board; breadcrumb grows by one level; tapping any earlier breadcrumb segment jumps back directly (not just one level at a time).
 6. The Canvas/List/Focus toggle (top-right, near the other icons) re-renders the same underlying pins without navigating away — switching modes is not a new "screen," just a re-render.
 
+### 3.3a Create flow (deliberate creation, distinct from Quick Capture)
+1. User taps the persistent **Create** button (top bar on tablet/desktop, elevated center of the bottom nav on phone) from anywhere in the app.
+2. A custom floating **Type Selector** popover opens directly from that button (never a native dropdown menu) showing three options: **To-do list**, **Note**, **Board**.
+3. Tapping an option animates that option morphing directly into its creation page — a To-do list page, a Note editor, or the New Board page (title + Canvas/List default + kanban opt-in) — rather than closing and opening an unrelated screen.
+4. On completion, the user lands wherever makes sense for what they made: a new board opens directly onto that (now empty) board; a new note/to-do list either opens on its chosen destination board, or — if left unfiled — appears in the Unsorted tray on the Dashboard, same as a Quick Capture item.
+5. This is the *only* place "+ New board" lives now — the old standalone Boards Hub button opens the same Type Selector, pre-scrolled/highlighted to the Board option.
+
 ### 3.4 Quick Capture flow (Zen mode)
 1. Triggered from the FAB, home-screen widget, or (desktop) a keyboard shortcut.
 2. Opens directly to a blank text field with only a Save action visible — no board picker, no tags, no color, no kanban stage.
-3. Save → item is created in the Inbox board as a Note or Task (auto-detected: if it looks like an actionable item or the user taps a small "make this a task" toggle, otherwise it's a note) and the capture sheet closes back to whatever screen the user was on.
-4. Later, from the Inbox board (reachable via Boards Hub or a Dashboard shortcut), the user triages captured items into their proper boards.
+3. Save → item is created as a Note or Task (auto-detected: if it looks like an actionable item or the user taps a small "make this a task" toggle, otherwise it's a note) and appears as an unfiled card in the **Unsorted tray** on the Dashboard — the capture sheet closes back to whatever screen the user was on; there is no separate "Inbox" screen to navigate into.
+4. Later, from the Unsorted tray, the user files each item by dragging it onto a board thumbnail, or by tapping it for a floating "Move to board…" popover.
 
 ### 3.5 Search flow
 1. Search icon/shortcut opens a search overlay from any screen.

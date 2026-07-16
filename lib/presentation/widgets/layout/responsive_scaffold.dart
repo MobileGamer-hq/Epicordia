@@ -5,68 +5,45 @@ import '../features/quick_capture_modal.dart';
 
 class ResponsiveScaffold extends StatelessWidget {
   final Widget child;
+  final PreferredSizeWidget? appBar;
 
-  const ResponsiveScaffold({super.key, required this.child});
+  const ResponsiveScaffold({super.key, required this.child, this.appBar});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    // A premium, soft gradient background to make glassmorphism pop
-    final backgroundDecoration = BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: isDark
-            ? [
-                const Color(0xFF101216), // Dark background color
-                const Color(0xFF161B22), // Soft dark navy/charcoal shift
-              ]
-            : [
-                const Color(0xFFFAFAF8), // Warm light background color
-                const Color(0xFFEFF1F5), // Soft greyish blue shift
-              ],
-      ),
-    );
-
-    // Make screen content selectable as requested by the user
-    final content = Container(
-      decoration: backgroundDecoration,
-      child: SelectionArea(child: child),
-    );
+    final content = SelectionArea(child: child);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
         final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth <= 1024;
-        
+
         if (isMobile) {
           return Scaffold(
+            backgroundColor: const Color(0xFFF8F7F4),
+            appBar: appBar,
             body: content,
-            bottomNavigationBar: const AppBottomNav(),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => showQuickCapture(context),
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.add),
+            bottomNavigationBar: AppBottomNav(
+              onCreateTap: () => showQuickCapture(context),
             ),
           );
         }
 
-        // Tablet & Desktop layout
         return Scaffold(
+          backgroundColor: const Color(0xFFF8F7F4),
+          appBar: appBar,
           body: Row(
             children: [
               AppSidebar(isTablet: isTablet),
               Expanded(child: content),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
+          floatingActionButton: FloatingActionButton.extended(
             onPressed: () => showQuickCapture(context),
-            backgroundColor: theme.colorScheme.primary,
+            backgroundColor: const Color(0xFF0077B6),
             foregroundColor: Colors.white,
-            child: const Icon(Icons.add),
+            icon: const Icon(Icons.add),
+            label: const Text('Create'),
           ),
         );
       },

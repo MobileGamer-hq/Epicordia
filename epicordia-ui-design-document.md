@@ -94,9 +94,23 @@ A small fixed set so boards stay visually calm rather than becoming rainbow-colo
 
 ## 3. Layout, spacing & shape
 
+**Shape direction:** Reddit's own design-system teams found that inconsistent corner radii and button styles across a product make it feel disjointed, and standardized instead on a small, consistent radius scale plus uniform circular containers for every clickable icon. Epicordia adopts that same discipline, with noticeably more curvature than a typical enterprise tool — soft, friendly, and consistent — while keeping the calmer blue/neutral palette from §1 rather than Reddit's own brand color.
+
 - **Base spacing unit:** 4px grid (4, 8, 12, 16, 24, 32, 48px steps) — every margin/padding in the app should be a multiple of 4.
-- **Corner radius:** cards/panels 12px, buttons/inputs 8px, small chips/tags fully rounded (pill), the canvas dot-grid itself uses tiny 1–2px dots spaced ~24px apart in `border-subtle`.
-- **Elevation:** flat design with soft, single-direction shadows only on interactive/lifted elements (a pin being dragged, an open modal) — resting cards use a 1px border instead of a shadow, keeping the interface calm (shadows are earned by interaction, not default decoration).
+- **Radius scale** (semantic tokens, each element sized to its own group — never one flat radius applied everywhere):
+
+| Token | Radius | Use |
+|---|---|---|
+| `radius-xs` | 6px | Small chips, input fields, checkboxes-replacement controls |
+| `radius-s` | 10px | Buttons, small cards, toolbar icons' hover background |
+| `radius-m` | 16px | Standard cards (board cards, pin cards, list rows) |
+| `radius-l` | 20px | Large surfaces — modals, side panels, bottom sheets |
+| `radius-pill` | 999px (full) | Buttons with text, tags/chips, the Create button, segmented controls, the status control ring's outer hit-area |
+
+Following the golden nesting rule (inner radius = outer radius − padding), an element inside a `radius-m` card with 12px padding gets `radius-s`, not the same 16px — never reuse a parent's radius on its direct children.
+
+- **Clickable icons are always circular containers** (uniform 40px diameter on desktop/tablet, 44px on phone for touch-target size), regardless of where they appear — top bar icons, pin-tray tools, floating popover close buttons. Non-clickable/decorative icons have no container at all. This one rule, borrowed directly from Reddit's own design-system consolidation, is what prevents the "13 different small text/icon styles" problem their design team documented — Epicordia should never end up with more than one visual style per icon role.
+- **Elevation:** flat design with soft, single-direction shadows only on interactive/lifted elements (a pin being dragged, an open popover/modal) — resting cards use a 1px border instead of a shadow, keeping the interface calm (shadows are earned by interaction, not default decoration).
 - **Grid/breakpoints** (aligned to Flutter/Material responsive conventions):
   - **Compact (phone): <600px** — single column, bottom navigation, full-screen modals.
   - **Medium (tablet): 600–1024px** — collapsible navigation rail, board canvas + side-panel pin editor.
@@ -125,29 +139,88 @@ A small fixed set so boards stay visually calm rather than becoming rainbow-colo
 ### 4.4 Cards (Dashboard board cards, list rows, pin cards)
 - Consistent card shell across contexts: `surface-card`, `border-subtle`, 12px radius, 16px internal padding, title in Body Strong, metadata in Caption/`text-secondary`.
 - Important/Urgent boards get a thin left-edge accent stripe in the warning/error semantic color (not a full-card color change, to stay calm).
+- Task rows/cards use the **Task Status Control** (§4.8) in place of a checkbox — see that section for full behavior.
+
+### 4.6a Unsorted tray (replaces the earlier "Inbox board" concept)
+Quick-captured notes/tasks should never feel like they've been filed into a hidden second app inside the app. Instead:
+- Captured items appear as small unfiled cards in an **"Unsorted" shelf** — a horizontally-scrollable strip at the top of the Dashboard (and mirrored as the existing "Unsorted" counter badge on the Boards Hub/Board screen, per §4.3) — rather than living inside a separate named board a user has to learn to navigate into.
+- Each unsorted card can be dragged directly onto any board thumbnail (Dashboard/Boards Hub) to file it, or tapped to open a floating popover offering "Move to board…" — no dedicated "Inbox" screen to visit at all.
+- The shelf empties as items get filed; when empty it collapses to nothing (no empty "Inbox" ever sits there looking unfinished).
+
+### 4.8 Task Status Control
+The primary way any task communicates progress — see full animation spec in §5.4. Visually: a small circular ring (20px on compact rows, 24px on cards) to the left of the task title, tappable, with the three states (empty / half-filled blue / checkmark-in-success-color) always paired with the title text's own treatment (normal → normal → strikethrough+dimmed) so status is never conveyed by the ring's color alone.
+
+### 4.9 Create button & Type Selector
+The single, deliberate entry point for making something new — distinct from the ultra-fast Quick Capture FAB (§4.6a is about triaging captures; this is about intentionally starting a To-do list, Note, or Board).
+
+- **Create button:** a `radius-pill` primary button, always labeled "Create" with a small "+" icon, permanently visible — top bar (right side, next to the icon cluster) on tablet/desktop, and as the elevated **center item of the bottom navigation bar** on phone (larger than the flanking icons, filled in `blue-600`, sitting slightly above the bar's edge) — directly mirroring the convention Reddit and most major mobile apps use for a single, unmissable creation action.
+- **Type Selector:** tapping Create never opens a native OS dropdown. Instead it opens a custom **floating popover** (per §5.2's light-interaction pattern) directly above/near the Create button, containing three large tappable options as a horizontal (tablet/desktop) or stacked (phone) set of `radius-m` cards, each with a distinct icon + label: **To-do list**, **Note**, **Board**. Each option card has its own subtle tint (not the three pin-tag colors — a neutral `surface-sunken` with a colored icon) so the three are visually distinct at a glance.
+- **Transition into the creation page:** tapping an option does not close the popover and open something unrelated — the selected card animates a continuity/morph transition (full timing/sequence in §5.6) into the relevant creation page: a **To-do list** creation page (title, first few items, board destination or leave Unsorted), a **Note** creation page (rich text editor, board destination or leave Unsorted), or the **New Board** page (title, Canvas/List default, kanban opt-in toggle). The user should feel like the card they tapped *became* the next screen, not that it was replaced by one.
+- This unifies what was previously a separate, smaller "+ New board" action on the Boards Hub — that action now simply opens the Type Selector pre-filtered/scrolled to Board, rather than being a second, differently-styled creation entry point elsewhere in the app.
 
 ### 4.5 Calendar Heatmap widget
 - Grid of small rounded squares (3–4px radius, ~12px each, 2px gutter), colored per §1.5, arranged in weekly columns like a contributions graph; a light `text-tertiary` month label row above.
 - Tapping/hovering a cell shows a tiny tooltip/popover with the day's count and jumps to that day in Calendar view on tap.
 
-### 4.6 Buttons
-- **Primary:** `blue-600` fill, white text, 8px radius, used once per screen for the single most important action (mirrors FAB scarcity principle — don't let every screen have three "primary-looking" buttons).
+### 4.6 Buttons — a small, consolidated set (Reddit-style discipline)
+Reddit's own design-system audit found that unmanaged button variation (different radii, fills, and text styles across the same product) was one of the biggest sources of visual inconsistency. Epicordia deliberately allows only four button styles, always `radius-pill`, no exceptions:
+- **Primary:** `blue-600` fill, white text, used once per screen for the single most important action (mirrors FAB scarcity principle — don't let every screen have three "primary-looking" buttons).
 - **Secondary:** `surface-card` fill, `border-strong` outline, `text-primary` text.
 - **Ghost/tertiary:** no fill/border, `text-secondary`, used for low-emphasis actions (e.g. "Cancel").
 - **Destructive:** `error` color outline/text by default, filled only inside a confirm step.
+- **Icon-only buttons** (search, notifications, settings, pin-tray tools, popover close) are never square — always a circular container per §3's clickable-icon rule, with a `surface-sunken`-tinted background on hover/press.
 
 ### 4.7 Empty states
 - Every empty list/board/tab gets an illustration-free, text-plus-icon prompt in `text-secondary`, one clear primary button (e.g. "Create your first board"), matching the "empty states matter" principle from research — never a literal blank white/grey rectangle.
 
 ---
 
-## 5. Motion & micro-interactions
+## 5. Motion & Interaction Language
 
-- **Drag lift:** picking up a pin scales it to 1.03x and adds a soft shadow over ~120ms; dropping settles back to 1.0x with a slight ease-out.
+Motion isn't decoration here — it's how the app explains what just happened, so the interface should never rely on an instant, silent state-change. Every state transition below has a defined animation; nothing "just appears."
+
+### 5.1 Principles
+- **Spring-based easing everywhere**, not linear or basic ease-in-out — small overshoot/settle (like a physical object coming to rest) on drags, pop-ins, and toggles, so the app has a tactile, confident feel rather than a flat/robotic one.
+- **Duration bands:** micro feedback (button press, toggle flip) 100–150ms; element enter/exit (popovers, cards) 150–250ms; screen-level transitions (entering a nested board) 250–350ms. Nothing in the app should take longer than ~350ms to settle.
+- **Staggered reveals:** when a list of cards/pins first renders (opening a board, loading Dashboard sections), items fade+rise in with a small stagger (~20–30ms between each) rather than all popping in at once — reinforces that this is a living workspace, not a static page.
+- **Continuity over cuts:** wherever an element on screen A becomes an element on screen B (a board card becoming the board's top bar, a task row becoming its detail popover), animate that element growing/moving into place (a shared-element/hero-style transition) rather than a hard cut to a new screen.
+
+### 5.2 Overlay system — floating contextual popovers, not blanket modals
+Most day-to-day interactions should feel local to what the user tapped, not like leaving the screen. Overlay choice by weight:
+
+| Interaction weight | Pattern | Animation |
+|---|---|---|
+| **Light** — quick status change, priority pick, color tag, short context menu, due-date pick | **Floating popover**: a small card anchored directly next to/above the tapped element, with a subtle directional pointer/notch toward its trigger, drop shadow, rounded 12px corners | Scale from 0.92→1.0 + fade + slight rise (~180ms spring), anchored so it visually originates from the tapped element, not the screen center |
+| **Medium** — editing a single pin's full content, quick task detail | **Side panel** (tablet/desktop, board stays visible) or **bottom sheet** (phone) — not a centered modal | Slides in from the anchored edge (right on desktop/tablet, bottom on phone) over ~220ms, board dims very slightly (10–15% scrim) but stays visible/blurred behind it, not hidden |
+| **Heavy** — new board creation, Settings sections, import/export confirmation, first-run setup | **Full-screen sheet/modal** | Standard modal fade+rise, reserved only for flows that genuinely need the user's full attention away from the board |
+
+Rule of thumb: if the user is still conceptually "on the board," they should see a floating popover or side panel with the board visible/dimmed behind it — never a full opaque takeover. Full modals are earned only by heavier, standalone tasks.
+
+### 5.3 Switches & toggles
+- Track morphs color (neutral → `blue-600`) over ~150ms as the thumb slides, not an instant color swap.
+- Thumb slides with a small spring overshoot (travels slightly past its resting position, settles back) rather than a linear glide — this is what makes a toggle feel "flipped" rather than just "moved."
+- On tap, a very brief (~80ms) scale-down-then-up on the thumb gives tactile press feedback before the slide animation runs.
+
+### 5.4 Task status control (replaces plain checkboxes)
+A tappable circular **status ring**, not a checkbox — it should visually tell the story of a task's progress, not just its binary done/not-done state:
+
+- **Not started:** an empty outlined ring in `border-strong`.
+- **In progress:** the ring animates filling clockwise to roughly half, in `blue-600`, over ~200ms — this state is set automatically the first time a task is opened/edited, or manually via tap-and-hold for a quick menu, so "in progress" emerges naturally from use rather than requiring a manual step every time.
+- **Done:** tapping a Not-started or In-progress ring completes the fill (spring-eased, ~250ms) in the success color, and a checkmark draws itself inside the ring stroke-by-stroke (~150ms) immediately after the fill finishes — followed by the task's title text animating a soft strikethrough sweep and fading to `text-tertiary` over ~200ms. The whole sequence reads as "this task just got finished," not "a box got ticked."
+- Tapping a Done ring reverses the whole sequence (uncomplete), symmetrically animated back to its prior state.
+- This same ring is the single source of truth whether or not a board has kanban enabled: with kanban off, the ring's three states are all the user sees; with kanban on, the ring's state is exactly what places the task in its To Do/Doing/Done column — there is no separate, disconnected "status" field for kanban mode.
+
+### 5.5 Canvas-specific motion
+- **Drag lift:** picking up a pin scales it to 1.03x and adds a soft shadow over ~120ms; dropping settles back to 1.0x with a slight spring ease-out.
 - **Snapping:** alignment guides fade in at ~80ms when a dragged pin nears alignment with another, fade out on release.
-- **Board entry/exit:** entering a nested board zooms/fades the canvas forward (~200ms ease); exiting via breadcrumb reverses it — this single transition is what makes it feel like Milanote/Figma rather than a generic list-based CRUD app.
-- **View-mode switch (Canvas/List/Focus):** cross-fade + slight vertical settle (~150ms), never an abrupt cut, so the user's sense of "same data, different lens" is reinforced visually.
-- Keep all durations short (100–250ms) and easing consistent (standard ease-in-out) — motion should feel responsive, never decorative or slow.
+- **Board entry/exit:** entering a nested board zooms/fades the canvas forward (~280ms spring ease), visually growing out of the board pin the user tapped (shared-element continuity per §5.1); exiting via breadcrumb reverses the same animation.
+- **View-mode switch (Canvas/List/Focus):** cross-fade + slight vertical settle (~180ms), never an abrupt cut, so the user's sense of "same data, different lens" is reinforced visually.
+
+### 5.6 Create button & Type Selector motion
+- **Opening:** tapping Create, the button itself gives a brief (~80ms) press scale-down, then the Type Selector popover blooms outward from the button's position — scale 0.9→1.0 + fade over ~200ms spring, with the three option cards staggered in individually (~25ms apart, per §5.1) rather than appearing as one flat block.
+- **Selecting an option:** the chosen card does not simply vanish — it scales up and expands (~250ms spring ease) to fill the space the creation page will occupy, while its icon fades out and its label cross-fades into the new page's title; the other two option cards fade out quickly (~100ms) as this happens, so all visual attention follows the one the user picked.
+- **Backing out:** tapping outside the popover or a "Cancel"/back action reverses the opening animation exactly (cards fade/stagger back, popover shrinks back into the Create button) — never a hard cut back to the previous screen.
+- **Bottom-nav Create button (phone):** being the elevated center item, it gets a subtle idle "breathing" affordance — a very slow (~2s), low-amplitude scale pulse (1.0→1.02→1.0) only when the Unsorted tray has unfiled items waiting, as a gentle nudge rather than a badge number; otherwise it sits still.
 
 ---
 
