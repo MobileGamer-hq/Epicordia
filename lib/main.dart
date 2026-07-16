@@ -4,11 +4,7 @@ import 'core/theme.dart';
 import 'core/router.dart';
 
 void main() {
-  runApp(
-    const ProviderScope(
-      child: EpicordiaApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: EpicordiaApp()));
 }
 
 class EpicordiaApp extends ConsumerWidget {
