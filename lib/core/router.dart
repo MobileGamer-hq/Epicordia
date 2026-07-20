@@ -21,6 +21,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/',       builder: (context, state) => const TodayDashboard()),
+      // GoRoute(path: '/',       builder: (context, state) => const DashboardScreen()),
       GoRoute(path: '/boards', builder: (context, state) => const BoardsTab()),
       GoRoute(
         path: '/board/:id',

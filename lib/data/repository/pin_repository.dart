@@ -6,6 +6,14 @@ import '../providers.dart';
 
 final pinRepositoryProvider = Provider<PinRepository>((ref) => PinRepository(ref));
 
+final allNotesProvider = StreamProvider<List<PinEntity>>((ref) {
+  return ref.watch(pinRepositoryProvider).watchAllNotes();
+});
+
+final unsortedNotesProvider = StreamProvider<List<PinEntity>>((ref) {
+  return ref.watch(pinRepositoryProvider).watchUnsortedNotes();
+});
+
 class PinRepository {
   final Ref ref;
 

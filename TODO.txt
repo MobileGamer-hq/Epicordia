@@ -9,3 +9,5 @@
 -The app designs should have a glass like designs on cards and ui for buttons and all make it look nice.
 -on the dashboard there should be a settings button that will link tot the settings screen.
 
+-There should be ba cresta button on the notes_tab screen and tasks_tabs screen the button is there for the tasks_tab screen but once there is a task it doesnt show again which is wrong it should show even when there is content in the list, and the create button on the tasks_tab screen doesnt work
+-Let the notes_tabs and tasks_tabs screens get their data from the database, and the filters on top should work for both of them so recents, pinned and ideas  and due today, overdu and boards 

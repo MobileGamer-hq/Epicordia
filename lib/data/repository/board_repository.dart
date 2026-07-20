@@ -5,6 +5,10 @@ import '../providers.dart';
 
 final boardRepositoryProvider = Provider<BoardRepository>((ref) => BoardRepository(ref));
 
+final allBoardsProvider = StreamProvider<List<BoardEntity>>((ref) {
+  return ref.watch(boardRepositoryProvider).watchAllBoards();
+});
+
 class BoardRepository {
   final Ref ref;
 

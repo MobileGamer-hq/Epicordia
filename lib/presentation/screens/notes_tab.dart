@@ -18,12 +18,12 @@ class _NotesTabState extends State<NotesTab> {
   final List<String> _filters = ['All', 'Recent', 'Pinned', 'Ideas'];
 
   final List<_NoteData> _notes = const [
-    _NoteData(title: 'Product Roadmap 2024', preview: 'The focus for the upcoming quarters will be on enhancing the canvas-first workflow. We need to prioritize the transition from list-based tasks to spatial', board: 'Strategy', modified: 'Modified 9h ago', isPinned: true),
-    _NoteData(title: 'Client Feedback · Zenith', preview: 'Zenith Corp mentioned that they love the \'Digital Zen\' aesthetic but would like more robust export options — like the canvas views. Need to investigate PDF filing.', board: 'Research', modified: 'Modified 9h ago', isPinned: false),
-    _NoteData(title: 'Interaction Model Design', preview: 'Defining the tactile edge for mobile interactions. Every icon must sit within a 44px touchable touch target. Use scale-90 transitions on active states for feedback.', board: 'UX/UX', modified: 'Modified Yesterday', isPinned: true),
-    _NoteData(title: 'Brutalist Pavilion Inspo', preview: 'Reference photos and initial sketches for the Epicordia Pavilion project in Milan.', board: 'Architecture', modified: 'Modified Oct 23', isPinned: false),
-    _NoteData(title: 'Quick Ideas: Shader Effects', preview: 'Maybe add a subtle noise texture to the canvas background? Just enough to make it feel like paper — but digitally crisp. Test grain opacity at 0.02.', board: 'Ideas', modified: 'Modified Oct 23', isPinned: false),
-    _NoteData(title: 'Meeting Notes: API V2', preview: 'Discussed moving to a more modular architecture for board endpoints. The current monolith is slowing down the canvas loading states. Aim for <200ms.', board: 'Engineering', modified: 'Modified Oct 23', isPinned: false),
+    // _NoteData(title: 'Product Roadmap 2024', preview: 'The focus for the upcoming quarters will be on enhancing the canvas-first workflow. We need to prioritize the transition from list-based tasks to spatial', board: 'Strategy', modified: 'Modified 9h ago', isPinned: true),
+    // _NoteData(title: 'Client Feedback · Zenith', preview: 'Zenith Corp mentioned that they love the \'Digital Zen\' aesthetic but would like more robust export options — like the canvas views. Need to investigate PDF filing.', board: 'Research', modified: 'Modified 9h ago', isPinned: false),
+    // _NoteData(title: 'Interaction Model Design', preview: 'Defining the tactile edge for mobile interactions. Every icon must sit within a 44px touchable touch target. Use scale-90 transitions on active states for feedback.', board: 'UX/UX', modified: 'Modified Yesterday', isPinned: true),
+    // _NoteData(title: 'Brutalist Pavilion Inspo', preview: 'Reference photos and initial sketches for the Epicordia Pavilion project in Milan.', board: 'Architecture', modified: 'Modified Oct 23', isPinned: false),
+    // _NoteData(title: 'Quick Ideas: Shader Effects', preview: 'Maybe add a subtle noise texture to the canvas background? Just enough to make it feel like paper — but digitally crisp. Test grain opacity at 0.02.', board: 'Ideas', modified: 'Modified Oct 23', isPinned: false),
+    // _NoteData(title: 'Meeting Notes: API V2', preview: 'Discussed moving to a more modular architecture for board endpoints. The current monolith is slowing down the canvas loading states. Aim for <200ms.', board: 'Engineering', modified: 'Modified Oct 23', isPinned: false),
   ];
 
   @override
@@ -48,7 +48,11 @@ class _NotesTabState extends State<NotesTab> {
                   controller: _searchController,
                   decoration: const InputDecoration(
                     hintText: 'Search across all boards...',
-                    prefixIcon: Icon(Icons.search, size: 18, color: EpicordiaColors.textTertiaryLight),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      size: 18,
+                      color: EpicordiaColors.textTertiaryLight,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -63,13 +67,31 @@ class _NotesTabState extends State<NotesTab> {
                           onTap: () => setState(() => _selectedFilter = f),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: selected ? EpicordiaColors.blue700 : Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: selected ? EpicordiaColors.blue700 : EpicordiaColors.borderStrongLight),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
                             ),
-                            child: Text(f, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: selected ? Colors.white : EpicordiaColors.textSecondaryLight)),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? EpicordiaColors.blue700
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: selected
+                                    ? EpicordiaColors.blue700
+                                    : EpicordiaColors.borderStrongLight,
+                              ),
+                            ),
+                            child: Text(
+                              f,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: selected
+                                    ? Colors.white
+                                    : EpicordiaColors.textSecondaryLight,
+                              ),
+                            ),
                           ),
                         ),
                       );
@@ -87,7 +109,8 @@ class _NotesTabState extends State<NotesTab> {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
                 itemCount: _notes.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) => _NoteListItem(note: _notes[index]),
+                itemBuilder: (context, index) =>
+                    _NoteListItem(note: _notes[index]),
               ),
             ),
           ),
@@ -104,7 +127,13 @@ class _NoteData {
   final String board;
   final String modified;
   final bool isPinned;
-  const _NoteData({required this.title, required this.preview, required this.board, required this.modified, required this.isPinned});
+  const _NoteData({
+    required this.title,
+    required this.preview,
+    required this.board,
+    required this.modified,
+    required this.isPinned,
+  });
 }
 
 // ── Note list item ────────────────────────────────────────────
@@ -122,30 +151,72 @@ class _NoteListItem extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(note.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
+                child: Text(
+                  note.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: EpicordiaColors.textPrimaryLight,
+                  ),
+                ),
               ),
               Container(
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: note.isPinned ? EpicordiaColors.blue600 : Colors.transparent,
-                  border: Border.all(color: note.isPinned ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight, width: 1.5),
+                  color: note.isPinned
+                      ? EpicordiaColors.blue600
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: note.isPinned
+                        ? EpicordiaColors.blue600
+                        : EpicordiaColors.borderStrongLight,
+                    width: 1.5,
+                  ),
                 ),
-                child: note.isPinned ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
+                child: note.isPinned
+                    ? const Icon(Icons.check, size: 10, color: Colors.white)
+                    : null,
               ),
             ],
           ),
           const SizedBox(height: 6),
-          Text(note.preview, style: const TextStyle(fontSize: 13, color: EpicordiaColors.textSecondaryLight, height: 1.45), maxLines: 3, overflow: TextOverflow.ellipsis),
+          Text(
+            note.preview,
+            style: const TextStyle(
+              fontSize: 13,
+              color: EpicordiaColors.textSecondaryLight,
+              height: 1.45,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Text(note.modified, style: const TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight)),
+              Text(
+                note.modified,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: EpicordiaColors.textTertiaryLight,
+                ),
+              ),
               const SizedBox(width: 8),
-              Text('Board: ${note.board}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: EpicordiaColors.blue600)),
+              Text(
+                'Board: ${note.board}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: EpicordiaColors.blue600,
+                ),
+              ),
               const Spacer(),
-              const Icon(Icons.more_horiz, size: 16, color: EpicordiaColors.textTertiaryLight),
+              const Icon(
+                Icons.more_horiz,
+                size: 16,
+                color: EpicordiaColors.textTertiaryLight,
+              ),
             ],
           ),
         ],

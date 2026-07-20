@@ -5,6 +5,14 @@ import '../providers.dart';
 
 final taskRepositoryProvider = Provider<TaskRepository>((ref) => TaskRepository(ref));
 
+final allTasksProvider = StreamProvider<List<TaskEntity>>((ref) {
+  return ref.watch(taskRepositoryProvider).watchAllTasks();
+});
+
+final tasksDueTodayProvider = StreamProvider<List<TaskEntity>>((ref) {
+  return ref.watch(taskRepositoryProvider).watchTasksDueToday();
+});
+
 class TaskRepository {
   final Ref ref;
 

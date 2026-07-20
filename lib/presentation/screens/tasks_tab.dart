@@ -18,11 +18,46 @@ class _TasksTabState extends State<TasksTab> {
   final List<String> _filters = ['All', 'Due Today', 'Overdue', 'Boards'];
 
   final List<_TaskData> _tasks = const [
-    _TaskData(title: 'Update Infrastructure API keys', due: 'Due: Yesterday', board: 'DEVOPS BOARD', boardColor: Color(0xFFC6362E), isOverdue: true, isCompleted: false),
-    _TaskData(title: 'Review Q3 Design Language System', due: 'Due: Today, 5:00 PM', board: 'DESIGN', boardColor: Color(0xFF0077B6), isOverdue: false, isCompleted: false),
-    _TaskData(title: 'Setup Weekly Sync with Stakeholders', due: 'Completed 2h ago', board: 'MANAGEMENT', boardColor: Color(0xFF1A9A5B), isOverdue: false, isCompleted: true),
-    _TaskData(title: 'Draft product requirement document for V2', due: 'Due: Oct 12', board: 'PRODUCT', boardColor: Color(0xFF0077B6), isOverdue: false, isCompleted: false),
-    _TaskData(title: 'Prepare client presentation deck', due: 'Due: Oct 14', board: 'SALES', boardColor: Color(0xFF0077B6), isOverdue: false, isCompleted: false),
+    // _TaskData(
+    //   title: 'Update Infrastructure API keys',
+    //   due: 'Due: Yesterday',
+    //   board: 'DEVOPS BOARD',
+    //   boardColor: Color(0xFFC6362E),
+    //   isOverdue: true,
+    //   isCompleted: false,
+    // ),
+    // _TaskData(
+    //   title: 'Review Q3 Design Language System',
+    //   due: 'Due: Today, 5:00 PM',
+    //   board: 'DESIGN',
+    //   boardColor: Color(0xFF0077B6),
+    //   isOverdue: false,
+    //   isCompleted: false,
+    // ),
+    // _TaskData(
+    //   title: 'Setup Weekly Sync with Stakeholders',
+    //   due: 'Completed 2h ago',
+    //   board: 'MANAGEMENT',
+    //   boardColor: Color(0xFF1A9A5B),
+    //   isOverdue: false,
+    //   isCompleted: true,
+    // ),
+    // _TaskData(
+    //   title: 'Draft product requirement document for V2',
+    //   due: 'Due: Oct 12',
+    //   board: 'PRODUCT',
+    //   boardColor: Color(0xFF0077B6),
+    //   isOverdue: false,
+    //   isCompleted: false,
+    // ),
+    // _TaskData(
+    //   title: 'Prepare client presentation deck',
+    //   due: 'Due: Oct 14',
+    //   board: 'SALES',
+    //   boardColor: Color(0xFF0077B6),
+    //   isOverdue: false,
+    //   isCompleted: false,
+    // ),
   ];
 
   @override
@@ -48,7 +83,11 @@ class _TasksTabState extends State<TasksTab> {
                   controller: _searchController,
                   decoration: const InputDecoration(
                     hintText: 'Filter tasks by name, tag, or board...',
-                    prefixIcon: Icon(Icons.search, size: 18, color: EpicordiaColors.textTertiaryLight),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      size: 18,
+                      color: EpicordiaColors.textTertiaryLight,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -64,12 +103,19 @@ class _TasksTabState extends State<TasksTab> {
                           onTap: () => setState(() => _selectedFilter = f),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
-                              color: selected ? EpicordiaColors.blue700 : Colors.transparent,
+                              color: selected
+                                  ? EpicordiaColors.blue700
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: selected ? EpicordiaColors.blue700 : EpicordiaColors.borderStrongLight,
+                                color: selected
+                                    ? EpicordiaColors.blue700
+                                    : EpicordiaColors.borderStrongLight,
                               ),
                             ),
                             child: Text(
@@ -77,7 +123,9 @@ class _TasksTabState extends State<TasksTab> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: selected ? Colors.white : EpicordiaColors.textSecondaryLight,
+                                color: selected
+                                    ? Colors.white
+                                    : EpicordiaColors.textSecondaryLight,
                               ),
                             ),
                           ),
@@ -120,7 +168,14 @@ class _TaskData {
   final Color boardColor;
   final bool isOverdue;
   final bool isCompleted;
-  const _TaskData({required this.title, required this.due, required this.board, required this.boardColor, required this.isOverdue, required this.isCompleted});
+  const _TaskData({
+    required this.title,
+    required this.due,
+    required this.board,
+    required this.boardColor,
+    required this.isOverdue,
+    required this.isCompleted,
+  });
 }
 
 // ── Task list item ────────────────────────────────────────────
@@ -142,17 +197,21 @@ class _TaskListItem extends StatelessWidget {
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: task.isCompleted ? EpicordiaColors.successLight : Colors.transparent,
+                color: task.isCompleted
+                    ? EpicordiaColors.successLight
+                    : Colors.transparent,
                 border: Border.all(
                   color: task.isOverdue
                       ? EpicordiaColors.errorLight.withValues(alpha: 0.6)
                       : task.isCompleted
-                          ? EpicordiaColors.successLight
-                          : EpicordiaColors.borderStrongLight,
+                      ? EpicordiaColors.successLight
+                      : EpicordiaColors.borderStrongLight,
                   width: 1.5,
                 ),
               ),
-              child: task.isCompleted ? const Icon(Icons.check, size: 13, color: Colors.white) : null,
+              child: task.isCompleted
+                  ? const Icon(Icons.check, size: 13, color: Colors.white)
+                  : null,
             ),
           ),
           const SizedBox(width: 12),
@@ -169,7 +228,9 @@ class _TaskListItem extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: EpicordiaColors.textPrimaryLight,
-                          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                          decoration: task.isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
                           decorationColor: EpicordiaColors.textTertiaryLight,
                         ),
                       ),
@@ -187,13 +248,26 @@ class _TaskListItem extends StatelessWidget {
                       task.due,
                       style: TextStyle(
                         fontSize: 12,
-                        color: task.isOverdue ? EpicordiaColors.errorLight : EpicordiaColors.textTertiaryLight,
+                        color: task.isOverdue
+                            ? EpicordiaColors.errorLight
+                            : EpicordiaColors.textTertiaryLight,
                       ),
                     ),
-                    const Text(' • ', style: TextStyle(fontSize: 12, color: EpicordiaColors.textTertiaryLight)),
+                    const Text(
+                      ' • ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: EpicordiaColors.textTertiaryLight,
+                      ),
+                    ),
                     Text(
                       task.board,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: task.boardColor, letterSpacing: 0.5),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: task.boardColor,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ],
                 ),
@@ -218,14 +292,29 @@ class _CreateTaskButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: EpicordiaColors.borderStrongLight, style: BorderStyle.solid, width: 1.5),
+          border: Border.all(
+            color: EpicordiaColors.borderStrongLight,
+            style: BorderStyle.solid,
+            width: 1.5,
+          ),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, size: 18, color: EpicordiaColors.textSecondaryLight),
+            Icon(
+              Icons.add,
+              size: 18,
+              color: EpicordiaColors.textSecondaryLight,
+            ),
             SizedBox(width: 6),
-            Text('Create New Task', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: EpicordiaColors.textSecondaryLight)),
+            Text(
+              'Create New Task',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: EpicordiaColors.textSecondaryLight,
+              ),
+            ),
           ],
         ),
       ),
