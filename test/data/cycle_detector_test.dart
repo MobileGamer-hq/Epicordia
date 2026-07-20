@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:app/data/database/database.dart';
-import 'package:app/domain/cycle_detector.dart';
+import 'package:Epicorida/data/database/database.dart';
+import 'package:Epicorida/domain/cycle_detector.dart';
 
 void main() {
   group('Cycle Detection', () {

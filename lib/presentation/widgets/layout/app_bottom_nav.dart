@@ -26,25 +26,19 @@ class AppBottomNav extends StatelessWidget {
               _NavItem(item: appNavItems[0], isActive: location == appNavItems[0].route),
               _NavItem(item: appNavItems[1], isActive: location == appNavItems[1].route),
 
-              // Center: Create button
+              // Center: Create button (icon only)
               Expanded(
                 child: GestureDetector(
                   onTap: onCreateTap,
                   child: Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
                         color: EpicordiaColors.blue600,
-                        borderRadius: BorderRadius.circular(20),
+                        shape: BoxShape.circle,
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add, color: Colors.white, size: 16),
-                          SizedBox(width: 4),
-                          Text('Create', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                        ],
-                      ),
+                      child: const Icon(Icons.add, color: Colors.white, size: 20),
                     ),
                   ),
                 ),

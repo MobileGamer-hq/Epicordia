@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
 
-/// The Epicordia brand logo widget: grid icon + "Epicordia" in bold blue
+/// The Epicordia brand logo widget: logo image + "Epicordia" in bold blue
 class EpicordiaLogo extends StatelessWidget {
   final double size;
   const EpicordiaLogo({super.key, this.size = 20});
@@ -11,7 +11,12 @@ class EpicordiaLogo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _GridIcon(size: size),
+        Image.asset(
+          'assets/Logo.png',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+        ),
         const SizedBox(width: 8),
         Text(
           'Epicordia',
@@ -28,50 +33,8 @@ class EpicordiaLogo extends StatelessWidget {
   }
 }
 
-class _GridIcon extends StatelessWidget {
-  final double size;
-  const _GridIcon({required this.size});
 
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(painter: _GridPainter()),
-    );
-  }
-}
 
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = EpicordiaColors.blue700
-      ..style = PaintingStyle.fill;
-
-    final r = size.width * 0.22;
-    final gap = size.width * 0.06;
-    final step = r * 2 + gap;
-
-    // 2x2 grid of rounded squares
-    for (int row = 0; row < 2; row++) {
-      for (int col = 0; col < 2; col++) {
-        final x = col * step;
-        final y = row * step;
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(x, y, r * 2, r * 2),
-            Radius.circular(r * 0.4),
-          ),
-          paint,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 
 /// Standard Epicordia app bar with logo, search, and optional avatar
 class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {

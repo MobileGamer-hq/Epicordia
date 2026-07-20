@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:app/data/database/database.dart';
+import 'package:Epicorida/data/database/database.dart';
 
 void main() {
   late AppDatabase database;
@@ -45,7 +45,7 @@ void main() {
       final pinDao = database.pinDao;
 
       await boardDao.insertBoard(BoardsCompanion.insert(id: 'b1', title: 'Test'));
-      await pinDao.insertPin(PinsCompanion.insert(id: 'p1', boardId: 'b1', type: 'note'));
+      await pinDao.insertPin(PinsCompanion.insert(id: 'p1', boardId: const Value('b1'), type: 'note'));
       
       var pin = await pinDao.getPin('p1');
       expect(pin, isNotNull);

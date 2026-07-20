@@ -12,6 +12,10 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return (select(tasks)..where((t) => t.boardId.equals(boardId))).watch();
   }
 
+  Stream<List<TaskEntity>> watchUnsortedTasks() {
+    return (select(tasks)..where((t) => t.boardId.isNull())).watch();
+  }
+
   Stream<List<TaskEntity>> watchTasksDueToday() {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);

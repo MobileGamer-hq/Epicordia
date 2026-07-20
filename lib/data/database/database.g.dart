@@ -564,9 +564,9 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
   late final GeneratedColumn<String> boardId = GeneratedColumn<String>(
     'board_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES boards (id) ON DELETE CASCADE',
     ),
@@ -726,8 +726,6 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
         _boardIdMeta,
         boardId.isAcceptableOrUnknown(data['board_id']!, _boardIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_boardIdMeta);
     }
     if (data.containsKey('type')) {
       context.handle(
@@ -807,7 +805,7 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
       boardId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}board_id'],
-      )!,
+      ),
       type: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}type'],
@@ -863,7 +861,7 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
 
 class PinEntity extends DataClass implements Insertable<PinEntity> {
   final String id;
-  final String boardId;
+  final String? boardId;
   final String type;
   final double x;
   final double y;
@@ -877,7 +875,7 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
   final DateTime modifiedAt;
   const PinEntity({
     required this.id,
-    required this.boardId,
+    this.boardId,
     required this.type,
     required this.x,
     required this.y,
@@ -894,7 +892,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['board_id'] = Variable<String>(boardId);
+    if (!nullToAbsent || boardId != null) {
+      map['board_id'] = Variable<String>(boardId);
+    }
     map['type'] = Variable<String>(type);
     map['x'] = Variable<double>(x);
     map['y'] = Variable<double>(y);
@@ -916,7 +916,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
   PinsCompanion toCompanion(bool nullToAbsent) {
     return PinsCompanion(
       id: Value(id),
-      boardId: Value(boardId),
+      boardId: boardId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boardId),
       type: Value(type),
       x: Value(x),
       y: Value(y),
@@ -942,7 +944,7 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PinEntity(
       id: serializer.fromJson<String>(json['id']),
-      boardId: serializer.fromJson<String>(json['boardId']),
+      boardId: serializer.fromJson<String?>(json['boardId']),
       type: serializer.fromJson<String>(json['type']),
       x: serializer.fromJson<double>(json['x']),
       y: serializer.fromJson<double>(json['y']),
@@ -961,7 +963,7 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'boardId': serializer.toJson<String>(boardId),
+      'boardId': serializer.toJson<String?>(boardId),
       'type': serializer.toJson<String>(type),
       'x': serializer.toJson<double>(x),
       'y': serializer.toJson<double>(y),
@@ -978,7 +980,7 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
 
   PinEntity copyWith({
     String? id,
-    String? boardId,
+    Value<String?> boardId = const Value.absent(),
     String? type,
     double? x,
     double? y,
@@ -992,7 +994,7 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     DateTime? modifiedAt,
   }) => PinEntity(
     id: id ?? this.id,
-    boardId: boardId ?? this.boardId,
+    boardId: boardId.present ? boardId.value : this.boardId,
     type: type ?? this.type,
     x: x ?? this.x,
     y: y ?? this.y,
@@ -1082,7 +1084,7 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
 
 class PinsCompanion extends UpdateCompanion<PinEntity> {
   final Value<String> id;
-  final Value<String> boardId;
+  final Value<String?> boardId;
   final Value<String> type;
   final Value<double> x;
   final Value<double> y;
@@ -1113,7 +1115,7 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
   });
   PinsCompanion.insert({
     required String id,
-    required String boardId,
+    this.boardId = const Value.absent(),
     required String type,
     this.x = const Value.absent(),
     this.y = const Value.absent(),
@@ -1127,7 +1129,6 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       boardId = Value(boardId),
        type = Value(type);
   static Insertable<PinEntity> custom({
     Expression<String>? id,
@@ -1165,7 +1166,7 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
 
   PinsCompanion copyWith({
     Value<String>? id,
-    Value<String>? boardId,
+    Value<String?>? boardId,
     Value<String>? type,
     Value<double>? x,
     Value<double>? y,
@@ -1366,10 +1367,25 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
     'status',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultValue: const Constant('todo'),
   );
+  static const VerificationMeta _recurrenceParentIdMeta =
+      const VerificationMeta('recurrenceParentId');
+  @override
+  late final GeneratedColumn<String> recurrenceParentId =
+      GeneratedColumn<String>(
+        'recurrence_parent_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES tasks (id) ON DELETE CASCADE',
+        ),
+      );
   static const VerificationMeta _recurrenceRuleMeta = const VerificationMeta(
     'recurrenceRule',
   );
@@ -1403,6 +1419,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
     scheduledDate,
     priority,
     status,
+    recurrenceParentId,
     recurrenceRule,
     calendarEventId,
   ];
@@ -1476,6 +1493,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('recurrence_parent_id')) {
+      context.handle(
+        _recurrenceParentIdMeta,
+        recurrenceParentId.isAcceptableOrUnknown(
+          data['recurrence_parent_id']!,
+          _recurrenceParentIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('recurrence_rule')) {
       context.handle(
         _recurrenceRuleMeta,
@@ -1538,6 +1564,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
+      )!,
+      recurrenceParentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recurrence_parent_id'],
       ),
       recurrenceRule: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1565,7 +1595,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
   final DateTime? dueDate;
   final DateTime? scheduledDate;
   final int priority;
-  final String? status;
+  final String status;
+  final String? recurrenceParentId;
   final String? recurrenceRule;
   final String? calendarEventId;
   const TaskEntity({
@@ -1577,7 +1608,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     this.dueDate,
     this.scheduledDate,
     required this.priority,
-    this.status,
+    required this.status,
+    this.recurrenceParentId,
     this.recurrenceRule,
     this.calendarEventId,
   });
@@ -1602,8 +1634,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       map['scheduled_date'] = Variable<DateTime>(scheduledDate);
     }
     map['priority'] = Variable<int>(priority);
-    if (!nullToAbsent || status != null) {
-      map['status'] = Variable<String>(status);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || recurrenceParentId != null) {
+      map['recurrence_parent_id'] = Variable<String>(recurrenceParentId);
     }
     if (!nullToAbsent || recurrenceRule != null) {
       map['recurrence_rule'] = Variable<String>(recurrenceRule);
@@ -1634,9 +1667,10 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           ? const Value.absent()
           : Value(scheduledDate),
       priority: Value(priority),
-      status: status == null && nullToAbsent
+      status: Value(status),
+      recurrenceParentId: recurrenceParentId == null && nullToAbsent
           ? const Value.absent()
-          : Value(status),
+          : Value(recurrenceParentId),
       recurrenceRule: recurrenceRule == null && nullToAbsent
           ? const Value.absent()
           : Value(recurrenceRule),
@@ -1660,7 +1694,10 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       dueDate: serializer.fromJson<DateTime?>(json['dueDate']),
       scheduledDate: serializer.fromJson<DateTime?>(json['scheduledDate']),
       priority: serializer.fromJson<int>(json['priority']),
-      status: serializer.fromJson<String?>(json['status']),
+      status: serializer.fromJson<String>(json['status']),
+      recurrenceParentId: serializer.fromJson<String?>(
+        json['recurrenceParentId'],
+      ),
       recurrenceRule: serializer.fromJson<String?>(json['recurrenceRule']),
       calendarEventId: serializer.fromJson<String?>(json['calendarEventId']),
     );
@@ -1677,7 +1714,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       'dueDate': serializer.toJson<DateTime?>(dueDate),
       'scheduledDate': serializer.toJson<DateTime?>(scheduledDate),
       'priority': serializer.toJson<int>(priority),
-      'status': serializer.toJson<String?>(status),
+      'status': serializer.toJson<String>(status),
+      'recurrenceParentId': serializer.toJson<String?>(recurrenceParentId),
       'recurrenceRule': serializer.toJson<String?>(recurrenceRule),
       'calendarEventId': serializer.toJson<String?>(calendarEventId),
     };
@@ -1692,7 +1730,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     Value<DateTime?> dueDate = const Value.absent(),
     Value<DateTime?> scheduledDate = const Value.absent(),
     int? priority,
-    Value<String?> status = const Value.absent(),
+    String? status,
+    Value<String?> recurrenceParentId = const Value.absent(),
     Value<String?> recurrenceRule = const Value.absent(),
     Value<String?> calendarEventId = const Value.absent(),
   }) => TaskEntity(
@@ -1706,7 +1745,10 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
         ? scheduledDate.value
         : this.scheduledDate,
     priority: priority ?? this.priority,
-    status: status.present ? status.value : this.status,
+    status: status ?? this.status,
+    recurrenceParentId: recurrenceParentId.present
+        ? recurrenceParentId.value
+        : this.recurrenceParentId,
     recurrenceRule: recurrenceRule.present
         ? recurrenceRule.value
         : this.recurrenceRule,
@@ -1727,6 +1769,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           : this.scheduledDate,
       priority: data.priority.present ? data.priority.value : this.priority,
       status: data.status.present ? data.status.value : this.status,
+      recurrenceParentId: data.recurrenceParentId.present
+          ? data.recurrenceParentId.value
+          : this.recurrenceParentId,
       recurrenceRule: data.recurrenceRule.present
           ? data.recurrenceRule.value
           : this.recurrenceRule,
@@ -1748,6 +1793,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           ..write('scheduledDate: $scheduledDate, ')
           ..write('priority: $priority, ')
           ..write('status: $status, ')
+          ..write('recurrenceParentId: $recurrenceParentId, ')
           ..write('recurrenceRule: $recurrenceRule, ')
           ..write('calendarEventId: $calendarEventId')
           ..write(')'))
@@ -1765,6 +1811,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     scheduledDate,
     priority,
     status,
+    recurrenceParentId,
     recurrenceRule,
     calendarEventId,
   );
@@ -1781,6 +1828,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           other.scheduledDate == this.scheduledDate &&
           other.priority == this.priority &&
           other.status == this.status &&
+          other.recurrenceParentId == this.recurrenceParentId &&
           other.recurrenceRule == this.recurrenceRule &&
           other.calendarEventId == this.calendarEventId);
 }
@@ -1794,7 +1842,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
   final Value<DateTime?> dueDate;
   final Value<DateTime?> scheduledDate;
   final Value<int> priority;
-  final Value<String?> status;
+  final Value<String> status;
+  final Value<String?> recurrenceParentId;
   final Value<String?> recurrenceRule;
   final Value<String?> calendarEventId;
   final Value<int> rowid;
@@ -1808,6 +1857,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.scheduledDate = const Value.absent(),
     this.priority = const Value.absent(),
     this.status = const Value.absent(),
+    this.recurrenceParentId = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
     this.calendarEventId = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1822,6 +1872,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.scheduledDate = const Value.absent(),
     this.priority = const Value.absent(),
     this.status = const Value.absent(),
+    this.recurrenceParentId = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
     this.calendarEventId = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1837,6 +1888,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Expression<DateTime>? scheduledDate,
     Expression<int>? priority,
     Expression<String>? status,
+    Expression<String>? recurrenceParentId,
     Expression<String>? recurrenceRule,
     Expression<String>? calendarEventId,
     Expression<int>? rowid,
@@ -1851,6 +1903,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
       if (scheduledDate != null) 'scheduled_date': scheduledDate,
       if (priority != null) 'priority': priority,
       if (status != null) 'status': status,
+      if (recurrenceParentId != null)
+        'recurrence_parent_id': recurrenceParentId,
       if (recurrenceRule != null) 'recurrence_rule': recurrenceRule,
       if (calendarEventId != null) 'calendar_event_id': calendarEventId,
       if (rowid != null) 'rowid': rowid,
@@ -1866,7 +1920,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Value<DateTime?>? dueDate,
     Value<DateTime?>? scheduledDate,
     Value<int>? priority,
-    Value<String?>? status,
+    Value<String>? status,
+    Value<String?>? recurrenceParentId,
     Value<String?>? recurrenceRule,
     Value<String?>? calendarEventId,
     Value<int>? rowid,
@@ -1881,6 +1936,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
       scheduledDate: scheduledDate ?? this.scheduledDate,
       priority: priority ?? this.priority,
       status: status ?? this.status,
+      recurrenceParentId: recurrenceParentId ?? this.recurrenceParentId,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       calendarEventId: calendarEventId ?? this.calendarEventId,
       rowid: rowid ?? this.rowid,
@@ -1917,6 +1973,9 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (recurrenceParentId.present) {
+      map['recurrence_parent_id'] = Variable<String>(recurrenceParentId.value);
+    }
     if (recurrenceRule.present) {
       map['recurrence_rule'] = Variable<String>(recurrenceRule.value);
     }
@@ -1941,6 +2000,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
           ..write('scheduledDate: $scheduledDate, ')
           ..write('priority: $priority, ')
           ..write('status: $status, ')
+          ..write('recurrenceParentId: $recurrenceParentId, ')
           ..write('recurrenceRule: $recurrenceRule, ')
           ..write('calendarEventId: $calendarEventId, ')
           ..write('rowid: $rowid')
@@ -2875,6 +2935,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final BoardDao boardDao = BoardDao(this as AppDatabase);
   late final PinDao pinDao = PinDao(this as AppDatabase);
   late final TaskDao taskDao = TaskDao(this as AppDatabase);
+  late final ConnectorDao connectorDao = ConnectorDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2913,6 +2974,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'boards',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('tasks', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tasks',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('tasks', kind: UpdateKind.delete)],
@@ -3627,7 +3695,7 @@ typedef $$BoardsTableProcessedTableManager =
 typedef $$PinsTableCreateCompanionBuilder =
     PinsCompanion Function({
       required String id,
-      required String boardId,
+      Value<String?> boardId,
       required String type,
       Value<double> x,
       Value<double> y,
@@ -3644,7 +3712,7 @@ typedef $$PinsTableCreateCompanionBuilder =
 typedef $$PinsTableUpdateCompanionBuilder =
     PinsCompanion Function({
       Value<String> id,
-      Value<String> boardId,
+      Value<String?> boardId,
       Value<String> type,
       Value<double> x,
       Value<double> y,
@@ -3666,9 +3734,9 @@ final class $$PinsTableReferences
   static $BoardsTable _boardIdTable(_$AppDatabase db) =>
       db.boards.createAlias('pins__board_id__boards__id');
 
-  $$BoardsTableProcessedTableManager get boardId {
-    final $_column = $_itemColumn<String>('board_id')!;
-
+  $$BoardsTableProcessedTableManager? get boardId {
+    final $_column = $_itemColumn<String>('board_id');
+    if ($_column == null) return null;
     final manager = $$BoardsTableTableManager(
       $_db,
       $_db.boards,
@@ -4106,7 +4174,7 @@ class $$PinsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> boardId = const Value.absent(),
+                Value<String?> boardId = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<double> x = const Value.absent(),
                 Value<double> y = const Value.absent(),
@@ -4138,7 +4206,7 @@ class $$PinsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String boardId,
+                Value<String?> boardId = const Value.absent(),
                 required String type,
                 Value<double> x = const Value.absent(),
                 Value<double> y = const Value.absent(),
@@ -4288,7 +4356,8 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<DateTime?> dueDate,
       Value<DateTime?> scheduledDate,
       Value<int> priority,
-      Value<String?> status,
+      Value<String> status,
+      Value<String?> recurrenceParentId,
       Value<String?> recurrenceRule,
       Value<String?> calendarEventId,
       Value<int> rowid,
@@ -4303,7 +4372,8 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<DateTime?> dueDate,
       Value<DateTime?> scheduledDate,
       Value<int> priority,
-      Value<String?> status,
+      Value<String> status,
+      Value<String?> recurrenceParentId,
       Value<String?> recurrenceRule,
       Value<String?> calendarEventId,
       Value<int> rowid,
@@ -4341,6 +4411,23 @@ final class $$TasksTableReferences
       $_db.boards,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_boardIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TasksTable _recurrenceParentIdTable(_$AppDatabase db) =>
+      db.tasks.createAlias('tasks__recurrence_parent_id__tasks__id');
+
+  $$TasksTableProcessedTableManager? get recurrenceParentId {
+    final $_column = $_itemColumn<String>('recurrence_parent_id');
+    if ($_column == null) return null;
+    final manager = $$TasksTableTableManager(
+      $_db,
+      $_db.tasks,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_recurrenceParentIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -4438,6 +4525,29 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
           }) => $$BoardsTableFilterComposer(
             $db: $db,
             $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TasksTableFilterComposer get recurrenceParentId {
+    final $$TasksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recurrenceParentId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableFilterComposer(
+            $db: $db,
+            $table: $db.tasks,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4547,6 +4657,29 @@ class $$TasksTableOrderingComposer
     );
     return composer;
   }
+
+  $$TasksTableOrderingComposer get recurrenceParentId {
+    final $$TasksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recurrenceParentId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableOrderingComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$TasksTableAnnotationComposer
@@ -4636,6 +4769,29 @@ class $$TasksTableAnnotationComposer
     );
     return composer;
   }
+
+  $$TasksTableAnnotationComposer get recurrenceParentId {
+    final $$TasksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recurrenceParentId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$TasksTableTableManager
@@ -4651,7 +4807,11 @@ class $$TasksTableTableManager
           $$TasksTableUpdateCompanionBuilder,
           (TaskEntity, $$TasksTableReferences),
           TaskEntity,
-          PrefetchHooks Function({bool pinId, bool boardId})
+          PrefetchHooks Function({
+            bool pinId,
+            bool boardId,
+            bool recurrenceParentId,
+          })
         > {
   $$TasksTableTableManager(_$AppDatabase db, $TasksTable table)
     : super(
@@ -4674,7 +4834,8 @@ class $$TasksTableTableManager
                 Value<DateTime?> dueDate = const Value.absent(),
                 Value<DateTime?> scheduledDate = const Value.absent(),
                 Value<int> priority = const Value.absent(),
-                Value<String?> status = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> recurrenceParentId = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
                 Value<String?> calendarEventId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4688,6 +4849,7 @@ class $$TasksTableTableManager
                 scheduledDate: scheduledDate,
                 priority: priority,
                 status: status,
+                recurrenceParentId: recurrenceParentId,
                 recurrenceRule: recurrenceRule,
                 calendarEventId: calendarEventId,
                 rowid: rowid,
@@ -4702,7 +4864,8 @@ class $$TasksTableTableManager
                 Value<DateTime?> dueDate = const Value.absent(),
                 Value<DateTime?> scheduledDate = const Value.absent(),
                 Value<int> priority = const Value.absent(),
-                Value<String?> status = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> recurrenceParentId = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
                 Value<String?> calendarEventId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4716,6 +4879,7 @@ class $$TasksTableTableManager
                 scheduledDate: scheduledDate,
                 priority: priority,
                 status: status,
+                recurrenceParentId: recurrenceParentId,
                 recurrenceRule: recurrenceRule,
                 calendarEventId: calendarEventId,
                 rowid: rowid,
@@ -4726,60 +4890,74 @@ class $$TasksTableTableManager
                     (e.readTable(table), $$TasksTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({pinId = false, boardId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (pinId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.pinId,
-                                referencedTable: $$TasksTableReferences
-                                    ._pinIdTable(db),
-                                referencedColumn: $$TasksTableReferences
-                                    ._pinIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-                    if (boardId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.boardId,
-                                referencedTable: $$TasksTableReferences
-                                    ._boardIdTable(db),
-                                referencedColumn: $$TasksTableReferences
-                                    ._boardIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({pinId = false, boardId = false, recurrenceParentId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (pinId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.pinId,
+                                    referencedTable: $$TasksTableReferences
+                                        ._pinIdTable(db),
+                                    referencedColumn: $$TasksTableReferences
+                                        ._pinIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (boardId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.boardId,
+                                    referencedTable: $$TasksTableReferences
+                                        ._boardIdTable(db),
+                                    referencedColumn: $$TasksTableReferences
+                                        ._boardIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (recurrenceParentId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.recurrenceParentId,
+                                    referencedTable: $$TasksTableReferences
+                                        ._recurrenceParentIdTable(db),
+                                    referencedColumn: $$TasksTableReferences
+                                        ._recurrenceParentIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -4796,7 +4974,11 @@ typedef $$TasksTableProcessedTableManager =
       $$TasksTableUpdateCompanionBuilder,
       (TaskEntity, $$TasksTableReferences),
       TaskEntity,
-      PrefetchHooks Function({bool pinId, bool boardId})
+      PrefetchHooks Function({
+        bool pinId,
+        bool boardId,
+        bool recurrenceParentId,
+      })
     >;
 typedef $$TaskDependenciesTableCreateCompanionBuilder =
     TaskDependenciesCompanion Function({

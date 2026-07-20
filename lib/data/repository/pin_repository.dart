@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart' show Value;
 
 import '../database/database.dart';
 import '../providers.dart';
@@ -14,6 +15,15 @@ class PinRepository {
     return ref.watch(pinDaoProvider).watchPinsForBoard(boardId);
   }
 
+  Stream<List<PinEntity>> watchAllNotes() {
+    return ref.watch(pinDaoProvider).watchAllNotes();
+  }
+
+  Stream<List<PinEntity>> watchUnsortedNotes() {
+    return ref.watch(pinDaoProvider).watchUnsortedNotes();
+  }
+
+
   Future<void> createPin(PinsCompanion pin) {
     return ref.read(pinDaoProvider).insertPin(pin);
   }
@@ -24,5 +34,68 @@ class PinRepository {
 
   Future<void> deletePin(String id) {
     return ref.read(pinDaoProvider).deletePin(id);
+  }
+
+  Future<void> updatePinPosition(
+    String id, {
+    required double x,
+    required double y,
+    double? width,
+    double? height,
+  }) async {
+    final pin = await ref.read(pinDaoProvider).getPin(id);
+    if (pin == null) return;
+
+    await ref.read(pinDaoProvider).updatePin(
+          pin.copyWith(
+            x: x,
+            y: y,
+            width: width ?? pin.width,
+            height: height ?? pin.height,
+            modifiedAt: DateTime.now(),
+          ),
+        );
+  }
+
+  Future<PinEntity> createNoteOnBoard(
+    String? boardId, {
+    double x = 80,
+    double y = 80,
+  }) async {
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    await createPin(
+      PinsCompanion.insert(
+        id: id,
+        boardId: Value(boardId),
+        type: 'note',
+        x: Value(x),
+        y: Value(y),
+        width: const Value(220),
+        height: const Value(160),
+        content: const Value('New Note\n\nTap to edit'),
+      ),
+    );
+    return (await ref.read(pinDaoProvider).getPin(id))!;
+  }
+
+  Future<PinEntity> createTaskOnBoard(
+    String? boardId, {
+    double x = 80,
+    double y = 80,
+  }) async {
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    await createPin(
+      PinsCompanion.insert(
+        id: id,
+        boardId: Value(boardId),
+        type: 'task',
+        x: Value(x),
+        y: Value(y),
+        width: const Value(240),
+        height: const Value(100),
+        content: const Value('New task'),
+      ),
+    );
+    return (await ref.read(pinDaoProvider).getPin(id))!;
   }
 }

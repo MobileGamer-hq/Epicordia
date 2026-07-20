@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 import '../layout/navigation_item.dart';
+import '../core/epicordia_brand.dart';
 
 /// Desktop: full labeled sidebar (>1024px)
 /// Tablet:  icon-only rail (600–1024px)
@@ -283,25 +284,19 @@ class _MobileBottomNav extends StatelessWidget {
               _BottomNavItem(item: appNavItems[0], isActive: location == appNavItems[0].route),
               _BottomNavItem(item: appNavItems[1], isActive: location == appNavItems[1].route),
 
-              // Center Create pill
+              // Center Create button (icon only)
               Expanded(
                 child: GestureDetector(
                   onTap: () => context.go('/create'),
                   child: Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
                         color: EpicordiaColors.blue600,
-                        borderRadius: BorderRadius.circular(20),
+                        shape: BoxShape.circle,
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add, color: Colors.white, size: 16),
-                          SizedBox(width: 4),
-                          Text('Create', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                        ],
-                      ),
+                      child: const Icon(Icons.add, color: Colors.white, size: 20),
                     ),
                   ),
                 ),
@@ -388,12 +383,6 @@ class EpicordiaLogoInline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Icon(Icons.space_dashboard, color: EpicordiaColors.blue700, size: 22),
-        SizedBox(width: 8),
-        Text('Epicordia', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: EpicordiaColors.blue700, letterSpacing: -0.3)),
-      ],
-    );
+    return const EpicordiaLogo(size: 18);
   }
 }

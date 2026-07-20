@@ -10,15 +10,23 @@ class TaskRepository {
 
   TaskRepository(this.ref);
 
-  Stream<List<TaskEntity>> watchInboxTasks() {
-    final taskDao = ref.read(taskDaoProvider);
-    final query = taskDao.select(taskDao.tasks)..where((t) => t.boardId.isNull());
-    return query.watch();
+  Stream<List<TaskEntity>> watchUnsortedTasks() {
+    return ref.watch(taskDaoProvider).watchUnsortedTasks();
   }
 
   Stream<List<TaskEntity>> watchTasksForBoard(String boardId) {
     return ref.watch(taskDaoProvider).watchTasksForBoard(boardId);
   }
+
+  Stream<List<TaskEntity>> watchTasksDueToday() {
+    return ref.watch(taskDaoProvider).watchTasksDueToday();
+  }
+
+  Stream<List<TaskEntity>> watchAllTasks() {
+    final taskDao = ref.watch(taskDaoProvider);
+    return taskDao.select(taskDao.tasks).watch();
+  }
+
 
   Future<void> createTask(TasksCompanion task) {
     return ref.read(taskDaoProvider).insertTask(task);

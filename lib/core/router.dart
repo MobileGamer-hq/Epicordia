@@ -17,17 +17,7 @@ import '../presentation/screens/settings_screen.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
-    redirect: (context, state) async {
-      // Show onboarding only on first launch
-      if (state.uri.path == '/') {
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          final seen = prefs.getBool('onboarding_complete') ?? false;
-          if (!seen) return '/onboarding';
-        } catch (_) {}
-      }
-      return null;
-    },
+    redirect: (context, state) => null,
     routes: [
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/',       builder: (context, state) => const TodayDashboard()),

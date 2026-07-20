@@ -11,60 +11,64 @@ class TodayDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
       appBar: const EpicordiaAppBar(),
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        children: [
-          // ── Activity Heatmap ─────────────────────────────────
-          const _ActivityHeatmap(),
-          const SizedBox(height: 28),
-
-          // ── Unsorted Tray ───────────────────────────────────
-          _SectionHeader(title: 'Unsorted Tray', actionLabel: 'View All', onAction: () {}),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 160,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: const [
-                _QuickCaptureCard(
-                  category: 'QUICK CAPTURE',
-                  title: 'Draft idea: Decentralized knowledge graphs',
-                  preview: 'Exploration of how nodes... interact in a non-linear',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Column(
+            children: [
+              // Activity Heatmap
+              const _ActivityHeatmap(),
+              const SizedBox(height: 28),
+          
+              // Unsorted Tray
+              _SectionHeader(title: 'Unsorted Tray', actionLabel: 'View All', onAction: () {}),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 160,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: const [
+                    _QuickCaptureCard(
+                      category: 'QUICK CAPTURE',
+                      title: 'Draft idea: Decentralized knowledge graphs',
+                      preview: 'Exploration of how nodes... interact in a non-linear',
+                    ),
+                    SizedBox(width: 12),
+                    _QuickCaptureCard(
+                      category: 'RECIPE',
+                      title: 'Morning Coffee Recipe',
+                      preview: null,
+                      time: 'Added 2h ago',
+                    ),
+                  ],
                 ),
-                SizedBox(width: 12),
-                _QuickCaptureCard(
-                  category: 'RECIPE',
-                  title: 'Morning Coffee Recipe',
-                  preview: null,
-                  time: 'Added 2h ago',
-                ),
-              ],
-            ),
+              ),
+          
+              const SizedBox(height: 28),
+          
+              // Today Tasks
+              _SectionHeader(title: 'Today', actionLabel: null, onAction: null),
+              const SizedBox(height: 12),
+              const _TodayTaskItem(title: 'Review Q3 Vision Board',    meta: 'Due 4:00 PM', isCompleted: false, isInProgress: false),
+              const SizedBox(height: 8),
+              const _TodayTaskItem(title: 'Update project timeline',   meta: 'Completed',   isCompleted: true,  isInProgress: true),
+              const SizedBox(height: 8),
+              const _TodayTaskItem(title: 'Call with Product Team',    meta: 'Due 6:30 PM', isCompleted: false, isInProgress: false),
+          
+              const SizedBox(height: 28),
+          
+              // ── Recent Boards ────────────────────────────────────
+              _SectionHeader(title: 'Recent Boards', actionLabel: null, onAction: null),
+              const SizedBox(height: 12),
+              const _BoardCard(title: '2024 Product Launch',  meta: '14 items • Modified 10m ago', color: Color(0xFF8B9DC3)),
+              const SizedBox(height: 12),
+              const _BoardCard(title: 'Design System Sync',   meta: '32 items • Modified 1h ago',  color: Color(0xFFA8B4C8)),
+              const SizedBox(height: 12),
+              const _BoardCard(title: 'Inspiration Canvas',   meta: '8 items • Modified 3h ago',   color: Color(0xFF6B7FA0)),
+              const SizedBox(height: 32),
+            ],
           ),
-
-          const SizedBox(height: 28),
-
-          // ── Today Tasks ─────────────────────────────────────
-          _SectionHeader(title: 'Today', actionLabel: null, onAction: null),
-          const SizedBox(height: 12),
-          const _TodayTaskItem(title: 'Review Q3 Vision Board',    meta: 'Due 4:00 PM', isCompleted: false, isInProgress: false),
-          const SizedBox(height: 8),
-          const _TodayTaskItem(title: 'Update project timeline',   meta: 'Completed',   isCompleted: true,  isInProgress: true),
-          const SizedBox(height: 8),
-          const _TodayTaskItem(title: 'Call with Product Team',    meta: 'Due 6:30 PM', isCompleted: false, isInProgress: false),
-
-          const SizedBox(height: 28),
-
-          // ── Recent Boards ────────────────────────────────────
-          _SectionHeader(title: 'Recent Boards', actionLabel: null, onAction: null),
-          const SizedBox(height: 12),
-          const _BoardCard(title: '2024 Product Launch',  meta: '14 items • Modified 10m ago', color: Color(0xFF8B9DC3)),
-          const SizedBox(height: 12),
-          const _BoardCard(title: 'Design System Sync',   meta: '32 items • Modified 1h ago',  color: Color(0xFFA8B4C8)),
-          const SizedBox(height: 12),
-          const _BoardCard(title: 'Inspiration Canvas',   meta: '8 items • Modified 3h ago',   color: Color(0xFF6B7FA0)),
-          const SizedBox(height: 32),
-        ],
+        ),
       ),
     );
   }
@@ -137,7 +141,7 @@ class _ActivityHeatmap extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 2),
                         child: AnimatedContainer(
                           duration: Duration(milliseconds: 200 + entry.key * 30),
-                          width: double.infinity,
+                          width: 12,
                           height: 12,
                           decoration: BoxDecoration(
                             color: _cellColor(entry.value),

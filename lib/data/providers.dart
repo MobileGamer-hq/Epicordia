@@ -3,6 +3,7 @@ import 'database/database.dart';
 import 'dao/board_dao.dart';
 import 'dao/pin_dao.dart';
 import 'dao/task_dao.dart';
+import 'dao/connector_dao.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -20,4 +21,8 @@ final pinDaoProvider = Provider<PinDao>((ref) {
 
 final taskDaoProvider = Provider<TaskDao>((ref) {
   return ref.watch(databaseProvider).taskDao;
+});
+
+final connectorDaoProvider = Provider<ConnectorDao>((ref) {
+  return ref.watch(databaseProvider).connectorDao;
 });

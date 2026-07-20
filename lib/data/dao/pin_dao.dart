@@ -16,6 +16,10 @@ class PinDao extends DatabaseAccessor<AppDatabase> with _$PinDaoMixin {
     return (select(pins)..where((t) => t.type.equals('note'))).watch();
   }
 
+  Stream<List<PinEntity>> watchUnsortedNotes() {
+    return (select(pins)..where((t) => t.boardId.isNull() & t.type.equals('note'))).watch();
+  }
+
   Future<PinEntity?> getPin(String id) {
     return (select(pins)..where((t) => t.id.equals(id))).getSingleOrNull();
   }

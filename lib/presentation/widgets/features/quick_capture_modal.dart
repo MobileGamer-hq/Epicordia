@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:app/data/database/database.dart';
-import 'package:app/data/repository/task_repository.dart';
-import 'package:app/data/repository/pin_repository.dart';
-import 'package:app/data/repository/board_repository.dart';
+import 'package:Epicorida/data/database/database.dart';
+import 'package:Epicorida/data/repository/task_repository.dart';
+import 'package:Epicorida/data/repository/pin_repository.dart';
+import 'package:Epicorida/data/repository/board_repository.dart';
 import '../core/epicordia_button.dart';
 
 enum CaptureType { note, task }
@@ -38,22 +38,10 @@ class _QuickCaptureModalState extends ConsumerState<QuickCaptureModal> {
         ),
       );
     } else {
-      // Ensure inbox board exists since pins require a boardId reference
-      try {
-        await ref.read(boardRepositoryProvider).createBoard(
-          BoardsCompanion.insert(
-            id: 'inbox',
-            title: 'Inbox',
-          ),
-        );
-      } catch (_) {
-        // Safe to ignore if board already exists
-      }
-
       await ref.read(pinRepositoryProvider).createPin(
         PinsCompanion.insert(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          boardId: 'inbox',
+          boardId: const drift.Value(null),
           type: 'note',
           content: drift.Value(text),
         ),

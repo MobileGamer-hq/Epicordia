@@ -30,18 +30,11 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     final body = _bodyController.text.trim();
     if (title.isEmpty && body.isEmpty) return;
 
-    // Ensure inbox board exists
-    try {
-      await ref.read(boardRepositoryProvider).createBoard(
-        BoardsCompanion.insert(id: 'inbox', title: 'Inbox'),
-      );
-    } catch (_) {}
-
     final content = title.isNotEmpty ? '$title\n\n$body' : body;
     await ref.read(pinRepositoryProvider).createPin(
       PinsCompanion.insert(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        boardId: 'inbox',
+        boardId: const drift.Value(null),
         type: 'note',
         content: drift.Value(content),
       ),

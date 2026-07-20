@@ -3,6 +3,7 @@ import 'schema.dart';
 import '../dao/board_dao.dart';
 import '../dao/pin_dao.dart';
 import '../dao/task_dao.dart';
+import '../dao/connector_dao.dart';
 
 import 'connection/connection_stub.dart'
     if (dart.library.io) 'connection/connection_native.dart'
@@ -12,7 +13,7 @@ part 'database.g.dart';
 
 @DriftDatabase(
   tables: [Boards, Pins, Tasks, TaskDependencies, Connectors, Attachments],
-  daos: [BoardDao, PinDao, TaskDao],
+  daos: [BoardDao, PinDao, TaskDao, ConnectorDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());

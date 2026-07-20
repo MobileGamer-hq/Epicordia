@@ -18,7 +18,7 @@ class Boards extends Table {
 @DataClassName('PinEntity')
 class Pins extends Table {
   TextColumn get id => text()();
-  TextColumn get boardId => text().references(Boards, #id, onDelete: KeyAction.cascade)();
+  TextColumn get boardId => text().nullable().references(Boards, #id, onDelete: KeyAction.cascade)();
   TextColumn get type => text()();
   RealColumn get x => real().withDefault(const Constant(0.0))();
   RealColumn get y => real().withDefault(const Constant(0.0))();
@@ -45,7 +45,8 @@ class Tasks extends Table {
   DateTimeColumn get dueDate => dateTime().nullable()();
   DateTimeColumn get scheduledDate => dateTime().nullable()();
   IntColumn get priority => integer().withDefault(const Constant(0))();
-  TextColumn get status => text().nullable()(); // kanbanStage
+  TextColumn get status => text().withDefault(const Constant('todo'))();
+  TextColumn get recurrenceParentId => text().nullable().references(Tasks, #id, onDelete: KeyAction.cascade)();
   TextColumn get recurrenceRule => text().nullable()();
   TextColumn get calendarEventId => text().nullable()();
 
