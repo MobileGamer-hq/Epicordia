@@ -1,17 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
-import '../../data/database/database.dart';
 import '../../core/theme.dart';
+import 'search_screen.dart';
 
-class TodayDashboard extends ConsumerWidget {
+class TodayDashboard extends ConsumerStatefulWidget {
   const TodayDashboard({super.key});
+
+  @override
+  ConsumerState<TodayDashboard> createState() => _TodayDashboardState();
+}
+
+class _TodayDashboardState extends ConsumerState<TodayDashboard> {
+  String _userName = 'Alex';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('user_name');
+    if (name != null && name.isNotEmpty) {
+      setState(() {
+        _userName = name;
+      });
+    }
+  }
 
   String _formatModified(DateTime date) {
     final now = DateTime.now();
@@ -40,25 +64,92 @@ class TodayDashboard extends ConsumerWidget {
     return colors[boardId.hashCode % colors.length];
   }
 
+  void _showSearchScreen(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const EpicordiaSearchScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final tween = Tween(begin: const Offset(0.0, -1.0), end: Offset.zero)
+              .chain(CurveTween(curve: Curves.fastOutSlowIn));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final unsortedNotesAsync = ref.watch(unsortedNotesProvider);
     final todayTasksAsync = ref.watch(tasksDueTodayProvider);
     final recentBoardsAsync = ref.watch(allBoardsProvider);
 
+    final now = DateTime.now();
+    final greeting = now.hour < 12
+        ? 'Good morning'
+        : now.hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
+
     return ResponsiveScaffold(
-      appBar: const EpicordiaAppBar(),
+      appBar: EpicordiaAppBar(
+        onSearch: () => _showSearchScreen(context),
+      ),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Greeting
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$greeting, $_userName',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: EpicordiaColors.textPrimaryLight,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Here's your workspace overview for today.",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: EpicordiaColors.textTertiaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               // Activity Heatmap
-              const _ActivityHeatmap(),
+              Hero(
+                tag: 'heatmap-hero',
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.push('/calendar'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: const ActivityHeatmap(),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 28),
           
               // Unsorted Tray
-              _SectionHeader(title: 'Unsorted Tray', actionLabel: 'View All', onAction: () => context.push('/notes')),
+              _SectionHeader(title: 'Recent Notes', actionLabel: 'View All', onAction: () => context.push('/notes')),
               const SizedBox(height: 12),
               unsortedNotesAsync.when(
                 loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
@@ -258,81 +349,340 @@ class _SectionEmptyState extends StatelessWidget {
 // ────────────────────────────────────────────────────────────
 // Activity Heatmap
 // ────────────────────────────────────────────────────────────
-class _ActivityHeatmap extends StatelessWidget {
-  const _ActivityHeatmap();
+class ActivityHeatmap extends StatefulWidget {
+  final Function(DateTime)? onTapDate;
+  final DateTime? selectedMonth;
+  final DateTime? selectedDate;
+  const ActivityHeatmap({
+    super.key,
+    this.onTapDate,
+    this.selectedMonth,
+    this.selectedDate,
+  });
 
-  static final List<List<int>> _data = [
-    [0, 1, 0, 2, 0, 1, 0],
-    [1, 2, 3, 1, 0, 2, 1],
-    [0, 1, 4, 3, 2, 1, 0],
-    [2, 3, 2, 4, 3, 2, 1],
-    [1, 0, 3, 2, 4, 3, 2],
-    [0, 2, 1, 3, 2, 1, 0],
-    [1, 1, 2, 1, 0, 2, 1],
-  ];
+  @override
+  State<ActivityHeatmap> createState() => _ActivityHeatmapState();
+}
+
+class _ActivityHeatmapState extends State<ActivityHeatmap> {
+  late DateTime _selectedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMonth = widget.selectedMonth ?? DateTime.now();
+  }
+
+  @override
+  void didUpdateWidget(covariant ActivityHeatmap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedMonth != null && widget.selectedMonth != oldWidget.selectedMonth) {
+      _selectedMonth = widget.selectedMonth!;
+    }
+  }
+
+  /// Example activity data.
+  ///
+  /// The key is the date and the value is the activity level.
+  /// Replace this with your actual activity data.
+  final Map<DateTime, int> _activityData = {
+    DateTime(2026, 7, 1): 1,
+    DateTime(2026, 7, 2): 2,
+    DateTime(2026, 7, 3): 3,
+    DateTime(2026, 7, 5): 4,
+    DateTime(2026, 7, 8): 2,
+    DateTime(2026, 7, 10): 3,
+    DateTime(2026, 7, 15): 4,
+    DateTime(2026, 7, 18): 2,
+  };
 
   static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   Color _cellColor(int level) {
     switch (level) {
-      case 1: return EpicordiaColors.blue200;
-      case 2: return EpicordiaColors.blue300;
-      case 3: return EpicordiaColors.blue400;
-      case 4: return EpicordiaColors.blue500;
-      default: return EpicordiaColors.borderSubtleLight;
+      case 1:
+        return EpicordiaColors.blue200;
+      case 2:
+        return EpicordiaColors.blue300;
+      case 3:
+        return EpicordiaColors.blue400;
+      case 4:
+        return EpicordiaColors.blue500;
+      default:
+        return EpicordiaColors.borderSubtleLight;
     }
+  }
+
+  String _monthName(DateTime date) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    return months[date.month - 1];
+  }
+
+  /// Returns the activity level for a specific day.
+  int _getActivityLevel(DateTime date) {
+    final normalizedDate = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    );
+
+    return _activityData[normalizedDate] ?? 0;
+  }
+
+  /// Generates all the days required to display the selected month.
+  ///
+  /// Monday is the first day of the week.
+  List<List<DateTime?>> _generateCalendar() {
+    final firstDayOfMonth = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month,
+      1,
+    );
+
+    final lastDayOfMonth = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month + 1,
+      0,
+    );
+
+    // DateTime.weekday:
+    // Monday = 1
+    // Sunday = 7
+    final firstDayOffset = firstDayOfMonth.weekday - 1;
+
+    final totalDays = lastDayOfMonth.day;
+
+    final totalCells = firstDayOffset + totalDays;
+
+    final numberOfWeeks = (totalCells / 7).ceil();
+
+    final calendar = <List<DateTime?>>[];
+
+    for (int week = 0; week < numberOfWeeks; week++) {
+      final weekDays = <DateTime?>[];
+
+      for (int day = 0; day < 7; day++) {
+        final dayIndex = week * 7 + day;
+
+        if (dayIndex < firstDayOffset ||
+            dayIndex >= firstDayOffset + totalDays) {
+          weekDays.add(null);
+        } else {
+          final dayNumber = dayIndex - firstDayOffset + 1;
+
+          weekDays.add(
+            DateTime(
+              _selectedMonth.year,
+              _selectedMonth.month,
+              dayNumber,
+            ),
+          );
+        }
+      }
+
+      calendar.add(weekDays);
+    }
+
+    return calendar;
+  }
+
+  void _previousMonth() {
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month - 1,
+      );
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + 1,
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final calendar = _generateCalendar();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Header
         Row(
           children: [
-            const Text('Activity', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EpicordiaColors.textPrimaryLight)),
+            const Text(
+              'Activity',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: EpicordiaColors.textPrimaryLight,
+              ),
+            ),
+
             const Spacer(),
+
             _HeatmapLegend(),
           ],
         ),
+
         const SizedBox(height: 10),
+
+        // Month navigation
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              children: _dayLabels.map((d) => SizedBox(
-                height: 14,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(d, style: const TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
-                ),
-              )).toList(),
+            IconButton(
+              onPressed: _previousMonth,
+              icon: const Icon(
+                Icons.chevron_left,
+                size: 18,
+                color: EpicordiaColors.textSecondaryLight,
+              ),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: _data.map((week) {
-                  return Column(
-                    children: week.asMap().entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 200 + entry.key * 30),
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: _cellColor(entry.value),
-                            borderRadius: BorderRadius.circular(3),
+
+            Text(
+              '${_monthName(_selectedMonth)} ${_selectedMonth.year}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: EpicordiaColors.textPrimaryLight,
+              ),
+            ),
+
+            IconButton(
+              onPressed: _nextMonth,
+              icon: const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: EpicordiaColors.textSecondaryLight,
+              ),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        // Heatmap
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final numberOfWeeks = calendar.length;
+            const columnSpacing = 4.0;
+            const dayLabelsWidth = 12.0;
+            const labelSpacing = 6.0;
+
+            final availableWidth = constraints.maxWidth - dayLabelsWidth - labelSpacing;
+            final cellWidth = (availableWidth - ((numberOfWeeks - 1) * columnSpacing)) / numberOfWeeks;
+            final cellHeight = cellWidth / 3;
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Day labels
+                SizedBox(
+                  width: dayLabelsWidth,
+                  child: Column(
+                    children: _dayLabels.map((day) {
+                      return SizedBox(
+                        height: cellHeight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Text(
+                              day,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: EpicordiaColors.textTertiaryLight,
+                              ),
+                            ),
                           ),
                         ),
                       );
                     }).toList(),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
+                  ),
+                ),
+                const SizedBox(width: labelSpacing),
+                // Calendar columns
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: calendar.map((week) {
+                      return SizedBox(
+                        width: cellWidth,
+                        child: Column(
+                          children: week.map((date) {
+                            if (date == null) {
+                              return SizedBox(
+                                height: cellHeight,
+                              );
+                            }
+
+                            final now = DateTime.now();
+                            final today = DateTime(now.year, now.month, now.day);
+                            final currentDate = DateTime(date.year, date.month, date.day);
+                            final isFuture = currentDate.isAfter(today);
+                            final activityLevel = isFuture ? 0 : _getActivityLevel(date);
+                            
+                            final isSelected = widget.selectedDate != null &&
+                                date.year == widget.selectedDate!.year &&
+                                date.month == widget.selectedDate!.month &&
+                                date.day == widget.selectedDate!.day;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Tooltip(
+                                message: '${date.day} ${_monthName(date)}: '
+                                    '${activityLevel == 0 ? 'No activity' : 'Activity level $activityLevel'}',
+                                child: GestureDetector(
+                                  onTap: widget.onTapDate != null ? () => widget.onTapDate!(date) : null,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: cellWidth,
+                                    height: cellHeight - 2,
+                                    decoration: BoxDecoration(
+                                      color: _cellColor(activityLevel),
+                                      borderRadius: BorderRadius.circular(3),
+                                      border: isSelected
+                                          ? Border.all(color: EpicordiaColors.blue700, width: 2.0)
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );

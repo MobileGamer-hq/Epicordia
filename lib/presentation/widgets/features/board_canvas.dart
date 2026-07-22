@@ -148,13 +148,7 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
           if (mounted) _syncPins(pins);
         });
 
-        if (pins.isEmpty && snapshot.connectionState == ConnectionState.active) {
-          return _EmptyCanvasHint(
-            onAddNote: widget.onAddNote,
-            onAddTask: widget.onAddTask,
-          );
-        }
-
+        final showEmptyHint = pins.isEmpty && snapshot.connectionState == ConnectionState.active;
         final connectorsData = ref.watch(connectorRenderDataProvider(widget.boardId));
 
         return Stack(
@@ -181,6 +175,11 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
                 return const SizedBox();
               },
             ),
+            if (showEmptyHint)
+              _EmptyCanvasHint(
+                onAddNote: widget.onAddNote,
+                onAddTask: widget.onAddTask,
+              ),
           ],
         );
       },

@@ -28,10 +28,10 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
     if (title.isEmpty) return;
 
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    await ref.read(boardRepositoryProvider).createBoard(
-      BoardsCompanion.insert(id: id, title: title),
-    );
-    if (mounted) context.go('/board/$id');
+    await ref
+        .read(boardRepositoryProvider)
+        .createBoard(BoardsCompanion.insert(id: id, title: title));
+    if (mounted) context.push('/board/$id');
   }
 
   @override
@@ -42,14 +42,31 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
         backgroundColor: EpicordiaColors.surfaceAppLight,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: EpicordiaColors.textPrimaryLight),
-          onPressed: () => context.go('/create'),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: EpicordiaColors.textPrimaryLight,
+          ),
+          onPressed: () => context.go('/boards'),
         ),
-        title: const Text('New Board', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
+        title: const Text(
+          'New Board',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: EpicordiaColors.textPrimaryLight,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('Create', style: TextStyle(color: EpicordiaColors.blue600, fontWeight: FontWeight.w700, fontSize: 15)),
+            child: const Text(
+              'Create',
+              style: TextStyle(
+                color: EpicordiaColors.blue600,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
           ),
         ],
       ),
@@ -61,21 +78,37 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
             TextField(
               controller: _titleController,
               autofocus: true,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: EpicordiaColors.textPrimaryLight,
+              ),
               decoration: const InputDecoration(
                 hintText: 'Board name...',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 filled: false,
-                hintStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: EpicordiaColors.textTertiaryLight),
+                hintStyle: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: EpicordiaColors.textTertiaryLight,
+                ),
               ),
             ),
             const Divider(color: EpicordiaColors.borderSubtleLight),
             const SizedBox(height: 24),
 
             // Default view mode
-            const Text('Default view', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: EpicordiaColors.textSecondaryLight, letterSpacing: 0.4)),
+            const Text(
+              'Default view',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: EpicordiaColors.textSecondaryLight,
+                letterSpacing: 0.4,
+              ),
+            ),
             const SizedBox(height: 12),
             Row(
               children: ['Canvas', 'List', 'Focus'].map((mode) {
@@ -86,13 +119,31 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
                     onTap: () => setState(() => _viewMode = mode),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: active ? EpicordiaColors.blue600 : EpicordiaColors.surfaceCardLight,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: active ? EpicordiaColors.blue600 : EpicordiaColors.borderSubtleLight),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
                       ),
-                      child: Text(mode, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: active ? Colors.white : EpicordiaColors.textSecondaryLight)),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? EpicordiaColors.blue600
+                            : EpicordiaColors.surfaceCardLight,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: active
+                              ? EpicordiaColors.blue600
+                              : EpicordiaColors.borderSubtleLight,
+                        ),
+                      ),
+                      child: Text(
+                        mode,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: active
+                              ? Colors.white
+                              : EpicordiaColors.textSecondaryLight,
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -101,7 +152,15 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
             const SizedBox(height: 24),
 
             // Kanban toggle
-            const Text('Options', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: EpicordiaColors.textSecondaryLight, letterSpacing: 0.4)),
+            const Text(
+              'Options',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: EpicordiaColors.textSecondaryLight,
+                letterSpacing: 0.4,
+              ),
+            ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
@@ -110,18 +169,42 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
                 border: Border.all(color: EpicordiaColors.borderSubtleLight),
               ),
               child: SwitchListTile(
-                title: const Text('Enable Kanban stages', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: EpicordiaColors.textPrimaryLight)),
-                subtitle: const Text('Add To-do / In-progress / Done columns', style: TextStyle(fontSize: 12, color: EpicordiaColors.textTertiaryLight)),
+                title: const Text(
+                  'Enable Kanban stages',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: EpicordiaColors.textPrimaryLight,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Add To-do / In-progress / Done columns',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: EpicordiaColors.textTertiaryLight,
+                  ),
+                ),
                 value: _kanban,
                 activeThumbColor: EpicordiaColors.blue600,
                 onChanged: (v) => setState(() => _kanban = v),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
               ),
             ),
             const SizedBox(height: 32),
 
             // Color preview
-            const Text('Cover color', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: EpicordiaColors.textSecondaryLight, letterSpacing: 0.4)),
+            const Text(
+              'Cover color',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: EpicordiaColors.textSecondaryLight,
+                letterSpacing: 0.4,
+              ),
+            ),
             const SizedBox(height: 12),
             _ColorPicker(),
           ],
@@ -165,11 +248,19 @@ class _ColorPickerState extends State<_ColorPicker> {
               color: _colors[i],
               shape: BoxShape.circle,
               border: Border.all(
-                color: _selected == i ? EpicordiaColors.blue600 : Colors.transparent,
+                color: _selected == i
+                    ? EpicordiaColors.blue600
+                    : Colors.transparent,
                 width: 2.5,
               ),
               boxShadow: _selected == i
-                  ? [BoxShadow(color: _colors[i].withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 2))]
+                  ? [
+                      BoxShadow(
+                        color: _colors[i].withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
                   : [],
             ),
           ),

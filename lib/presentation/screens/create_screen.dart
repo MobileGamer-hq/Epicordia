@@ -16,9 +16,9 @@ class CreateScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: EpicordiaColors.textPrimaryLight),
-          onPressed: () => context.go('/'),
+          onPressed: () => context.pop(),
         ),
-        title: const EpicordiaLogo(),
+        // title: const EpicordiaLogo(),
         centerTitle: false,
       ),
       body: SafeArea(
@@ -53,7 +53,7 @@ class CreateScreen extends StatelessWidget {
                       title: 'To-do List',
                       description: 'A structured list of tasks. Best for planning work, tracking checklists, and managing daily to-dos.',
                       previewWidget: const _TaskPreview(),
-                      onTap: () => context.go('/create/task'),
+                      onTap: () => context.push('/create/task'),
                     ),
                     const SizedBox(height: 16),
                     _CreateTypeCard(
@@ -63,7 +63,7 @@ class CreateScreen extends StatelessWidget {
                       title: 'Note',
                       description: 'Rich text notes and quick captures. Best for journaling, ideas, and meeting notes.',
                       previewWidget: const _NotePreview(),
-                      onTap: () => context.go('/create/note'),
+                      onTap: () => context.push('/create/note'),
                     ),
                     const SizedBox(height: 16),
                     _CreateTypeCard(
@@ -73,7 +73,7 @@ class CreateScreen extends StatelessWidget {
                       title: 'Board',
                       description: 'A visual, infinite canvas for spatial organization. Best for moodboarding, complex projects, and brainstorming.',
                       previewWidget: const _BoardPreview(),
-                      onTap: () => context.go('/create/board'),
+                      onTap: () => context.push('/create/board'),
                     ),
                   ],
                 ),

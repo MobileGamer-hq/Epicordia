@@ -10,4 +10,13 @@
 -on the dashboard there should be a settings button that will link tot the settings screen.
 
 -There should be ba cresta button on the notes_tab screen and tasks_tabs screen the button is there for the tasks_tab screen but once there is a task it doesnt show again which is wrong it should show even when there is content in the list, and the create button on the tasks_tab screen doesnt work
--Let the notes_tabs and tasks_tabs screens get their data from the database, and the filters on top should work for both of them so recents, pinned and ideas  and due today, overdu and boards 
+-Let the notes_tabs and tasks_tabs screens get their data from the database, and the filters on top should work for both of them so recents, pinned and ideas  and due today, overdu and boards
+-Have a greeting either below or above the heatmap
+
+-I want the heatmap to be linked to a calnedar screen by hero widget.
+-also the heatmap widget has a small row height, make it bigger but it should scale for screens and for desktopns or wide screens the heat map should show work done for 3 months
+
+-let the Format toolbar and for notes work,
+-task should have due date and time not just date
+-the search on the today dashboard should open a nice animation to search like screen, this will allow search for notes, task and boards.
+-edit the onboarding screen to ask and save the users name and what they will be using the app for with options like project management personal development etc

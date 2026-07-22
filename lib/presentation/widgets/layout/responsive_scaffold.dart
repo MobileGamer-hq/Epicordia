@@ -54,7 +54,7 @@ class ResponsiveScaffold extends StatelessWidget {
         return Scaffold(
           backgroundColor: EpicordiaColors.surfaceAppLight,
           appBar: appBar,
-          body: content,
+          body: SafeArea(child: content),
           bottomNavigationBar: const _MobileBottomNav(),
         );
       },
@@ -74,16 +74,16 @@ class _DesktopSidebar extends StatelessWidget {
       width: 220,
       decoration: const BoxDecoration(
         color: EpicordiaColors.surfaceCardLight,
-        border: Border(right: BorderSide(color: EpicordiaColors.borderSubtleLight)),
+        border: Border(
+          right: BorderSide(color: EpicordiaColors.borderSubtleLight),
+        ),
       ),
       child: Column(
         children: [
           // Logo
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-            child: Row(
-              children: const [EpicordiaLogoInline()],
-            ),
+            child: Row(children: const [EpicordiaLogoInline()]),
           ),
 
           // Nav items
@@ -92,7 +92,9 @@ class _DesktopSidebar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Column(
                 children: appNavItems.map((item) {
-                  final isActive = location == item.route || location.startsWith('${item.route}/');
+                  final isActive =
+                      location == item.route ||
+                      location.startsWith('${item.route}/');
                   return _SidebarItem(item: item, isActive: isActive);
                 }).toList(),
               ),
@@ -103,7 +105,7 @@ class _DesktopSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: InkWell(
-              onTap: () => context.go('/create'),
+              onTap: () => context.push('/create'),
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 width: double.infinity,
@@ -117,7 +119,14 @@ class _DesktopSidebar extends StatelessWidget {
                   children: [
                     Icon(Icons.add, color: Colors.white, size: 18),
                     SizedBox(width: 8),
-                    Text('Create', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                    Text(
+                      'Create',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -132,15 +141,25 @@ class _DesktopSidebar extends StatelessWidget {
               children: [
                 // Settings link
                 InkWell(
-                  onTap: () => context.go('/settings'),
+                  onTap: () => context.push('/settings'),
                   borderRadius: BorderRadius.circular(8),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.settings_outlined, size: 18, color: EpicordiaColors.textSecondaryLight),
+                        Icon(
+                          Icons.settings_outlined,
+                          size: 18,
+                          color: EpicordiaColors.textSecondaryLight,
+                        ),
                         SizedBox(width: 10),
-                        Text('Settings', style: TextStyle(fontSize: 14, color: EpicordiaColors.textSecondaryLight)),
+                        Text(
+                          'Settings',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: EpicordiaColors.textSecondaryLight,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -152,15 +171,33 @@ class _DesktopSidebar extends StatelessWidget {
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: EpicordiaColors.blue100,
-                      child: const Icon(Icons.person, size: 18, color: EpicordiaColors.blue700),
+                      child: const Icon(
+                        Icons.person,
+                        size: 18,
+                        color: EpicordiaColors.blue700,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Alex Rivera', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: EpicordiaColors.textPrimaryLight)),
-                          Text('alex@epicordia.io', style: TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight), overflow: TextOverflow.ellipsis),
+                          Text(
+                            'Alex Rivera',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: EpicordiaColors.textPrimaryLight,
+                            ),
+                          ),
+                          Text(
+                            'alex@epicordia.io',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: EpicordiaColors.textTertiaryLight,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
                     ),
@@ -187,7 +224,9 @@ class _TabletRail extends StatelessWidget {
       width: 68,
       decoration: const BoxDecoration(
         color: EpicordiaColors.surfaceCardLight,
-        border: Border(right: BorderSide(color: EpicordiaColors.borderSubtleLight)),
+        border: Border(
+          right: BorderSide(color: EpicordiaColors.borderSubtleLight),
+        ),
       ),
       child: Column(
         children: [
@@ -196,8 +235,15 @@ class _TabletRail extends StatelessWidget {
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(color: EpicordiaColors.blue700, borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.space_dashboard, color: Colors.white, size: 20),
+            decoration: BoxDecoration(
+              color: EpicordiaColors.blue700,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.space_dashboard,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(height: 20),
           // Nav icons
@@ -212,13 +258,24 @@ class _TabletRail extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isActive ? EpicordiaColors.blue600.withValues(alpha: 0.1) : Colors.transparent,
+                        color: isActive
+                            ? EpicordiaColors.blue600.withValues(alpha: 0.1)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(item.icon, size: 22, color: isActive ? EpicordiaColors.blue600 : EpicordiaColors.textSecondaryLight),
+                      child: Icon(
+                        item.icon,
+                        size: 22,
+                        color: isActive
+                            ? EpicordiaColors.blue600
+                            : EpicordiaColors.textSecondaryLight,
+                      ),
                     ),
                   ),
                 );
@@ -229,7 +286,7 @@ class _TabletRail extends StatelessWidget {
           Tooltip(
             message: 'Create',
             child: InkWell(
-              onTap: () => context.go('/create'),
+              onTap: () => context.push('/create'),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 margin: const EdgeInsets.all(10),
@@ -247,11 +304,15 @@ class _TabletRail extends StatelessWidget {
           Tooltip(
             message: 'Settings',
             child: InkWell(
-              onTap: () => context.go('/settings'),
+              onTap: () => context.push('/settings'),
               borderRadius: BorderRadius.circular(10),
               child: const Padding(
                 padding: EdgeInsets.all(12),
-                child: Icon(Icons.settings_outlined, size: 22, color: EpicordiaColors.textSecondaryLight),
+                child: Icon(
+                  Icons.settings_outlined,
+                  size: 22,
+                  color: EpicordiaColors.textSecondaryLight,
+                ),
               ),
             ),
           ),
@@ -273,7 +334,9 @@ class _MobileBottomNav extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: EpicordiaColors.surfaceCardLight,
-        border: Border(top: BorderSide(color: EpicordiaColors.borderSubtleLight)),
+        border: Border(
+          top: BorderSide(color: EpicordiaColors.borderSubtleLight),
+        ),
       ),
       child: SafeArea(
         child: SizedBox(
@@ -281,13 +344,19 @@ class _MobileBottomNav extends StatelessWidget {
           child: Row(
             children: [
               // Home, Boards
-              _BottomNavItem(item: appNavItems[0], isActive: location == appNavItems[0].route),
-              _BottomNavItem(item: appNavItems[1], isActive: location == appNavItems[1].route),
+              _BottomNavItem(
+                item: appNavItems[0],
+                isActive: location == appNavItems[0].route,
+              ),
+              _BottomNavItem(
+                item: appNavItems[1],
+                isActive: location == appNavItems[1].route,
+              ),
 
               // Center Create button (icon only)
               Expanded(
                 child: GestureDetector(
-                  onTap: () => context.go('/create'),
+                  onTap: () => context.push('/create'),
                   child: Center(
                     child: Container(
                       width: 40,
@@ -296,15 +365,25 @@ class _MobileBottomNav extends StatelessWidget {
                         color: EpicordiaColors.blue600,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
               ),
 
               // Notes, Tasks
-              _BottomNavItem(item: appNavItems[2], isActive: location == appNavItems[2].route),
-              _BottomNavItem(item: appNavItems[3], isActive: location == appNavItems[3].route),
+              _BottomNavItem(
+                item: appNavItems[2],
+                isActive: location == appNavItems[2].route,
+              ),
+              _BottomNavItem(
+                item: appNavItems[3],
+                isActive: location == appNavItems[3].route,
+              ),
             ],
           ),
         ),
@@ -326,11 +405,23 @@ class _BottomNavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(item.icon, size: 22, color: isActive ? EpicordiaColors.blue600 : EpicordiaColors.textTertiaryLight),
+            Icon(
+              item.icon,
+              size: 22,
+              color: isActive
+                  ? EpicordiaColors.blue600
+                  : EpicordiaColors.textTertiaryLight,
+            ),
             const SizedBox(height: 2),
             Text(
               item.label,
-              style: TextStyle(fontSize: 10, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400, color: isActive ? EpicordiaColors.blue600 : EpicordiaColors.textTertiaryLight),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive
+                    ? EpicordiaColors.blue600
+                    : EpicordiaColors.textTertiaryLight,
+              ),
             ),
           ],
         ),
@@ -355,20 +446,41 @@ class _SidebarItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 2),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? EpicordiaColors.blue600.withValues(alpha: 0.1) : Colors.transparent,
+          color: isActive
+              ? EpicordiaColors.blue600.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(item.icon, size: 18, color: isActive ? EpicordiaColors.blue600 : EpicordiaColors.textSecondaryLight),
+            Icon(
+              item.icon,
+              size: 18,
+              color: isActive
+                  ? EpicordiaColors.blue600
+                  : EpicordiaColors.textSecondaryLight,
+            ),
             const SizedBox(width: 10),
             Text(
               item.label,
-              style: TextStyle(fontSize: 14, fontWeight: isActive ? FontWeight.w700 : FontWeight.w400, color: isActive ? EpicordiaColors.blue600 : EpicordiaColors.textSecondaryLight),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                color: isActive
+                    ? EpicordiaColors.blue600
+                    : EpicordiaColors.textSecondaryLight,
+              ),
             ),
             if (isActive) ...[
               const Spacer(),
-              Container(width: 4, height: 16, decoration: BoxDecoration(color: EpicordiaColors.blue600, borderRadius: BorderRadius.circular(2))),
+              Container(
+                width: 4,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: EpicordiaColors.blue600,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ],
           ],
         ),

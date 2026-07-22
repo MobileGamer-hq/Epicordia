@@ -31,7 +31,10 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
           title: const EpicordiaLogo(),
           actions: [
             IconButton(
-              icon: Icon(_isGrid ? Icons.grid_view : Icons.list, color: EpicordiaColors.textPrimaryLight),
+              icon: Icon(
+                _isGrid ? Icons.grid_view : Icons.list,
+                color: EpicordiaColors.textPrimaryLight,
+              ),
               onPressed: () => setState(() => _isGrid = !_isGrid),
             ),
             const SizedBox(width: 8),
@@ -51,7 +54,9 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
             return _EmptyBoardsState();
           }
 
-          return _isGrid ? _GridView(boards: boards) : _ListView(boards: boards);
+          return _isGrid
+              ? _GridView(boards: boards)
+              : _ListView(boards: boards);
         },
       ),
     );
@@ -73,12 +78,29 @@ class _EmptyBoardsState extends StatelessWidget {
               color: EpicordiaColors.surfaceSunkenLight,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.space_dashboard_outlined, size: 32, color: EpicordiaColors.textTertiaryLight),
+            child: const Icon(
+              Icons.space_dashboard_outlined,
+              size: 32,
+              color: EpicordiaColors.textTertiaryLight,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text('No boards yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
+          const Text(
+            'No boards yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: EpicordiaColors.textPrimaryLight,
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Create a board to start organizing visually', style: TextStyle(fontSize: 14, color: EpicordiaColors.textSecondaryLight)),
+          const Text(
+            'Create a board to start organizing visually',
+            style: TextStyle(
+              fontSize: 14,
+              color: EpicordiaColors.textSecondaryLight,
+            ),
+          ),
         ],
       ),
     );
@@ -95,17 +117,25 @@ class _GridView extends StatelessWidget {
     return GridView.builder(
       padding: const EdgeInsets.all(20),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.0,
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.0,
       ),
       itemCount: boards.length,
       itemBuilder: (context, index) {
         final board = boards[index];
-        final colors = [const Color(0xFF8B9DC3), const Color(0xFFA8B4C8), const Color(0xFF6B7FA0), const Color(0xFF9EAAC4)];
+        final colors = [
+          const Color(0xFF8B9DC3),
+          const Color(0xFFA8B4C8),
+          const Color(0xFF6B7FA0),
+          const Color(0xFF9EAAC4),
+        ];
         final color = colors[index % colors.length];
 
         return EpicordiaCard(
           padding: EdgeInsets.zero,
-          onTap: () => context.go('/board/${board.id}'),
+          onTap: () => context.push('/board/${board.id}'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -113,10 +143,16 @@ class _GridView extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
                   ),
                   child: Center(
-                    child: Icon(Icons.dashboard_outlined, size: 28, color: Colors.white.withValues(alpha: 0.5)),
+                    child: Icon(
+                      Icons.dashboard_outlined,
+                      size: 28,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
                   ),
                 ),
               ),
@@ -125,8 +161,23 @@ class _GridView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(board.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const Text('0 items', style: TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight)),
+                    Text(
+                      board.title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: EpicordiaColors.textPrimaryLight,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Text(
+                      '0 items',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: EpicordiaColors.textTertiaryLight,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -152,7 +203,7 @@ class _ListView extends StatelessWidget {
       itemBuilder: (context, index) {
         final board = boards[index];
         return EpicordiaCard(
-          onTap: () => context.go('/board/${board.id}'),
+          onTap: () => context.push('/board/${board.id}'),
           child: Row(
             children: [
               Container(
@@ -162,19 +213,39 @@ class _ListView extends StatelessWidget {
                   color: EpicordiaColors.blue100,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.space_dashboard_outlined, size: 20, color: EpicordiaColors.blue700),
+                child: const Icon(
+                  Icons.space_dashboard_outlined,
+                  size: 20,
+                  color: EpicordiaColors.blue700,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(board.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: EpicordiaColors.textPrimaryLight)),
-                    const Text('0 items', style: TextStyle(fontSize: 12, color: EpicordiaColors.textTertiaryLight)),
+                    Text(
+                      board.title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: EpicordiaColors.textPrimaryLight,
+                      ),
+                    ),
+                    const Text(
+                      '0 items',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: EpicordiaColors.textTertiaryLight,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: EpicordiaColors.textTertiaryLight),
+              const Icon(
+                Icons.chevron_right,
+                color: EpicordiaColors.textTertiaryLight,
+              ),
             ],
           ),
         );

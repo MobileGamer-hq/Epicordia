@@ -160,14 +160,14 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                         children: [
                           _BreadcrumbLink(
                             label: 'Home',
-                            onTap: () => context.go('/'),
+                            onTap: () => context.push('/'),
                           ),
                           if (parent != null) ...[
                             const _BreadcrumbSeparator(),
                             Flexible(
                               child: _BreadcrumbLink(
                                 label: parent.title,
-                                onTap: () => context.go('/board/${parent.id}'),
+                                onTap: () => context.push('/board/${parent.id}'),
                               ),
                             ),
                           ],
@@ -197,7 +197,7 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                     IconButton(
                       tooltip: 'Settings',
-                      onPressed: () => context.go('/settings'),
+                      onPressed: () => context.push('/settings'),
                       icon: const Icon(
                         Icons.settings_outlined,
                         color: EpicordiaColors.textPrimaryLight,

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/native.dart';
-import 'package:Epicorida/data/providers.dart';
-import 'package:Epicorida/data/database/database.dart';
-import 'package:Epicorida/core/theme.dart';
+import 'package:epicorida/data/providers.dart';
+import 'package:epicorida/data/database/database.dart';
+import 'package:epicorida/core/theme.dart';
 
 void main() {
   testWidgets('TodayDashboard renders section headers', (WidgetTester tester) async {

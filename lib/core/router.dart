@@ -13,6 +13,8 @@ import '../presentation/screens/create_note_screen.dart';
 import '../presentation/screens/create_task_screen.dart';
 import '../presentation/screens/create_board_screen.dart';
 import '../presentation/screens/settings_screen.dart';
+import '../presentation/screens/edit_task_screen.dart';
+import '../presentation/screens/calendar_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -21,6 +23,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/',       builder: (context, state) => const TodayDashboard()),
+      GoRoute(path: '/calendar', builder: (context, state) => const CalendarScreen()),
       // GoRoute(path: '/',       builder: (context, state) => const DashboardScreen()),
       GoRoute(path: '/boards', builder: (context, state) => const BoardsTab()),
       GoRoute(
@@ -28,7 +31,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => BoardScreen(boardId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/notes',    builder: (context, state) => const NotesTab()),
+      GoRoute(
+        path: '/note/:id',
+        builder: (context, state) => CreateNoteScreen(noteId: state.pathParameters['id']),
+      ),
       GoRoute(path: '/tasks',    builder: (context, state) => const TasksTab()),
+      GoRoute(
+        path: '/task/:id',
+        builder: (context, state) => EditTaskScreen(taskId: state.pathParameters['id']!),
+      ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       // Create flow
       GoRoute(path: '/create',       builder: (context, state) => const CreateScreen()),

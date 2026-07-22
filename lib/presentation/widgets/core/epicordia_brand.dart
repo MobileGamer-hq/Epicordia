@@ -24,7 +24,7 @@ class EpicordiaLogo extends StatelessWidget {
             fontFamily: 'Inter',
             fontSize: size,
             fontWeight: FontWeight.w800,
-            color: EpicordiaColors.blue700,
+            color: EpicordiaColors.blue500,
             letterSpacing: -0.3,
           ),
         ),
@@ -65,16 +65,16 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
             icon: const Icon(Icons.search, color: EpicordiaColors.textPrimaryLight),
             onPressed: onSearch,
           ),
-        if (showAvatar) ...[
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: EpicordiaColors.blue100,
-              child: const Icon(Icons.person, size: 18, color: EpicordiaColors.blue700),
-            ),
-          ),
-        ],
+        // if (showAvatar) ...[
+        //   Padding(
+        //     padding: const EdgeInsets.only(right: 16),
+        //     child: CircleAvatar(
+        //       radius: 16,
+        //       backgroundColor: EpicordiaColors.blue100,
+        //       child: const Icon(Icons.person, size: 18, color: EpicordiaColors.blue700),
+        //     ),
+        //   ),
+        // ],
       ],
     );
   }
@@ -96,13 +96,13 @@ class EpicordiaSimpleAppBar extends StatelessWidget implements PreferredSizeWidg
       elevation: 0,
       titleSpacing: 20,
       title: const EpicordiaLogo(),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.search, color: EpicordiaColors.textPrimaryLight),
-          onPressed: onSearch,
-        ),
-        const SizedBox(width: 8),
-      ],
+      // actions: [
+      //   IconButton(
+      //     icon: const Icon(Icons.settings, color: EpicordiaColors.textPrimaryLight),
+      //     onPressed: onSearch,
+      //   ),
+      //   const SizedBox(width: 8),
+      // ],
     );
   }
 }
