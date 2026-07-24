@@ -65,6 +65,17 @@ class PinRepository {
         );
   }
 
+  /// Convenience method to update just the content field of a pin.
+  Future<void> updatePinContent(String id, String content) async {
+    final pin = await ref.read(pinDaoProvider).getPin(id);
+    if (pin == null) return;
+    await ref.read(pinDaoProvider).updatePin(
+          pin.copyWith(content: Value(content), modifiedAt: DateTime.now()),
+        );
+  }
+
+
+
   Future<PinEntity> createNoteOnBoard(
     String? boardId, {
     double x = 80,

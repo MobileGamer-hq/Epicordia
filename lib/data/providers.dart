@@ -26,3 +26,14 @@ final taskDaoProvider = Provider<TaskDao>((ref) {
 final connectorDaoProvider = Provider<ConnectorDao>((ref) {
   return ref.watch(databaseProvider).connectorDao;
 });
+
+/// Watches the single Task row linked to a canvas pin (via Tasks.pinId).
+final taskForPinProvider = StreamProvider.family<TaskEntity?, String>((ref, pinId) {
+  return ref.watch(taskDaoProvider).watchTaskForPin(pinId);
+});
+
+/// Watches all Task rows belonging to a task-list card (via Tasks.groupPinId).
+final tasksForGroupPinProvider = StreamProvider.family<List<TaskEntity>, String>((ref, groupPinId) {
+  return ref.watch(taskDaoProvider).watchTasksForGroupPin(groupPinId);
+});
+

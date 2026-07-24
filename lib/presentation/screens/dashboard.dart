@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:drift/drift.dart' show Value;
+
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';

@@ -664,6 +664,34 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _parentFrameIdMeta = const VerificationMeta(
+    'parentFrameId',
+  );
+  @override
+  late final GeneratedColumn<String> parentFrameId = GeneratedColumn<String>(
+    'parent_frame_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES pins (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _linkedBoardIdMeta = const VerificationMeta(
+    'linkedBoardId',
+  );
+  @override
+  late final GeneratedColumn<String> linkedBoardId = GeneratedColumn<String>(
+    'linked_board_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES boards (id) ON DELETE CASCADE',
+    ),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -701,6 +729,8 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
     rotation,
     colorTag,
     content,
+    parentFrameId,
+    linkedBoardId,
     createdAt,
     modifiedAt,
   ];
@@ -777,6 +807,24 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
         content.isAcceptableOrUnknown(data['content']!, _contentMeta),
       );
     }
+    if (data.containsKey('parent_frame_id')) {
+      context.handle(
+        _parentFrameIdMeta,
+        parentFrameId.isAcceptableOrUnknown(
+          data['parent_frame_id']!,
+          _parentFrameIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linked_board_id')) {
+      context.handle(
+        _linkedBoardIdMeta,
+        linkedBoardId.isAcceptableOrUnknown(
+          data['linked_board_id']!,
+          _linkedBoardIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -842,6 +890,14 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
         DriftSqlType.string,
         data['${effectivePrefix}content'],
       ),
+      parentFrameId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_frame_id'],
+      ),
+      linkedBoardId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}linked_board_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -871,6 +927,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
   final double rotation;
   final String? colorTag;
   final String? content;
+  final String? parentFrameId;
+  final String? linkedBoardId;
   final DateTime createdAt;
   final DateTime modifiedAt;
   const PinEntity({
@@ -885,6 +943,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     required this.rotation,
     this.colorTag,
     this.content,
+    this.parentFrameId,
+    this.linkedBoardId,
     required this.createdAt,
     required this.modifiedAt,
   });
@@ -907,6 +967,12 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     }
     if (!nullToAbsent || content != null) {
       map['content'] = Variable<String>(content);
+    }
+    if (!nullToAbsent || parentFrameId != null) {
+      map['parent_frame_id'] = Variable<String>(parentFrameId);
+    }
+    if (!nullToAbsent || linkedBoardId != null) {
+      map['linked_board_id'] = Variable<String>(linkedBoardId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['modified_at'] = Variable<DateTime>(modifiedAt);
@@ -932,6 +998,12 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       content: content == null && nullToAbsent
           ? const Value.absent()
           : Value(content),
+      parentFrameId: parentFrameId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentFrameId),
+      linkedBoardId: linkedBoardId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedBoardId),
       createdAt: Value(createdAt),
       modifiedAt: Value(modifiedAt),
     );
@@ -954,6 +1026,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       rotation: serializer.fromJson<double>(json['rotation']),
       colorTag: serializer.fromJson<String?>(json['colorTag']),
       content: serializer.fromJson<String?>(json['content']),
+      parentFrameId: serializer.fromJson<String?>(json['parentFrameId']),
+      linkedBoardId: serializer.fromJson<String?>(json['linkedBoardId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
     );
@@ -973,6 +1047,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       'rotation': serializer.toJson<double>(rotation),
       'colorTag': serializer.toJson<String?>(colorTag),
       'content': serializer.toJson<String?>(content),
+      'parentFrameId': serializer.toJson<String?>(parentFrameId),
+      'linkedBoardId': serializer.toJson<String?>(linkedBoardId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
     };
@@ -990,6 +1066,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     double? rotation,
     Value<String?> colorTag = const Value.absent(),
     Value<String?> content = const Value.absent(),
+    Value<String?> parentFrameId = const Value.absent(),
+    Value<String?> linkedBoardId = const Value.absent(),
     DateTime? createdAt,
     DateTime? modifiedAt,
   }) => PinEntity(
@@ -1004,6 +1082,12 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     rotation: rotation ?? this.rotation,
     colorTag: colorTag.present ? colorTag.value : this.colorTag,
     content: content.present ? content.value : this.content,
+    parentFrameId: parentFrameId.present
+        ? parentFrameId.value
+        : this.parentFrameId,
+    linkedBoardId: linkedBoardId.present
+        ? linkedBoardId.value
+        : this.linkedBoardId,
     createdAt: createdAt ?? this.createdAt,
     modifiedAt: modifiedAt ?? this.modifiedAt,
   );
@@ -1020,6 +1104,12 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       rotation: data.rotation.present ? data.rotation.value : this.rotation,
       colorTag: data.colorTag.present ? data.colorTag.value : this.colorTag,
       content: data.content.present ? data.content.value : this.content,
+      parentFrameId: data.parentFrameId.present
+          ? data.parentFrameId.value
+          : this.parentFrameId,
+      linkedBoardId: data.linkedBoardId.present
+          ? data.linkedBoardId.value
+          : this.linkedBoardId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       modifiedAt: data.modifiedAt.present
           ? data.modifiedAt.value
@@ -1041,6 +1131,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
           ..write('rotation: $rotation, ')
           ..write('colorTag: $colorTag, ')
           ..write('content: $content, ')
+          ..write('parentFrameId: $parentFrameId, ')
+          ..write('linkedBoardId: $linkedBoardId, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt')
           ..write(')'))
@@ -1060,6 +1152,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     rotation,
     colorTag,
     content,
+    parentFrameId,
+    linkedBoardId,
     createdAt,
     modifiedAt,
   );
@@ -1078,6 +1172,8 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
           other.rotation == this.rotation &&
           other.colorTag == this.colorTag &&
           other.content == this.content &&
+          other.parentFrameId == this.parentFrameId &&
+          other.linkedBoardId == this.linkedBoardId &&
           other.createdAt == this.createdAt &&
           other.modifiedAt == this.modifiedAt);
 }
@@ -1094,6 +1190,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
   final Value<double> rotation;
   final Value<String?> colorTag;
   final Value<String?> content;
+  final Value<String?> parentFrameId;
+  final Value<String?> linkedBoardId;
   final Value<DateTime> createdAt;
   final Value<DateTime> modifiedAt;
   final Value<int> rowid;
@@ -1109,6 +1207,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     this.rotation = const Value.absent(),
     this.colorTag = const Value.absent(),
     this.content = const Value.absent(),
+    this.parentFrameId = const Value.absent(),
+    this.linkedBoardId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1125,6 +1225,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     this.rotation = const Value.absent(),
     this.colorTag = const Value.absent(),
     this.content = const Value.absent(),
+    this.parentFrameId = const Value.absent(),
+    this.linkedBoardId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1142,6 +1244,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     Expression<double>? rotation,
     Expression<String>? colorTag,
     Expression<String>? content,
+    Expression<String>? parentFrameId,
+    Expression<String>? linkedBoardId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? modifiedAt,
     Expression<int>? rowid,
@@ -1158,6 +1262,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
       if (rotation != null) 'rotation': rotation,
       if (colorTag != null) 'color_tag': colorTag,
       if (content != null) 'content': content,
+      if (parentFrameId != null) 'parent_frame_id': parentFrameId,
+      if (linkedBoardId != null) 'linked_board_id': linkedBoardId,
       if (createdAt != null) 'created_at': createdAt,
       if (modifiedAt != null) 'modified_at': modifiedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1176,6 +1282,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     Value<double>? rotation,
     Value<String?>? colorTag,
     Value<String?>? content,
+    Value<String?>? parentFrameId,
+    Value<String?>? linkedBoardId,
     Value<DateTime>? createdAt,
     Value<DateTime>? modifiedAt,
     Value<int>? rowid,
@@ -1192,6 +1300,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
       rotation: rotation ?? this.rotation,
       colorTag: colorTag ?? this.colorTag,
       content: content ?? this.content,
+      parentFrameId: parentFrameId ?? this.parentFrameId,
+      linkedBoardId: linkedBoardId ?? this.linkedBoardId,
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
       rowid: rowid ?? this.rowid,
@@ -1234,6 +1344,12 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     if (content.present) {
       map['content'] = Variable<String>(content.value);
     }
+    if (parentFrameId.present) {
+      map['parent_frame_id'] = Variable<String>(parentFrameId.value);
+    }
+    if (linkedBoardId.present) {
+      map['linked_board_id'] = Variable<String>(linkedBoardId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1260,6 +1376,8 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
           ..write('rotation: $rotation, ')
           ..write('colorTag: $colorTag, ')
           ..write('content: $content, ')
+          ..write('parentFrameId: $parentFrameId, ')
+          ..write('linkedBoardId: $linkedBoardId, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt, ')
           ..write('rowid: $rowid')
@@ -1306,6 +1424,20 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES boards (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _groupPinIdMeta = const VerificationMeta(
+    'groupPinId',
+  );
+  @override
+  late final GeneratedColumn<String> groupPinId = GeneratedColumn<String>(
+    'group_pin_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES pins (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
@@ -1408,11 +1540,36 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _modifiedAtMeta = const VerificationMeta(
+    'modifiedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> modifiedAt = GeneratedColumn<DateTime>(
+    'modified_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     pinId,
     boardId,
+    groupPinId,
     title,
     notes,
     dueDate,
@@ -1422,6 +1579,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
     recurrenceParentId,
     recurrenceRule,
     calendarEventId,
+    createdAt,
+    modifiedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1450,6 +1609,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
       context.handle(
         _boardIdMeta,
         boardId.isAcceptableOrUnknown(data['board_id']!, _boardIdMeta),
+      );
+    }
+    if (data.containsKey('group_pin_id')) {
+      context.handle(
+        _groupPinIdMeta,
+        groupPinId.isAcceptableOrUnknown(
+          data['group_pin_id']!,
+          _groupPinIdMeta,
+        ),
       );
     }
     if (data.containsKey('title')) {
@@ -1520,6 +1688,18 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         ),
       );
     }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('modified_at')) {
+      context.handle(
+        _modifiedAtMeta,
+        modifiedAt.isAcceptableOrUnknown(data['modified_at']!, _modifiedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1540,6 +1720,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
       boardId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}board_id'],
+      ),
+      groupPinId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_pin_id'],
       ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1577,6 +1761,14 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         DriftSqlType.string,
         data['${effectivePrefix}calendar_event_id'],
       ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      modifiedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}modified_at'],
+      )!,
     );
   }
 
@@ -1590,6 +1782,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
   final String id;
   final String? pinId;
   final String? boardId;
+  final String? groupPinId;
   final String title;
   final String? notes;
   final DateTime? dueDate;
@@ -1599,10 +1792,13 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
   final String? recurrenceParentId;
   final String? recurrenceRule;
   final String? calendarEventId;
+  final DateTime createdAt;
+  final DateTime modifiedAt;
   const TaskEntity({
     required this.id,
     this.pinId,
     this.boardId,
+    this.groupPinId,
     required this.title,
     this.notes,
     this.dueDate,
@@ -1612,6 +1808,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     this.recurrenceParentId,
     this.recurrenceRule,
     this.calendarEventId,
+    required this.createdAt,
+    required this.modifiedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1622,6 +1820,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     }
     if (!nullToAbsent || boardId != null) {
       map['board_id'] = Variable<String>(boardId);
+    }
+    if (!nullToAbsent || groupPinId != null) {
+      map['group_pin_id'] = Variable<String>(groupPinId);
     }
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || notes != null) {
@@ -1644,6 +1845,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     if (!nullToAbsent || calendarEventId != null) {
       map['calendar_event_id'] = Variable<String>(calendarEventId);
     }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['modified_at'] = Variable<DateTime>(modifiedAt);
     return map;
   }
 
@@ -1656,6 +1859,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       boardId: boardId == null && nullToAbsent
           ? const Value.absent()
           : Value(boardId),
+      groupPinId: groupPinId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupPinId),
       title: Value(title),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
@@ -1677,6 +1883,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       calendarEventId: calendarEventId == null && nullToAbsent
           ? const Value.absent()
           : Value(calendarEventId),
+      createdAt: Value(createdAt),
+      modifiedAt: Value(modifiedAt),
     );
   }
 
@@ -1689,6 +1897,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       id: serializer.fromJson<String>(json['id']),
       pinId: serializer.fromJson<String?>(json['pinId']),
       boardId: serializer.fromJson<String?>(json['boardId']),
+      groupPinId: serializer.fromJson<String?>(json['groupPinId']),
       title: serializer.fromJson<String>(json['title']),
       notes: serializer.fromJson<String?>(json['notes']),
       dueDate: serializer.fromJson<DateTime?>(json['dueDate']),
@@ -1700,6 +1909,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       ),
       recurrenceRule: serializer.fromJson<String?>(json['recurrenceRule']),
       calendarEventId: serializer.fromJson<String?>(json['calendarEventId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
     );
   }
   @override
@@ -1709,6 +1920,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       'id': serializer.toJson<String>(id),
       'pinId': serializer.toJson<String?>(pinId),
       'boardId': serializer.toJson<String?>(boardId),
+      'groupPinId': serializer.toJson<String?>(groupPinId),
       'title': serializer.toJson<String>(title),
       'notes': serializer.toJson<String?>(notes),
       'dueDate': serializer.toJson<DateTime?>(dueDate),
@@ -1718,6 +1930,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       'recurrenceParentId': serializer.toJson<String?>(recurrenceParentId),
       'recurrenceRule': serializer.toJson<String?>(recurrenceRule),
       'calendarEventId': serializer.toJson<String?>(calendarEventId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
     };
   }
 
@@ -1725,6 +1939,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     String? id,
     Value<String?> pinId = const Value.absent(),
     Value<String?> boardId = const Value.absent(),
+    Value<String?> groupPinId = const Value.absent(),
     String? title,
     Value<String?> notes = const Value.absent(),
     Value<DateTime?> dueDate = const Value.absent(),
@@ -1734,10 +1949,13 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     Value<String?> recurrenceParentId = const Value.absent(),
     Value<String?> recurrenceRule = const Value.absent(),
     Value<String?> calendarEventId = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? modifiedAt,
   }) => TaskEntity(
     id: id ?? this.id,
     pinId: pinId.present ? pinId.value : this.pinId,
     boardId: boardId.present ? boardId.value : this.boardId,
+    groupPinId: groupPinId.present ? groupPinId.value : this.groupPinId,
     title: title ?? this.title,
     notes: notes.present ? notes.value : this.notes,
     dueDate: dueDate.present ? dueDate.value : this.dueDate,
@@ -1755,12 +1973,17 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     calendarEventId: calendarEventId.present
         ? calendarEventId.value
         : this.calendarEventId,
+    createdAt: createdAt ?? this.createdAt,
+    modifiedAt: modifiedAt ?? this.modifiedAt,
   );
   TaskEntity copyWithCompanion(TasksCompanion data) {
     return TaskEntity(
       id: data.id.present ? data.id.value : this.id,
       pinId: data.pinId.present ? data.pinId.value : this.pinId,
       boardId: data.boardId.present ? data.boardId.value : this.boardId,
+      groupPinId: data.groupPinId.present
+          ? data.groupPinId.value
+          : this.groupPinId,
       title: data.title.present ? data.title.value : this.title,
       notes: data.notes.present ? data.notes.value : this.notes,
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
@@ -1778,6 +2001,10 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       calendarEventId: data.calendarEventId.present
           ? data.calendarEventId.value
           : this.calendarEventId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      modifiedAt: data.modifiedAt.present
+          ? data.modifiedAt.value
+          : this.modifiedAt,
     );
   }
 
@@ -1787,6 +2014,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           ..write('id: $id, ')
           ..write('pinId: $pinId, ')
           ..write('boardId: $boardId, ')
+          ..write('groupPinId: $groupPinId, ')
           ..write('title: $title, ')
           ..write('notes: $notes, ')
           ..write('dueDate: $dueDate, ')
@@ -1795,7 +2023,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           ..write('status: $status, ')
           ..write('recurrenceParentId: $recurrenceParentId, ')
           ..write('recurrenceRule: $recurrenceRule, ')
-          ..write('calendarEventId: $calendarEventId')
+          ..write('calendarEventId: $calendarEventId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt')
           ..write(')'))
         .toString();
   }
@@ -1805,6 +2035,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     id,
     pinId,
     boardId,
+    groupPinId,
     title,
     notes,
     dueDate,
@@ -1814,6 +2045,8 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     recurrenceParentId,
     recurrenceRule,
     calendarEventId,
+    createdAt,
+    modifiedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1822,6 +2055,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           other.id == this.id &&
           other.pinId == this.pinId &&
           other.boardId == this.boardId &&
+          other.groupPinId == this.groupPinId &&
           other.title == this.title &&
           other.notes == this.notes &&
           other.dueDate == this.dueDate &&
@@ -1830,13 +2064,16 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           other.status == this.status &&
           other.recurrenceParentId == this.recurrenceParentId &&
           other.recurrenceRule == this.recurrenceRule &&
-          other.calendarEventId == this.calendarEventId);
+          other.calendarEventId == this.calendarEventId &&
+          other.createdAt == this.createdAt &&
+          other.modifiedAt == this.modifiedAt);
 }
 
 class TasksCompanion extends UpdateCompanion<TaskEntity> {
   final Value<String> id;
   final Value<String?> pinId;
   final Value<String?> boardId;
+  final Value<String?> groupPinId;
   final Value<String> title;
   final Value<String?> notes;
   final Value<DateTime?> dueDate;
@@ -1846,11 +2083,14 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
   final Value<String?> recurrenceParentId;
   final Value<String?> recurrenceRule;
   final Value<String?> calendarEventId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> modifiedAt;
   final Value<int> rowid;
   const TasksCompanion({
     this.id = const Value.absent(),
     this.pinId = const Value.absent(),
     this.boardId = const Value.absent(),
+    this.groupPinId = const Value.absent(),
     this.title = const Value.absent(),
     this.notes = const Value.absent(),
     this.dueDate = const Value.absent(),
@@ -1860,12 +2100,15 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.recurrenceParentId = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
     this.calendarEventId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TasksCompanion.insert({
     required String id,
     this.pinId = const Value.absent(),
     this.boardId = const Value.absent(),
+    this.groupPinId = const Value.absent(),
     required String title,
     this.notes = const Value.absent(),
     this.dueDate = const Value.absent(),
@@ -1875,6 +2118,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.recurrenceParentId = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
     this.calendarEventId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title);
@@ -1882,6 +2127,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Expression<String>? id,
     Expression<String>? pinId,
     Expression<String>? boardId,
+    Expression<String>? groupPinId,
     Expression<String>? title,
     Expression<String>? notes,
     Expression<DateTime>? dueDate,
@@ -1891,12 +2137,15 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Expression<String>? recurrenceParentId,
     Expression<String>? recurrenceRule,
     Expression<String>? calendarEventId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? modifiedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (pinId != null) 'pin_id': pinId,
       if (boardId != null) 'board_id': boardId,
+      if (groupPinId != null) 'group_pin_id': groupPinId,
       if (title != null) 'title': title,
       if (notes != null) 'notes': notes,
       if (dueDate != null) 'due_date': dueDate,
@@ -1907,6 +2156,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
         'recurrence_parent_id': recurrenceParentId,
       if (recurrenceRule != null) 'recurrence_rule': recurrenceRule,
       if (calendarEventId != null) 'calendar_event_id': calendarEventId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (modifiedAt != null) 'modified_at': modifiedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1915,6 +2166,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Value<String>? id,
     Value<String?>? pinId,
     Value<String?>? boardId,
+    Value<String?>? groupPinId,
     Value<String>? title,
     Value<String?>? notes,
     Value<DateTime?>? dueDate,
@@ -1924,12 +2176,15 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Value<String?>? recurrenceParentId,
     Value<String?>? recurrenceRule,
     Value<String?>? calendarEventId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? modifiedAt,
     Value<int>? rowid,
   }) {
     return TasksCompanion(
       id: id ?? this.id,
       pinId: pinId ?? this.pinId,
       boardId: boardId ?? this.boardId,
+      groupPinId: groupPinId ?? this.groupPinId,
       title: title ?? this.title,
       notes: notes ?? this.notes,
       dueDate: dueDate ?? this.dueDate,
@@ -1939,6 +2194,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
       recurrenceParentId: recurrenceParentId ?? this.recurrenceParentId,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       calendarEventId: calendarEventId ?? this.calendarEventId,
+      createdAt: createdAt ?? this.createdAt,
+      modifiedAt: modifiedAt ?? this.modifiedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1954,6 +2211,9 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     }
     if (boardId.present) {
       map['board_id'] = Variable<String>(boardId.value);
+    }
+    if (groupPinId.present) {
+      map['group_pin_id'] = Variable<String>(groupPinId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -1982,6 +2242,12 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     if (calendarEventId.present) {
       map['calendar_event_id'] = Variable<String>(calendarEventId.value);
     }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (modifiedAt.present) {
+      map['modified_at'] = Variable<DateTime>(modifiedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1994,6 +2260,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
           ..write('id: $id, ')
           ..write('pinId: $pinId, ')
           ..write('boardId: $boardId, ')
+          ..write('groupPinId: $groupPinId, ')
           ..write('title: $title, ')
           ..write('notes: $notes, ')
           ..write('dueDate: $dueDate, ')
@@ -2003,6 +2270,8 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
           ..write('recurrenceParentId: $recurrenceParentId, ')
           ..write('recurrenceRule: $recurrenceRule, ')
           ..write('calendarEventId: $calendarEventId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2297,8 +2566,58 @@ class $ConnectorsTable extends Connectors
       'REFERENCES pins (id) ON DELETE CASCADE',
     ),
   );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
   @override
-  List<GeneratedColumn> get $columns => [id, boardId, fromPinId, toPinId];
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _styleMeta = const VerificationMeta('style');
+  @override
+  late final GeneratedColumn<String> style = GeneratedColumn<String>(
+    'style',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('straight'),
+  );
+  static const VerificationMeta _bendOffsetXMeta = const VerificationMeta(
+    'bendOffsetX',
+  );
+  @override
+  late final GeneratedColumn<double> bendOffsetX = GeneratedColumn<double>(
+    'bend_offset_x',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bendOffsetYMeta = const VerificationMeta(
+    'bendOffsetY',
+  );
+  @override
+  late final GeneratedColumn<double> bendOffsetY = GeneratedColumn<double>(
+    'bend_offset_y',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    boardId,
+    fromPinId,
+    toPinId,
+    label,
+    style,
+    bendOffsetX,
+    bendOffsetY,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2340,6 +2659,36 @@ class $ConnectorsTable extends Connectors
     } else if (isInserting) {
       context.missing(_toPinIdMeta);
     }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    if (data.containsKey('style')) {
+      context.handle(
+        _styleMeta,
+        style.isAcceptableOrUnknown(data['style']!, _styleMeta),
+      );
+    }
+    if (data.containsKey('bend_offset_x')) {
+      context.handle(
+        _bendOffsetXMeta,
+        bendOffsetX.isAcceptableOrUnknown(
+          data['bend_offset_x']!,
+          _bendOffsetXMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bend_offset_y')) {
+      context.handle(
+        _bendOffsetYMeta,
+        bendOffsetY.isAcceptableOrUnknown(
+          data['bend_offset_y']!,
+          _bendOffsetYMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2365,6 +2714,22 @@ class $ConnectorsTable extends Connectors
         DriftSqlType.string,
         data['${effectivePrefix}to_pin_id'],
       )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      ),
+      style: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}style'],
+      )!,
+      bendOffsetX: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}bend_offset_x'],
+      ),
+      bendOffsetY: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}bend_offset_y'],
+      ),
     );
   }
 
@@ -2379,11 +2744,19 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
   final String boardId;
   final String fromPinId;
   final String toPinId;
+  final String? label;
+  final String style;
+  final double? bendOffsetX;
+  final double? bendOffsetY;
   const ConnectorEntity({
     required this.id,
     required this.boardId,
     required this.fromPinId,
     required this.toPinId,
+    this.label,
+    required this.style,
+    this.bendOffsetX,
+    this.bendOffsetY,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2392,6 +2765,16 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
     map['board_id'] = Variable<String>(boardId);
     map['from_pin_id'] = Variable<String>(fromPinId);
     map['to_pin_id'] = Variable<String>(toPinId);
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    map['style'] = Variable<String>(style);
+    if (!nullToAbsent || bendOffsetX != null) {
+      map['bend_offset_x'] = Variable<double>(bendOffsetX);
+    }
+    if (!nullToAbsent || bendOffsetY != null) {
+      map['bend_offset_y'] = Variable<double>(bendOffsetY);
+    }
     return map;
   }
 
@@ -2401,6 +2784,16 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
       boardId: Value(boardId),
       fromPinId: Value(fromPinId),
       toPinId: Value(toPinId),
+      label: label == null && nullToAbsent
+          ? const Value.absent()
+          : Value(label),
+      style: Value(style),
+      bendOffsetX: bendOffsetX == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bendOffsetX),
+      bendOffsetY: bendOffsetY == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bendOffsetY),
     );
   }
 
@@ -2414,6 +2807,10 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
       boardId: serializer.fromJson<String>(json['boardId']),
       fromPinId: serializer.fromJson<String>(json['fromPinId']),
       toPinId: serializer.fromJson<String>(json['toPinId']),
+      label: serializer.fromJson<String?>(json['label']),
+      style: serializer.fromJson<String>(json['style']),
+      bendOffsetX: serializer.fromJson<double?>(json['bendOffsetX']),
+      bendOffsetY: serializer.fromJson<double?>(json['bendOffsetY']),
     );
   }
   @override
@@ -2424,6 +2821,10 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
       'boardId': serializer.toJson<String>(boardId),
       'fromPinId': serializer.toJson<String>(fromPinId),
       'toPinId': serializer.toJson<String>(toPinId),
+      'label': serializer.toJson<String?>(label),
+      'style': serializer.toJson<String>(style),
+      'bendOffsetX': serializer.toJson<double?>(bendOffsetX),
+      'bendOffsetY': serializer.toJson<double?>(bendOffsetY),
     };
   }
 
@@ -2432,11 +2833,19 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
     String? boardId,
     String? fromPinId,
     String? toPinId,
+    Value<String?> label = const Value.absent(),
+    String? style,
+    Value<double?> bendOffsetX = const Value.absent(),
+    Value<double?> bendOffsetY = const Value.absent(),
   }) => ConnectorEntity(
     id: id ?? this.id,
     boardId: boardId ?? this.boardId,
     fromPinId: fromPinId ?? this.fromPinId,
     toPinId: toPinId ?? this.toPinId,
+    label: label.present ? label.value : this.label,
+    style: style ?? this.style,
+    bendOffsetX: bendOffsetX.present ? bendOffsetX.value : this.bendOffsetX,
+    bendOffsetY: bendOffsetY.present ? bendOffsetY.value : this.bendOffsetY,
   );
   ConnectorEntity copyWithCompanion(ConnectorsCompanion data) {
     return ConnectorEntity(
@@ -2444,6 +2853,14 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
       boardId: data.boardId.present ? data.boardId.value : this.boardId,
       fromPinId: data.fromPinId.present ? data.fromPinId.value : this.fromPinId,
       toPinId: data.toPinId.present ? data.toPinId.value : this.toPinId,
+      label: data.label.present ? data.label.value : this.label,
+      style: data.style.present ? data.style.value : this.style,
+      bendOffsetX: data.bendOffsetX.present
+          ? data.bendOffsetX.value
+          : this.bendOffsetX,
+      bendOffsetY: data.bendOffsetY.present
+          ? data.bendOffsetY.value
+          : this.bendOffsetY,
     );
   }
 
@@ -2453,13 +2870,26 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
           ..write('id: $id, ')
           ..write('boardId: $boardId, ')
           ..write('fromPinId: $fromPinId, ')
-          ..write('toPinId: $toPinId')
+          ..write('toPinId: $toPinId, ')
+          ..write('label: $label, ')
+          ..write('style: $style, ')
+          ..write('bendOffsetX: $bendOffsetX, ')
+          ..write('bendOffsetY: $bendOffsetY')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, boardId, fromPinId, toPinId);
+  int get hashCode => Object.hash(
+    id,
+    boardId,
+    fromPinId,
+    toPinId,
+    label,
+    style,
+    bendOffsetX,
+    bendOffsetY,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2467,7 +2897,11 @@ class ConnectorEntity extends DataClass implements Insertable<ConnectorEntity> {
           other.id == this.id &&
           other.boardId == this.boardId &&
           other.fromPinId == this.fromPinId &&
-          other.toPinId == this.toPinId);
+          other.toPinId == this.toPinId &&
+          other.label == this.label &&
+          other.style == this.style &&
+          other.bendOffsetX == this.bendOffsetX &&
+          other.bendOffsetY == this.bendOffsetY);
 }
 
 class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
@@ -2475,12 +2909,20 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
   final Value<String> boardId;
   final Value<String> fromPinId;
   final Value<String> toPinId;
+  final Value<String?> label;
+  final Value<String> style;
+  final Value<double?> bendOffsetX;
+  final Value<double?> bendOffsetY;
   final Value<int> rowid;
   const ConnectorsCompanion({
     this.id = const Value.absent(),
     this.boardId = const Value.absent(),
     this.fromPinId = const Value.absent(),
     this.toPinId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.style = const Value.absent(),
+    this.bendOffsetX = const Value.absent(),
+    this.bendOffsetY = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ConnectorsCompanion.insert({
@@ -2488,6 +2930,10 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
     required String boardId,
     required String fromPinId,
     required String toPinId,
+    this.label = const Value.absent(),
+    this.style = const Value.absent(),
+    this.bendOffsetX = const Value.absent(),
+    this.bendOffsetY = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        boardId = Value(boardId),
@@ -2498,6 +2944,10 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
     Expression<String>? boardId,
     Expression<String>? fromPinId,
     Expression<String>? toPinId,
+    Expression<String>? label,
+    Expression<String>? style,
+    Expression<double>? bendOffsetX,
+    Expression<double>? bendOffsetY,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2505,6 +2955,10 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
       if (boardId != null) 'board_id': boardId,
       if (fromPinId != null) 'from_pin_id': fromPinId,
       if (toPinId != null) 'to_pin_id': toPinId,
+      if (label != null) 'label': label,
+      if (style != null) 'style': style,
+      if (bendOffsetX != null) 'bend_offset_x': bendOffsetX,
+      if (bendOffsetY != null) 'bend_offset_y': bendOffsetY,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2514,6 +2968,10 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
     Value<String>? boardId,
     Value<String>? fromPinId,
     Value<String>? toPinId,
+    Value<String?>? label,
+    Value<String>? style,
+    Value<double?>? bendOffsetX,
+    Value<double?>? bendOffsetY,
     Value<int>? rowid,
   }) {
     return ConnectorsCompanion(
@@ -2521,6 +2979,10 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
       boardId: boardId ?? this.boardId,
       fromPinId: fromPinId ?? this.fromPinId,
       toPinId: toPinId ?? this.toPinId,
+      label: label ?? this.label,
+      style: style ?? this.style,
+      bendOffsetX: bendOffsetX ?? this.bendOffsetX,
+      bendOffsetY: bendOffsetY ?? this.bendOffsetY,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2540,6 +3002,18 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
     if (toPinId.present) {
       map['to_pin_id'] = Variable<String>(toPinId.value);
     }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (style.present) {
+      map['style'] = Variable<String>(style.value);
+    }
+    if (bendOffsetX.present) {
+      map['bend_offset_x'] = Variable<double>(bendOffsetX.value);
+    }
+    if (bendOffsetY.present) {
+      map['bend_offset_y'] = Variable<double>(bendOffsetY.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2553,6 +3027,10 @@ class ConnectorsCompanion extends UpdateCompanion<ConnectorEntity> {
           ..write('boardId: $boardId, ')
           ..write('fromPinId: $fromPinId, ')
           ..write('toPinId: $toPinId, ')
+          ..write('label: $label, ')
+          ..write('style: $style, ')
+          ..write('bendOffsetX: $bendOffsetX, ')
+          ..write('bendOffsetY: $bendOffsetY, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2969,11 +3447,32 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'pins',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('pins', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'boards',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('pins', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'pins',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('tasks', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'boards',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('tasks', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'pins',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('tasks', kind: UpdateKind.delete)],
@@ -3073,25 +3572,6 @@ final class $$BoardsTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$PinsTable, List<PinEntity>> _pinsRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.pins,
-    aliasName: 'boards__id__pins__board_id',
-  );
-
-  $$PinsTableProcessedTableManager get pinsRefs {
-    final manager = $$PinsTableTableManager(
-      $_db,
-      $_db.pins,
-    ).filter((f) => f.boardId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_pinsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
@@ -3198,31 +3678,6 @@ class $$BoardsTableFilterComposer
           ),
     );
     return composer;
-  }
-
-  Expression<bool> pinsRefs(
-    Expression<bool> Function($$PinsTableFilterComposer f) f,
-  ) {
-    final $$PinsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.pins,
-      getReferencedColumn: (t) => t.boardId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PinsTableFilterComposer(
-            $db: $db,
-            $table: $db.pins,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
   }
 
   Expression<bool> tasksRefs(
@@ -3405,31 +3860,6 @@ class $$BoardsTableAnnotationComposer
     return composer;
   }
 
-  Expression<T> pinsRefs<T extends Object>(
-    Expression<T> Function($$PinsTableAnnotationComposer a) f,
-  ) {
-    final $$PinsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.pins,
-      getReferencedColumn: (t) => t.boardId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PinsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.pins,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> tasksRefs<T extends Object>(
     Expression<T> Function($$TasksTableAnnotationComposer a) f,
   ) {
@@ -3496,7 +3926,6 @@ class $$BoardsTableTableManager
           BoardEntity,
           PrefetchHooks Function({
             bool parentBoardId,
-            bool pinsRefs,
             bool tasksRefs,
             bool connectorsRefs,
           })
@@ -3565,14 +3994,12 @@ class $$BoardsTableTableManager
           prefetchHooksCallback:
               ({
                 parentBoardId = false,
-                pinsRefs = false,
                 tasksRefs = false,
                 connectorsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
-                    if (pinsRefs) db.pins,
                     if (tasksRefs) db.tasks,
                     if (connectorsRefs) db.connectors,
                   ],
@@ -3610,23 +4037,6 @@ class $$BoardsTableTableManager
                       },
                   getPrefetchedDataCallback: (items) async {
                     return [
-                      if (pinsRefs)
-                        await $_getPrefetchedData<
-                          BoardEntity,
-                          $BoardsTable,
-                          PinEntity
-                        >(
-                          currentTable: table,
-                          referencedTable: $$BoardsTableReferences
-                              ._pinsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$BoardsTableReferences(db, table, p0).pinsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.boardId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
                       if (tasksRefs)
                         await $_getPrefetchedData<
                           BoardEntity,
@@ -3687,7 +4097,6 @@ typedef $$BoardsTableProcessedTableManager =
       BoardEntity,
       PrefetchHooks Function({
         bool parentBoardId,
-        bool pinsRefs,
         bool tasksRefs,
         bool connectorsRefs,
       })
@@ -3705,6 +4114,8 @@ typedef $$PinsTableCreateCompanionBuilder =
       Value<double> rotation,
       Value<String?> colorTag,
       Value<String?> content,
+      Value<String?> parentFrameId,
+      Value<String?> linkedBoardId,
       Value<DateTime> createdAt,
       Value<DateTime> modifiedAt,
       Value<int> rowid,
@@ -3722,6 +4133,8 @@ typedef $$PinsTableUpdateCompanionBuilder =
       Value<double> rotation,
       Value<String?> colorTag,
       Value<String?> content,
+      Value<String?> parentFrameId,
+      Value<String?> linkedBoardId,
       Value<DateTime> createdAt,
       Value<DateTime> modifiedAt,
       Value<int> rowid,
@@ -3748,22 +4161,37 @@ final class $$PinsTableReferences
     );
   }
 
-  static MultiTypedResultKey<$TasksTable, List<TaskEntity>> _tasksRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.tasks,
-    aliasName: 'pins__id__tasks__pin_id',
-  );
+  static $PinsTable _parentFrameIdTable(_$AppDatabase db) =>
+      db.pins.createAlias('pins__parent_frame_id__pins__id');
 
-  $$TasksTableProcessedTableManager get tasksRefs {
-    final manager = $$TasksTableTableManager(
+  $$PinsTableProcessedTableManager? get parentFrameId {
+    final $_column = $_itemColumn<String>('parent_frame_id');
+    if ($_column == null) return null;
+    final manager = $$PinsTableTableManager(
       $_db,
-      $_db.tasks,
-    ).filter((f) => f.pinId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_tasksRefsTable($_db));
+      $_db.pins,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_parentFrameIdTable($_db));
+    if (item == null) return manager;
     return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $BoardsTable _linkedBoardIdTable(_$AppDatabase db) =>
+      db.boards.createAlias('pins__linked_board_id__boards__id');
+
+  $$BoardsTableProcessedTableManager? get linkedBoardId {
+    final $_column = $_itemColumn<String>('linked_board_id');
+    if ($_column == null) return null;
+    final manager = $$BoardsTableTableManager(
+      $_db,
+      $_db.boards,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_linkedBoardIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
     );
   }
 
@@ -3877,29 +4305,50 @@ class $$PinsTableFilterComposer extends Composer<_$AppDatabase, $PinsTable> {
     return composer;
   }
 
-  Expression<bool> tasksRefs(
-    Expression<bool> Function($$TasksTableFilterComposer f) f,
-  ) {
-    final $$TasksTableFilterComposer composer = $composerBuilder(
+  $$PinsTableFilterComposer get parentFrameId {
+    final $$PinsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.tasks,
-      getReferencedColumn: (t) => t.pinId,
+      getCurrentColumn: (t) => t.parentFrameId,
+      referencedTable: $db.pins,
+      getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TasksTableFilterComposer(
+          }) => $$PinsTableFilterComposer(
             $db: $db,
-            $table: $db.tasks,
+            $table: $db.pins,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
                 $removeJoinBuilderFromRootComposer,
           ),
     );
-    return f(composer);
+    return composer;
+  }
+
+  $$BoardsTableFilterComposer get linkedBoardId {
+    final $$BoardsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedBoardId,
+      referencedTable: $db.boards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BoardsTableFilterComposer(
+            $db: $db,
+            $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
   }
 
   Expression<bool> attachmentsRefs(
@@ -4018,6 +4467,52 @@ class $$PinsTableOrderingComposer extends Composer<_$AppDatabase, $PinsTable> {
     );
     return composer;
   }
+
+  $$PinsTableOrderingComposer get parentFrameId {
+    final $$PinsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.parentFrameId,
+      referencedTable: $db.pins,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PinsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pins,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BoardsTableOrderingComposer get linkedBoardId {
+    final $$BoardsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedBoardId,
+      referencedTable: $db.boards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BoardsTableOrderingComposer(
+            $db: $db,
+            $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PinsTableAnnotationComposer
@@ -4090,29 +4585,50 @@ class $$PinsTableAnnotationComposer
     return composer;
   }
 
-  Expression<T> tasksRefs<T extends Object>(
-    Expression<T> Function($$TasksTableAnnotationComposer a) f,
-  ) {
-    final $$TasksTableAnnotationComposer composer = $composerBuilder(
+  $$PinsTableAnnotationComposer get parentFrameId {
+    final $$PinsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.tasks,
-      getReferencedColumn: (t) => t.pinId,
+      getCurrentColumn: (t) => t.parentFrameId,
+      referencedTable: $db.pins,
+      getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TasksTableAnnotationComposer(
+          }) => $$PinsTableAnnotationComposer(
             $db: $db,
-            $table: $db.tasks,
+            $table: $db.pins,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
                 $removeJoinBuilderFromRootComposer,
           ),
     );
-    return f(composer);
+    return composer;
+  }
+
+  $$BoardsTableAnnotationComposer get linkedBoardId {
+    final $$BoardsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedBoardId,
+      referencedTable: $db.boards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BoardsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
   }
 
   Expression<T> attachmentsRefs<T extends Object>(
@@ -4156,7 +4672,8 @@ class $$PinsTableTableManager
           PinEntity,
           PrefetchHooks Function({
             bool boardId,
-            bool tasksRefs,
+            bool parentFrameId,
+            bool linkedBoardId,
             bool attachmentsRefs,
           })
         > {
@@ -4184,6 +4701,8 @@ class $$PinsTableTableManager
                 Value<double> rotation = const Value.absent(),
                 Value<String?> colorTag = const Value.absent(),
                 Value<String?> content = const Value.absent(),
+                Value<String?> parentFrameId = const Value.absent(),
+                Value<String?> linkedBoardId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4199,6 +4718,8 @@ class $$PinsTableTableManager
                 rotation: rotation,
                 colorTag: colorTag,
                 content: content,
+                parentFrameId: parentFrameId,
+                linkedBoardId: linkedBoardId,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 rowid: rowid,
@@ -4216,6 +4737,8 @@ class $$PinsTableTableManager
                 Value<double> rotation = const Value.absent(),
                 Value<String?> colorTag = const Value.absent(),
                 Value<String?> content = const Value.absent(),
+                Value<String?> parentFrameId = const Value.absent(),
+                Value<String?> linkedBoardId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4231,6 +4754,8 @@ class $$PinsTableTableManager
                 rotation: rotation,
                 colorTag: colorTag,
                 content: content,
+                parentFrameId: parentFrameId,
+                linkedBoardId: linkedBoardId,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 rowid: rowid,
@@ -4242,11 +4767,15 @@ class $$PinsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({boardId = false, tasksRefs = false, attachmentsRefs = false}) {
+              ({
+                boardId = false,
+                parentFrameId = false,
+                linkedBoardId = false,
+                attachmentsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
-                    if (tasksRefs) db.tasks,
                     if (attachmentsRefs) db.attachments,
                   ],
                   addJoins:
@@ -4278,28 +4807,37 @@ class $$PinsTableTableManager
                                   )
                                   as T;
                         }
+                        if (parentFrameId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.parentFrameId,
+                                    referencedTable: $$PinsTableReferences
+                                        ._parentFrameIdTable(db),
+                                    referencedColumn: $$PinsTableReferences
+                                        ._parentFrameIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (linkedBoardId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.linkedBoardId,
+                                    referencedTable: $$PinsTableReferences
+                                        ._linkedBoardIdTable(db),
+                                    referencedColumn: $$PinsTableReferences
+                                        ._linkedBoardIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
                         return state;
                       },
                   getPrefetchedDataCallback: (items) async {
                     return [
-                      if (tasksRefs)
-                        await $_getPrefetchedData<
-                          PinEntity,
-                          $PinsTable,
-                          TaskEntity
-                        >(
-                          currentTable: table,
-                          referencedTable: $$PinsTableReferences
-                              ._tasksRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$PinsTableReferences(db, table, p0).tasksRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.pinId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
                       if (attachmentsRefs)
                         await $_getPrefetchedData<
                           PinEntity,
@@ -4342,7 +4880,8 @@ typedef $$PinsTableProcessedTableManager =
       PinEntity,
       PrefetchHooks Function({
         bool boardId,
-        bool tasksRefs,
+        bool parentFrameId,
+        bool linkedBoardId,
         bool attachmentsRefs,
       })
     >;
@@ -4351,6 +4890,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       required String id,
       Value<String?> pinId,
       Value<String?> boardId,
+      Value<String?> groupPinId,
       required String title,
       Value<String?> notes,
       Value<DateTime?> dueDate,
@@ -4360,6 +4900,8 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<String?> recurrenceParentId,
       Value<String?> recurrenceRule,
       Value<String?> calendarEventId,
+      Value<DateTime> createdAt,
+      Value<DateTime> modifiedAt,
       Value<int> rowid,
     });
 typedef $$TasksTableUpdateCompanionBuilder =
@@ -4367,6 +4909,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String?> pinId,
       Value<String?> boardId,
+      Value<String?> groupPinId,
       Value<String> title,
       Value<String?> notes,
       Value<DateTime?> dueDate,
@@ -4376,6 +4919,8 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<String?> recurrenceParentId,
       Value<String?> recurrenceRule,
       Value<String?> calendarEventId,
+      Value<DateTime> createdAt,
+      Value<DateTime> modifiedAt,
       Value<int> rowid,
     });
 
@@ -4411,6 +4956,23 @@ final class $$TasksTableReferences
       $_db.boards,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_boardIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PinsTable _groupPinIdTable(_$AppDatabase db) =>
+      db.pins.createAlias('tasks__group_pin_id__pins__id');
+
+  $$PinsTableProcessedTableManager? get groupPinId {
+    final $_column = $_itemColumn<String>('group_pin_id');
+    if ($_column == null) return null;
+    final manager = $$PinsTableTableManager(
+      $_db,
+      $_db.pins,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_groupPinIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -4488,6 +5050,16 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get modifiedAt => $composableBuilder(
+    column: $table.modifiedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$PinsTableFilterComposer get pinId {
     final $$PinsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4525,6 +5097,29 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
           }) => $$BoardsTableFilterComposer(
             $db: $db,
             $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PinsTableFilterComposer get groupPinId {
+    final $$PinsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupPinId,
+      referencedTable: $db.pins,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PinsTableFilterComposer(
+            $db: $db,
+            $table: $db.pins,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4612,6 +5207,16 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get modifiedAt => $composableBuilder(
+    column: $table.modifiedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$PinsTableOrderingComposer get pinId {
     final $$PinsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4649,6 +5254,29 @@ class $$TasksTableOrderingComposer
           }) => $$BoardsTableOrderingComposer(
             $db: $db,
             $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PinsTableOrderingComposer get groupPinId {
+    final $$PinsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupPinId,
+      referencedTable: $db.pins,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PinsTableOrderingComposer(
+            $db: $db,
+            $table: $db.pins,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4724,6 +5352,14 @@ class $$TasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get modifiedAt => $composableBuilder(
+    column: $table.modifiedAt,
+    builder: (column) => column,
+  );
+
   $$PinsTableAnnotationComposer get pinId {
     final $$PinsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -4761,6 +5397,29 @@ class $$TasksTableAnnotationComposer
           }) => $$BoardsTableAnnotationComposer(
             $db: $db,
             $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PinsTableAnnotationComposer get groupPinId {
+    final $$PinsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupPinId,
+      referencedTable: $db.pins,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PinsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pins,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4810,6 +5469,7 @@ class $$TasksTableTableManager
           PrefetchHooks Function({
             bool pinId,
             bool boardId,
+            bool groupPinId,
             bool recurrenceParentId,
           })
         > {
@@ -4829,6 +5489,7 @@ class $$TasksTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String?> pinId = const Value.absent(),
                 Value<String?> boardId = const Value.absent(),
+                Value<String?> groupPinId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime?> dueDate = const Value.absent(),
@@ -4838,11 +5499,14 @@ class $$TasksTableTableManager
                 Value<String?> recurrenceParentId = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
                 Value<String?> calendarEventId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion(
                 id: id,
                 pinId: pinId,
                 boardId: boardId,
+                groupPinId: groupPinId,
                 title: title,
                 notes: notes,
                 dueDate: dueDate,
@@ -4852,6 +5516,8 @@ class $$TasksTableTableManager
                 recurrenceParentId: recurrenceParentId,
                 recurrenceRule: recurrenceRule,
                 calendarEventId: calendarEventId,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4859,6 +5525,7 @@ class $$TasksTableTableManager
                 required String id,
                 Value<String?> pinId = const Value.absent(),
                 Value<String?> boardId = const Value.absent(),
+                Value<String?> groupPinId = const Value.absent(),
                 required String title,
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime?> dueDate = const Value.absent(),
@@ -4868,11 +5535,14 @@ class $$TasksTableTableManager
                 Value<String?> recurrenceParentId = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
                 Value<String?> calendarEventId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion.insert(
                 id: id,
                 pinId: pinId,
                 boardId: boardId,
+                groupPinId: groupPinId,
                 title: title,
                 notes: notes,
                 dueDate: dueDate,
@@ -4882,6 +5552,8 @@ class $$TasksTableTableManager
                 recurrenceParentId: recurrenceParentId,
                 recurrenceRule: recurrenceRule,
                 calendarEventId: calendarEventId,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4891,7 +5563,12 @@ class $$TasksTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({pinId = false, boardId = false, recurrenceParentId = false}) {
+              ({
+                pinId = false,
+                boardId = false,
+                groupPinId = false,
+                recurrenceParentId = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [],
@@ -4937,6 +5614,19 @@ class $$TasksTableTableManager
                                   )
                                   as T;
                         }
+                        if (groupPinId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.groupPinId,
+                                    referencedTable: $$TasksTableReferences
+                                        ._groupPinIdTable(db),
+                                    referencedColumn: $$TasksTableReferences
+                                        ._groupPinIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
                         if (recurrenceParentId) {
                           state =
                               state.withJoin(
@@ -4977,6 +5667,7 @@ typedef $$TasksTableProcessedTableManager =
       PrefetchHooks Function({
         bool pinId,
         bool boardId,
+        bool groupPinId,
         bool recurrenceParentId,
       })
     >;
@@ -5347,6 +6038,10 @@ typedef $$ConnectorsTableCreateCompanionBuilder =
       required String boardId,
       required String fromPinId,
       required String toPinId,
+      Value<String?> label,
+      Value<String> style,
+      Value<double?> bendOffsetX,
+      Value<double?> bendOffsetY,
       Value<int> rowid,
     });
 typedef $$ConnectorsTableUpdateCompanionBuilder =
@@ -5355,6 +6050,10 @@ typedef $$ConnectorsTableUpdateCompanionBuilder =
       Value<String> boardId,
       Value<String> fromPinId,
       Value<String> toPinId,
+      Value<String?> label,
+      Value<String> style,
+      Value<double?> bendOffsetX,
+      Value<double?> bendOffsetY,
       Value<int> rowid,
     });
 
@@ -5425,6 +6124,26 @@ class $$ConnectorsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get style => $composableBuilder(
+    column: $table.style,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get bendOffsetX => $composableBuilder(
+    column: $table.bendOffsetX,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get bendOffsetY => $composableBuilder(
+    column: $table.bendOffsetY,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5512,6 +6231,26 @@ class $$ConnectorsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get style => $composableBuilder(
+    column: $table.style,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get bendOffsetX => $composableBuilder(
+    column: $table.bendOffsetX,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get bendOffsetY => $composableBuilder(
+    column: $table.bendOffsetY,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$BoardsTableOrderingComposer get boardId {
     final $$BoardsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -5593,6 +6332,22 @@ class $$ConnectorsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get style =>
+      $composableBuilder(column: $table.style, builder: (column) => column);
+
+  GeneratedColumn<double> get bendOffsetX => $composableBuilder(
+    column: $table.bendOffsetX,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get bendOffsetY => $composableBuilder(
+    column: $table.bendOffsetY,
+    builder: (column) => column,
+  );
 
   $$BoardsTableAnnotationComposer get boardId {
     final $$BoardsTableAnnotationComposer composer = $composerBuilder(
@@ -5696,12 +6451,20 @@ class $$ConnectorsTableTableManager
                 Value<String> boardId = const Value.absent(),
                 Value<String> fromPinId = const Value.absent(),
                 Value<String> toPinId = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                Value<String> style = const Value.absent(),
+                Value<double?> bendOffsetX = const Value.absent(),
+                Value<double?> bendOffsetY = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConnectorsCompanion(
                 id: id,
                 boardId: boardId,
                 fromPinId: fromPinId,
                 toPinId: toPinId,
+                label: label,
+                style: style,
+                bendOffsetX: bendOffsetX,
+                bendOffsetY: bendOffsetY,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5710,12 +6473,20 @@ class $$ConnectorsTableTableManager
                 required String boardId,
                 required String fromPinId,
                 required String toPinId,
+                Value<String?> label = const Value.absent(),
+                Value<String> style = const Value.absent(),
+                Value<double?> bendOffsetX = const Value.absent(),
+                Value<double?> bendOffsetY = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConnectorsCompanion.insert(
                 id: id,
                 boardId: boardId,
                 fromPinId: fromPinId,
                 toPinId: toPinId,
+                label: label,
+                style: style,
+                bendOffsetX: bendOffsetX,
+                bendOffsetY: bendOffsetY,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

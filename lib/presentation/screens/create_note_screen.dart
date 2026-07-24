@@ -8,6 +8,126 @@ import '../../core/theme.dart';
 
 import '../../data/providers.dart';
 
+/// A TextEditingController that renders basic markdown (bold, italic,
+/// underline, links) live as the user types, instead of showing the raw
+/// "**text**" characters as plain text. The raw markdown is still what's
+/// stored/saved - this only changes how it's *displayed* in the editor.
+class MarkdownController extends TextEditingController {
+  MarkdownController({super.text});
+
+  static final RegExp _pattern = RegExp(
+    r'(\*\*.*?\*\*)|(\*[^\*\n]+?\*)|(<u>.*?</u>)|(\[[^\]]*?\]\([^\)]*?\))',
+    dotAll: true,
+  );
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final source = text;
+    if (source.isEmpty) {
+      return TextSpan(style: style, text: source);
+    }
+
+    final children = <TextSpan>[];
+    int cursor = 0;
+
+    for (final match in _pattern.allMatches(source)) {
+      if (match.start > cursor) {
+        children.add(
+          TextSpan(text: source.substring(cursor, match.start), style: style),
+        );
+      }
+
+      final token = match.group(0)!;
+      children.add(_styledSpan(token, style));
+      cursor = match.end;
+    }
+
+    if (cursor < source.length) {
+      children.add(TextSpan(text: source.substring(cursor), style: style));
+    }
+
+    return TextSpan(style: style, children: children);
+  }
+
+  TextSpan _styledSpan(String token, TextStyle? base) {
+    final markerStyle = (base ?? const TextStyle()).copyWith(
+      color: EpicordiaColors.textTertiaryLight,
+    );
+
+    if (token.startsWith('**') && token.endsWith('**')) {
+      final inner = token.substring(2, token.length - 2);
+      return TextSpan(
+        children: [
+          TextSpan(text: '**', style: markerStyle),
+          TextSpan(
+            text: inner,
+            style: (base ?? const TextStyle()).copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          TextSpan(text: '**', style: markerStyle),
+        ],
+      );
+    }
+
+    if (token.startsWith('<u>') && token.endsWith('</u>')) {
+      final inner = token.substring(3, token.length - 4);
+      return TextSpan(
+        children: [
+          TextSpan(text: '<u>', style: markerStyle),
+          TextSpan(
+            text: inner,
+            style: (base ?? const TextStyle()).copyWith(
+              decoration: TextDecoration.underline,
+            ),
+          ),
+          TextSpan(text: '</u>', style: markerStyle),
+        ],
+      );
+    }
+
+    if (token.startsWith('[') && token.contains('](')) {
+      final closeBracket = token.indexOf(']');
+      final label = token.substring(1, closeBracket);
+      final url = token.substring(closeBracket + 2, token.length - 1);
+      return TextSpan(
+        children: [
+          TextSpan(text: '[', style: markerStyle),
+          TextSpan(
+            text: label,
+            style: (base ?? const TextStyle()).copyWith(
+              color: EpicordiaColors.blue600,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+          TextSpan(text: '](', style: markerStyle),
+          TextSpan(text: url, style: markerStyle),
+          TextSpan(text: ')', style: markerStyle),
+        ],
+      );
+    }
+
+    // Italic: single leading/trailing '*'
+    final inner = token.substring(1, token.length - 1);
+    return TextSpan(
+      children: [
+        TextSpan(text: '*', style: markerStyle),
+        TextSpan(
+          text: inner,
+          style: (base ?? const TextStyle()).copyWith(
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        TextSpan(text: '*', style: markerStyle),
+      ],
+    );
+  }
+}
+
 class CreateNoteScreen extends ConsumerStatefulWidget {
   final String? noteId;
   const CreateNoteScreen({super.key, this.noteId});
@@ -18,12 +138,24 @@ class CreateNoteScreen extends ConsumerStatefulWidget {
 
 class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   final _titleController = TextEditingController();
-  final _bodyController = TextEditingController();
+  final _bodyController = MarkdownController();
+  final _bodyFocusNode = FocusNode();
+
+  // The TextField reports an invalid (-1,-1) selection the instant it loses
+  // focus (e.g. when a toolbar button is tapped), so we cache the last known
+  // good selection to fall back on.
+  TextSelection _lastSelection = const TextSelection.collapsed(offset: 0);
+
   PinEntity? _existingNote;
 
   @override
   void initState() {
     super.initState();
+    _bodyController.addListener(() {
+      if (_bodyController.selection.isValid) {
+        _lastSelection = _bodyController.selection;
+      }
+    });
     if (widget.noteId != null) {
       _loadExistingNote();
     }
@@ -36,7 +168,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         _existingNote = note;
         final lines = (note.content ?? '').split('\n');
         _titleController.text = lines.isNotEmpty ? lines[0] : '';
-        _bodyController.text = lines.length > 1 ? lines.sublist(1).join('\n').trim() : '';
+        _bodyController.text = lines.length > 1
+            ? lines.sublist(1).join('\n').trim()
+            : '';
       });
     }
   }
@@ -45,6 +179,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
+    _bodyFocusNode.dispose();
     super.dispose();
   }
 
@@ -61,7 +196,10 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete', style: TextStyle(color: EpicordiaColors.errorLight)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: EpicordiaColors.errorLight),
+            ),
           ),
         ],
       ),
@@ -79,7 +217,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 
     final content = title.isNotEmpty ? '$title\n\n$body' : body;
     if (widget.noteId != null && _existingNote != null) {
-      await ref.read(pinRepositoryProvider).updatePin(
+      await ref
+          .read(pinRepositoryProvider)
+          .updatePin(
             _existingNote!.copyWith(
               content: drift.Value(content),
               modifiedAt: DateTime.now(),
@@ -100,13 +240,20 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     if (mounted) context.go('/notes');
   }
 
-  void _applyFormat(String prefix, String suffix, {bool isLineStart = false}) {
+  /// Selection to use for a formatting action. Falls back to the last known
+  /// good selection when the field has lost focus (e.g. tapping a toolbar
+  /// button), instead of bailing out on an invalid (-1,-1) selection.
+  TextSelection _currentSelection() {
     final selection = _bodyController.selection;
-    if (!selection.isValid) return;
+    return selection.isValid ? selection : _lastSelection;
+  }
+
+  void _applyFormat(String prefix, String suffix, {bool isLineStart = false}) {
+    final selection = _currentSelection();
 
     final text = _bodyController.text;
-    final start = selection.start;
-    final end = selection.end;
+    final start = selection.start.clamp(0, text.length);
+    final end = selection.end.clamp(0, text.length);
 
     if (isLineStart) {
       int lineStart = start;
@@ -125,10 +272,13 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         cursorOffset = lineStart + newLine.length;
       }
 
+      final newText = text.replaceRange(lineStart, end, newLine);
       _bodyController.value = TextEditingValue(
-        text: text.replaceRange(lineStart, end, newLine),
+        text: newText,
         selection: TextSelection.collapsed(offset: cursorOffset),
       );
+      _lastSelection = _bodyController.selection;
+      _bodyFocusNode.requestFocus();
       return;
     }
 
@@ -136,14 +286,18 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 
     if (selectedText.isEmpty) {
       final replacement = prefix + suffix;
+      final newText = text.replaceRange(start, end, replacement);
       _bodyController.value = TextEditingValue(
-        text: text.replaceRange(start, end, replacement),
+        text: newText,
         selection: TextSelection.collapsed(offset: start + prefix.length),
       );
+      _lastSelection = _bodyController.selection;
+      _bodyFocusNode.requestFocus();
       return;
     }
 
-    final alreadyWrapped = selectedText.startsWith(prefix) &&
+    final alreadyWrapped =
+        selectedText.startsWith(prefix) &&
         selectedText.endsWith(suffix) &&
         selectedText.length >= prefix.length + suffix.length;
 
@@ -152,30 +306,38 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         prefix.length,
         selectedText.length - suffix.length,
       );
+      final newText = text.replaceRange(start, end, inner);
       _bodyController.value = TextEditingValue(
-        text: text.replaceRange(start, end, inner),
-        selection: TextSelection(baseOffset: start, extentOffset: start + inner.length),
+        text: newText,
+        selection: TextSelection(
+          baseOffset: start,
+          extentOffset: start + inner.length,
+        ),
       );
+      _lastSelection = _bodyController.selection;
+      _bodyFocusNode.requestFocus();
       return;
     }
 
     final replacement = prefix + selectedText + suffix;
+    final newText = text.replaceRange(start, end, replacement);
     _bodyController.value = TextEditingValue(
-      text: text.replaceRange(start, end, replacement),
+      text: newText,
       selection: TextSelection(
         baseOffset: start + prefix.length,
         extentOffset: start + prefix.length + selectedText.length,
       ),
     );
+    _lastSelection = _bodyController.selection;
+    _bodyFocusNode.requestFocus();
   }
 
   void _insertLink() {
-    final selection = _bodyController.selection;
-    if (!selection.isValid) return;
+    final selection = _currentSelection();
 
     final text = _bodyController.text;
-    final start = selection.start;
-    final end = selection.end;
+    final start = selection.start.clamp(0, text.length);
+    final end = selection.end.clamp(0, text.length);
     final selectedText = text.substring(start, end);
 
     final urlController = TextEditingController(text: 'https://');
@@ -185,7 +347,10 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Insert Link', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          title: const Text(
+            'Insert Link',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -221,12 +386,17 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                 if (linkUrl.isNotEmpty) {
                   final displayName = linkText.isNotEmpty ? linkText : linkUrl;
                   final replacement = '[$displayName]($linkUrl)';
+                  final newText = text.replaceRange(start, end, replacement);
                   _bodyController.value = TextEditingValue(
-                    text: text.replaceRange(start, end, replacement),
-                    selection: TextSelection.collapsed(offset: start + replacement.length),
+                    text: newText,
+                    selection: TextSelection.collapsed(
+                      offset: start + replacement.length,
+                    ),
                   );
+                  _lastSelection = _bodyController.selection;
                 }
                 Navigator.of(context).pop();
+                _bodyFocusNode.requestFocus();
               },
               child: const Text('Insert'),
             ),
@@ -263,7 +433,10 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         actions: [
           if (isEditing)
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: EpicordiaColors.errorLight),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: EpicordiaColors.errorLight,
+              ),
               onPressed: _delete,
             ),
           TextButton(
@@ -311,6 +484,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
               Expanded(
                 child: TextField(
                   controller: _bodyController,
+                  focusNode: _bodyFocusNode,
                   autofocus: true,
                   maxLines: null,
                   expands: true,
@@ -332,42 +506,39 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                   ),
                 ),
               ),
-               Container(
-                 padding: const EdgeInsets.symmetric(vertical: 8),
-                 decoration: const BoxDecoration(
-                   border: Border(
-                     top: BorderSide(color: EpicordiaColors.borderSubtleLight),
-                   ),
-                 ),
-                 child: Row(
-                   children: [
-                     _FmtButton(
-                       icon: Icons.format_bold,
-                       onTap: () => _applyFormat('**', '**'),
-                     ),
-                     _FmtButton(
-                       icon: Icons.format_italic,
-                       onTap: () => _applyFormat('*', '*'),
-                     ),
-                     _FmtButton(
-                       icon: Icons.format_underline,
-                       onTap: () => _applyFormat('<u>', '</u>'),
-                     ),
-                     _FmtButton(
-                       icon: Icons.format_list_bulleted,
-                       onTap: () => _applyFormat('- ', '', isLineStart: true),
-                     ),
-                     _FmtButton(
-                       icon: Icons.format_list_numbered,
-                       onTap: () => _applyFormat('1. ', '', isLineStart: true),
-                     ),
-                     _FmtButton(
-                       icon: Icons.link,
-                       onTap: _insertLink,
-                     ),
-                   ],
-                 ),
-               ),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: EpicordiaColors.borderSubtleLight),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    _FmtButton(
+                      icon: Icons.format_bold,
+                      onTap: () => _applyFormat('**', '**'),
+                    ),
+                    _FmtButton(
+                      icon: Icons.format_italic,
+                      onTap: () => _applyFormat('*', '*'),
+                    ),
+                    _FmtButton(
+                      icon: Icons.format_underline,
+                      onTap: () => _applyFormat('<u>', '</u>'),
+                    ),
+                    _FmtButton(
+                      icon: Icons.format_list_bulleted,
+                      onTap: () => _applyFormat('- ', '', isLineStart: true),
+                    ),
+                    _FmtButton(
+                      icon: Icons.format_list_numbered,
+                      onTap: () => _applyFormat('1. ', '', isLineStart: true),
+                    ),
+                    _FmtButton(icon: Icons.link, onTap: _insertLink),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -385,6 +556,11 @@ class _FmtButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      // Critical: prevents the button from stealing focus away from the
+      // body TextField. Without this, tapping the button collapses the
+      // TextField's selection to (-1,-1) *before* onTap runs, so
+      // _applyFormat() would silently no-op.
+      canRequestFocus: false,
       borderRadius: BorderRadius.circular(6),
       child: Padding(
         padding: const EdgeInsets.all(8),

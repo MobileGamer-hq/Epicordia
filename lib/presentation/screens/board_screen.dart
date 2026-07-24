@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../data/database/database.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../widgets/features/board_canvas.dart';
+
 
 class BoardScreen extends ConsumerStatefulWidget {
   final String boardId;
@@ -20,18 +22,37 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   String _viewMode = 'Canvas';
   final GlobalKey<BoardCanvasState> _canvasKey = GlobalKey<BoardCanvasState>();
 
-  Future<void> _addNote() async {
-    final repo = ref.read(pinRepositoryProvider);
-    final pins = await repo.watchPinsForBoard(widget.boardId).first;
-    final offset = 80.0 + (pins.length % 6) * 32.0;
-    await repo.createNoteOnBoard(widget.boardId, x: offset, y: offset);
-  }
+  Future<void> _addNote() async => _addPin('note', width: 220, height: 160, content: '');
+  Future<void> _addTask() async => _addPin('task', width: 240, height: 110);
+  Future<void> _addChecklist() async => _addPin('checklist', width: 220, height: 180, content: '{"items":[]}');
+  Future<void> _addDrawing() async => _addPin('drawing', width: 240, height: 200, content: '{"strokes":[]}');
+  Future<void> _addLink() async => _addPin('link', width: 240, height: 100, content: '{"url":""}');
+  Future<void> _addImage() async => _addPin('image', width: 240, height: 200);
+  Future<void> _addHeading() async => _addPin('heading', width: 260, height: 48, content: '{"text":"New Heading","style":"heading"}');
+  Future<void> _addFrame() async => _addPin('frame', width: 320, height: 280, content: '{"label":"Group"}');
 
-  Future<void> _addTask() async {
+  Future<void> _addPin(
+    String type, {
+    double width = 220,
+    double height = 160,
+    String? content,
+  }) async {
     final repo = ref.read(pinRepositoryProvider);
     final pins = await repo.watchPinsForBoard(widget.boardId).first;
-    final offset = 120.0 + (pins.length % 6) * 32.0;
-    await repo.createTaskOnBoard(widget.boardId, x: offset, y: offset);
+    final offset = 80.0 + (pins.length % 8) * 28.0;
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    await repo.createPin(
+      PinsCompanion.insert(
+        id: id,
+        boardId: Value(widget.boardId),
+        type: type,
+        x: Value(offset),
+        y: Value(offset),
+        width: Value(width),
+        height: Value(height),
+        content: Value(content),
+      ),
+    );
   }
 
   Future<void> _deleteSelection() async {
@@ -45,9 +66,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       appBar: _BoardAppBar(boardId: widget.boardId),
       body: Column(
         children: [
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _ViewToggle(
                   selected: _viewMode,
@@ -57,32 +80,32 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3CD),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE5A030).withValues(alpha: 0.4)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.inbox_outlined, size: 16, color: Color(0xFFB5730A)),
-                  SizedBox(width: 8),
-                  Text(
-                    '4 items unsorted',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFB5730A),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 20),
+          //   child: Container(
+          //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          //     decoration: BoxDecoration(
+          //       color: const Color(0xFFFFF3CD),
+          //       borderRadius: BorderRadius.circular(10),
+          //       border: Border.all(color: const Color(0xFFE5A030).withValues(alpha: 0.4)),
+          //     ),
+          //     child: const Row(
+          //       mainAxisSize: MainAxisSize.min,
+          //       children: [
+          //         Icon(Icons.inbox_outlined, size: 16, color: Color(0xFFB5730A)),
+          //         SizedBox(width: 8),
+          //         Text(
+          //           '4 items unsorted',
+          //           style: TextStyle(
+          //             fontSize: 13,
+          //             fontWeight: FontWeight.w600,
+          //             color: Color(0xFFB5730A),
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
           const SizedBox(height: 8),
           Expanded(
             child: Stack(
@@ -106,6 +129,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     child: _CanvasToolbar(
                       onAddNote: _addNote,
                       onAddTask: _addTask,
+                      onAddChecklist: _addChecklist,
+                      onAddDrawing: _addDrawing,
+                      onAddLink: _addLink,
+                      onAddImage: _addImage,
+                      onAddHeading: _addHeading,
+                      onAddFrame: _addFrame,
                       onDelete: _deleteSelection,
                     ),
                   ),
@@ -338,7 +367,7 @@ class _BoardListView extends ConsumerWidget {
         return ListView.separated(
           padding: const EdgeInsets.all(20),
           itemCount: filtered.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final pin = filtered[index];
             final preview = pin.content?.split('\n').first ?? pin.type;
@@ -364,99 +393,106 @@ class _BoardListView extends ConsumerWidget {
 class _CanvasToolbar extends StatelessWidget {
   final VoidCallback onAddNote;
   final VoidCallback onAddTask;
+  final VoidCallback onAddChecklist;
+  final VoidCallback onAddDrawing;
+  final VoidCallback onAddLink;
+  final VoidCallback onAddImage;
+  final VoidCallback onAddHeading;
+  final VoidCallback onAddFrame;
   final VoidCallback onDelete;
 
   const _CanvasToolbar({
     required this.onAddNote,
     required this.onAddTask,
+    required this.onAddChecklist,
+    required this.onAddDrawing,
+    required this.onAddLink,
+    required this.onAddImage,
+    required this.onAddHeading,
+    required this.onAddFrame,
     required this.onDelete,
   });
 
-  static const _tools = [
-    (Icons.sticky_note_2_outlined, _ToolAction.note),
-    (Icons.check_circle_outline, _ToolAction.task),
-    (Icons.link, _ToolAction.none),
-    (Icons.image_outlined, _ToolAction.none),
-    (Icons.draw_outlined, _ToolAction.none),
-    (Icons.show_chart, _ToolAction.none),
-    (Icons.crop_free, _ToolAction.none),
-    (Icons.delete_outline, _ToolAction.delete),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final addTools = [
+      (Icons.sticky_note_2_outlined, 'Note', onAddNote),
+      (Icons.check_circle_outline, 'Task', onAddTask),
+      (Icons.checklist_rounded, 'Checklist', onAddChecklist),
+      (Icons.draw_outlined, 'Drawing', onAddDrawing),
+      (Icons.link_rounded, 'Link', onAddLink),
+      (Icons.image_outlined, 'Image', onAddImage),
+      (Icons.title_rounded, 'Heading', onAddHeading),
+      (Icons.crop_free_rounded, 'Frame', onAddFrame),
+    ];
+
     return Container(
       decoration: BoxDecoration(
         color: EpicordiaColors.surfaceCardLight,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 16,
+            offset: const Offset(2, 4),
           ),
         ],
+        border: Border.all(color: EpicordiaColors.borderSubtleLight, width: 0.8),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ...List.generate(_tools.length, (i) {
-            final (icon, action) = _tools[i];
-            final showDivider = i == 4;
-            final isDanger = action == _ToolAction.delete;
-            return Column(
-              children: [
-                if (showDivider)
-                  const Divider(height: 1, thickness: 1, color: EpicordiaColors.borderSubtleLight),
-                _ToolButton(
-                  icon: icon,
-                  isDanger: isDanger,
-                  onTap: () {
-                    switch (action) {
-                      case _ToolAction.note:
-                        onAddNote();
-                      case _ToolAction.task:
-                        onAddTask();
-                      case _ToolAction.delete:
-                        onDelete();
-                      case _ToolAction.none:
-                        break;
-                    }
-                  },
-                ),
-              ],
-            );
+          const SizedBox(height: 4),
+          ...addTools.map((t) {
+            final (icon, label, action) = t;
+            return _ToolButton(icon: icon, tooltip: label, onTap: action);
           }),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Divider(height: 8, thickness: 1, color: EpicordiaColors.borderSubtleLight),
+          ),
+          _ToolButton(
+            icon: Icons.delete_outline_rounded,
+            tooltip: 'Delete selected',
+            onTap: onDelete,
+            isDanger: true,
+          ),
+          const SizedBox(height: 4),
         ],
       ),
     );
   }
 }
 
-enum _ToolAction { note, task, delete, none }
-
 class _ToolButton extends StatelessWidget {
   final IconData icon;
+  final String tooltip;
   final bool isDanger;
   final VoidCallback onTap;
 
   const _ToolButton({
     required this.icon,
+    required this.tooltip,
     this.isDanger = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Icon(
-          icon,
-          size: 20,
-          color: isDanger ? EpicordiaColors.errorLight : EpicordiaColors.textSecondaryLight,
+    return Tooltip(
+      message: tooltip,
+      preferBelow: false,
+      waitDuration: const Duration(milliseconds: 400),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(
+            icon,
+            size: 20,
+            color: isDanger ? EpicordiaColors.errorLight : EpicordiaColors.textSecondaryLight,
+          ),
         ),
       ),
     );

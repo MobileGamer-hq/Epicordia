@@ -28,6 +28,8 @@ class Pins extends Table {
   RealColumn get rotation => real().withDefault(const Constant(0.0))();
   TextColumn get colorTag => text().nullable()();
   TextColumn get content => text().nullable()(); // JSON or raw string depending on type
+  TextColumn get parentFrameId => text().nullable().references(Pins, #id, onDelete: KeyAction.setNull)();
+  TextColumn get linkedBoardId => text().nullable().references(Boards, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get modifiedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -40,6 +42,7 @@ class Tasks extends Table {
   TextColumn get id => text()();
   TextColumn get pinId => text().nullable().references(Pins, #id, onDelete: KeyAction.setNull)();
   TextColumn get boardId => text().nullable().references(Boards, #id, onDelete: KeyAction.cascade)();
+  TextColumn get groupPinId => text().nullable().references(Pins, #id, onDelete: KeyAction.cascade)();
   TextColumn get title => text().withLength(min: 1)();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get dueDate => dateTime().nullable()();
@@ -49,6 +52,8 @@ class Tasks extends Table {
   TextColumn get recurrenceParentId => text().nullable().references(Tasks, #id, onDelete: KeyAction.cascade)();
   TextColumn get recurrenceRule => text().nullable()();
   TextColumn get calendarEventId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get modifiedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -69,6 +74,10 @@ class Connectors extends Table {
   TextColumn get boardId => text().references(Boards, #id, onDelete: KeyAction.cascade)();
   TextColumn get fromPinId => text().references(Pins, #id, onDelete: KeyAction.cascade)();
   TextColumn get toPinId => text().references(Pins, #id, onDelete: KeyAction.cascade)();
+  TextColumn get label => text().nullable()();
+  TextColumn get style => text().withDefault(const Constant('straight'))();
+  RealColumn get bendOffsetX => real().nullable()();
+  RealColumn get bendOffsetY => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -85,3 +94,4 @@ class Attachments extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+

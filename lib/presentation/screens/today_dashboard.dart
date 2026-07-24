@@ -93,8 +93,8 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
     final greeting = now.hour < 12
         ? 'Good morning'
         : now.hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+        ? 'Good afternoon'
+        : 'Good evening';
 
     return ResponsiveScaffold(
       appBar: EpicordiaAppBar(
@@ -147,7 +147,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
               ),
 
               const SizedBox(height: 28),
-          
+
               // Unsorted Tray
               _SectionHeader(title: 'Recent Notes', actionLabel: 'View All', onAction: () => context.push('/notes')),
               const SizedBox(height: 12),
@@ -189,9 +189,9 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                   );
                 },
               ),
-          
+
               const SizedBox(height: 28),
-          
+
               // Today Tasks
               _SectionHeader(title: 'Today', actionLabel: 'View All', onAction: () => context.push('/tasks')),
               const SizedBox(height: 12),
@@ -230,47 +230,47 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                   );
                 },
               ),
-          
-              const SizedBox(height: 28),
-          
-              // ── Recent Boards ────────────────────────────────────
-              _SectionHeader(title: 'Recent Boards', actionLabel: 'View All', onAction: () => context.push('/boards')),
-              const SizedBox(height: 12),
-              recentBoardsAsync.when(
-                loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-                error: (err, stack) => Text('Error: $err'),
-                data: (boards) {
-                  if (boards.isEmpty) {
-                    return _SectionEmptyState(
-                      icon: Icons.space_dashboard_outlined,
-                      title: 'No recent boards to put there',
-                      subtitle: 'You can get started creating with the button below.',
-                      createLabel: 'Create Board',
-                      onCreate: () => context.push('/create/board'),
-                    );
-                  }
 
-                  // Take most recent 3 boards
-                  final recent = boards.toList()..sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
-                  final top3 = recent.take(3).toList();
-
-                  return Column(
-                    children: top3.map((board) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: GestureDetector(
-                          onTap: () => context.push('/board/${board.id}'),
-                          child: _BoardCard(
-                            title: board.title,
-                            meta: 'Modified ${_formatModified(board.modifiedAt)}',
-                            color: _getBoardColor(board.id),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
+              // const SizedBox(height: 28),
+              //
+              // // ── Recent Boards ────────────────────────────────────
+              // _SectionHeader(title: 'Recent Boards', actionLabel: 'View All', onAction: () => context.push('/boards')),
+              // const SizedBox(height: 12),
+              // recentBoardsAsync.when(
+              //   loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+              //   error: (err, stack) => Text('Error: $err'),
+              //   data: (boards) {
+              //     if (boards.isEmpty) {
+              //       return _SectionEmptyState(
+              //         icon: Icons.space_dashboard_outlined,
+              //         title: 'No recent boards to put there',
+              //         subtitle: 'You can get started creating with the button below.',
+              //         createLabel: 'Create Board',
+              //         onCreate: () => context.push('/create/board'),
+              //       );
+              //     }
+              //
+              //     // Take most recent 3 boards
+              //     final recent = boards.toList()..sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+              //     final top3 = recent.take(3).toList();
+              //
+              //     return Column(
+              //       children: top3.map((board) {
+              //         return Padding(
+              //           padding: const EdgeInsets.only(bottom: 12),
+              //           child: GestureDetector(
+              //             onTap: () => context.push('/board/${board.id}'),
+              //             child: _BoardCard(
+              //               title: board.title,
+              //               meta: 'Modified ${_formatModified(board.modifiedAt)}',
+              //               color: _getBoardColor(board.id),
+              //             ),
+              //           ),
+              //         );
+              //       }).toList(),
+              //     );
+              //   },
+              // ),
               const SizedBox(height: 32),
             ],
           ),
@@ -646,7 +646,7 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
                             final currentDate = DateTime(date.year, date.month, date.day);
                             final isFuture = currentDate.isAfter(today);
                             final activityLevel = isFuture ? 0 : _getActivityLevel(date);
-                            
+
                             final isSelected = widget.selectedDate != null &&
                                 date.year == widget.selectedDate!.year &&
                                 date.month == widget.selectedDate!.month &&
@@ -697,10 +697,10 @@ class _HeatmapLegend extends StatelessWidget {
         const Text('Less', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
         const SizedBox(width: 4),
         ...([EpicordiaColors.borderSubtleLight, EpicordiaColors.blue200, EpicordiaColors.blue300, EpicordiaColors.blue400, EpicordiaColors.blue500].map((c) =>
-          Padding(
-            padding: const EdgeInsets.only(left: 3),
-            child: Container(width: 10, height: 10, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
-          ),
+            Padding(
+              padding: const EdgeInsets.only(left: 3),
+              child: Container(width: 10, height: 10, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
+            ),
         )),
         const SizedBox(width: 4),
         const Text('More', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),

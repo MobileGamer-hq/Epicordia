@@ -33,23 +33,22 @@ class EpicordiaCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (indicatorColor != null)
-                Container(width: 4, color: indicatorColor),
-              Expanded(
-                child: Padding(
-                  padding: padding,
-                  child: child,
-                ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (indicatorColor != null)
+              Container(width: 4, color: indicatorColor),
+            Expanded(
+              child: Padding(
+                padding: padding,
+                child: child,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+
 
     if (onTap != null) {
       return Material(

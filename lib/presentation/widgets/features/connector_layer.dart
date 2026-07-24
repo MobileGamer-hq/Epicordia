@@ -109,23 +109,23 @@ class ConnectorLayerPainter extends CustomPainter {
       final path = Path()..moveTo(start.dx, start.dy);
 
       double endAngle;
-      // Defaulting to straight for now, unless style is implemented.
-      // if (c.connector.style == ConnectorStyle.curved)
-      if (false) {
+      final isCurved = c.connector.style == 'curved';
+      if (isCurved) {
         final control = curveControlPoint(start, end);
         path.quadraticBezierTo(control.dx, control.dy, end.dx, end.dy);
-        endAngle = (end - control).direction; 
+        endAngle = (end - control).direction;
       } else {
         path.lineTo(end.dx, end.dy);
         endAngle = (end - start).direction;
       }
 
       canvas.drawPath(path, linePaint);
-      
+
       final fillPaint = Paint()
         ..color = linePaint.color
         ..style = PaintingStyle.fill;
       paintArrowhead(canvas, end, endAngle, fillPaint);
+
       
       // if (c.connector.label != null) _paintLabel(canvas, path, c.connector.label!);
     }

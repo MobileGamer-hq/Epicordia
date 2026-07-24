@@ -8,6 +8,16 @@ part 'task_dao.g.dart';
 class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   TaskDao(AppDatabase db) : super(db);
 
+  /// Watch the task linked to a specific canvas pin (pinId on the Tasks row).
+  Stream<TaskEntity?> watchTaskForPin(String pinId) {
+    return (select(tasks)..where((t) => t.pinId.equals(pinId))).watchSingleOrNull();
+  }
+
+  /// Watch all tasks belonging to a task-list card (groupPinId on the Tasks row).
+  Stream<List<TaskEntity>> watchTasksForGroupPin(String groupPinId) {
+    return (select(tasks)..where((t) => t.groupPinId.equals(groupPinId))).watch();
+  }
+
   Stream<List<TaskEntity>> watchTasksForBoard(String boardId) {
     return (select(tasks)..where((t) => t.boardId.equals(boardId))).watch();
   }
