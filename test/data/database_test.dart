@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:epicorida/data/database/database.dart';
+import 'package:epicordia/data/database/database.dart';
 
 void main() {
   late AppDatabase database;

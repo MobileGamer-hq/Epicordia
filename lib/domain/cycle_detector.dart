@@ -1,4 +1,4 @@
-import 'package:epicorida/data/database/database.dart';
+import 'package:epicordia/data/database/database.dart';
 
 bool createsCycle(String taskId, String dependsOnTaskId, List<TaskDependencyEntity> allDependencies) {
   // If a task depends on itself directly

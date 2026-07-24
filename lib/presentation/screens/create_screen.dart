@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/core/epicordia_brand.dart';
 import '../../core/theme.dart';
 
 /// The type-selector "Create" screen — routes to Note / Task / Board creation

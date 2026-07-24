@@ -58,11 +58,6 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
     return '$hour:$minute $ampm';
   }
 
-  Color _getBoardColor(String? boardId) {
-    if (boardId == null) return Colors.grey;
-    final colors = [const Color(0xFF8B9DC3), const Color(0xFFA8B4C8), const Color(0xFF6B7FA0), const Color(0xFF9EAAC4)];
-    return colors[boardId.hashCode % colors.length];
-  }
 
   void _showSearchScreen(BuildContext context) {
     Navigator.of(context).push(
@@ -87,8 +82,6 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
   Widget build(BuildContext context) {
     final unsortedNotesAsync = ref.watch(unsortedNotesProvider);
     final todayTasksAsync = ref.watch(tasksDueTodayProvider);
-    final recentBoardsAsync = ref.watch(allBoardsProvider);
-
     final now = DateTime.now();
     final greeting = now.hour < 12
         ? 'Good morning'
@@ -825,47 +818,6 @@ class _TodayTaskItem extends StatelessWidget {
                     decorationColor: EpicordiaColors.textTertiaryLight,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(meta, style: const TextStyle(fontSize: 12, color: EpicordiaColors.textTertiaryLight)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BoardCard extends StatelessWidget {
-  final String title;
-  final String meta;
-  final Color color;
-
-  const _BoardCard({required this.title, required this.meta, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return EpicordiaCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 110,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Center(
-              child: Icon(Icons.dashboard_outlined, size: 36, color: Colors.white.withValues(alpha: 0.5)),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
                 const SizedBox(height: 2),
                 Text(meta, style: const TextStyle(fontSize: 12, color: EpicordiaColors.textTertiaryLight)),
               ],

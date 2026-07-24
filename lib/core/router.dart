@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../presentation/screens/dashboard.dart';
 import '../presentation/screens/onboarding_screen.dart';
 import '../presentation/screens/today_dashboard.dart';
 import '../presentation/screens/boards_tab.dart';

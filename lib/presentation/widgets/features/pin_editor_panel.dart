@@ -5,11 +5,11 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:epicorida/core/theme.dart';
-import 'package:epicorida/data/database/database.dart';
-import 'package:epicorida/data/providers.dart';
-import 'package:epicorida/data/repository/pin_repository.dart';
-import 'package:epicorida/data/repository/task_repository.dart';
+import 'package:epicordia/core/theme.dart';
+import 'package:epicordia/data/database/database.dart';
+import 'package:epicordia/data/providers.dart';
+import 'package:epicordia/data/repository/pin_repository.dart';
+import 'package:epicordia/data/repository/task_repository.dart';
 
 
 // ---------------------------------------------------------------------------

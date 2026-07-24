@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:epicorida/data/database/database.dart';
-import 'package:epicorida/data/repository/task_repository.dart';
-import 'package:epicorida/data/repository/pin_repository.dart';
+import 'package:epicordia/data/database/database.dart';
+import 'package:epicordia/data/repository/task_repository.dart';
+import 'package:epicordia/data/repository/pin_repository.dart';
 import '../core/epicordia_button.dart';
 
 enum CaptureType { note, task }

@@ -13,7 +13,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Path;
 import 'package:flutter/material.dart' as material show Path;
 
-import 'package:epicorida/core/theme.dart';
+import 'package:epicordia/core/theme.dart';
 
 // ---------------------------------------------------------------------------
 // Data models

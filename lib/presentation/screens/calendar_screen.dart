@@ -7,8 +7,6 @@ import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/theme.dart';
 import 'today_dashboard.dart';
-import 'notes_tab.dart';
-import 'tasks_tab.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});

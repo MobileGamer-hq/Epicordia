@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/native.dart';
-import 'package:epicorida/data/database/database.dart';
-import 'package:epicorida/data/providers.dart';
-import 'package:epicorida/data/repository/board_repository.dart';
-import 'package:epicorida/domain/state/navigation_state.dart';
+import 'package:epicordia/data/database/database.dart';
+import 'package:epicordia/data/providers.dart';
+import 'package:epicordia/data/repository/board_repository.dart';
+import 'package:epicordia/domain/state/navigation_state.dart';
 
 void main() {
   test('BoardRepository and NavigationState integrate correctly', () async {
