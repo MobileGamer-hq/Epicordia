@@ -1,4 +1,4 @@
-package com.epicordia.app
+package com.epicordia.live
 
 import io.flutter.embedding.android.FlutterActivity
 
