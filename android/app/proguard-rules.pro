@@ -21,5 +21,7 @@
 
 # General rules
 -dontwarn kotlin.**
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable

@@ -19,7 +19,7 @@ class TodayDashboard extends ConsumerStatefulWidget {
 }
 
 class _TodayDashboardState extends ConsumerState<TodayDashboard> {
-  String _userName = 'Alex';
+  String _userName = 'Somto';
 
   @override
   void initState() {
