@@ -23,6 +23,10 @@ class PinRepository {
     return ref.watch(pinDaoProvider).watchPinsForBoard(boardId);
   }
 
+  Stream<List<PinEntity>> watchPinsForFrame(String frameId) {
+    return ref.watch(pinDaoProvider).watchPinsForFrame(frameId);
+  }
+
   Stream<List<PinEntity>> watchAllNotes() {
     return ref.watch(pinDaoProvider).watchAllNotes();
   }
@@ -31,6 +35,10 @@ class PinRepository {
     return ref.watch(pinDaoProvider).watchUnsortedNotes();
   }
 
+
+  Future<PinEntity?> getPin(String id) {
+    return ref.read(pinDaoProvider).getPin(id);
+  }
 
   Future<void> createPin(PinsCompanion pin) {
     return ref.read(pinDaoProvider).insertPin(pin);

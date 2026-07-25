@@ -36,24 +36,28 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return Scaffold(
-      backgroundColor: EpicordiaColors.surfaceAppLight,
+      backgroundColor: bgApp,
       appBar: AppBar(
-        backgroundColor: EpicordiaColors.surfaceAppLight,
+        backgroundColor: bgApp,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
           onPressed: () => context.go('/boards'),
         ),
-        title: const Text(
+        title: Text(
           'New Board',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
         ),
         actions: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme.dart';
+import 'core/theme_provider.dart';
 import 'core/router.dart';
 
 void main() {
@@ -13,12 +14,13 @@ class EpicordiaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Epicordia',
       theme: EpicordiaTheme.lightTheme,
       darkTheme: EpicordiaTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: goRouter,
       debugShowCheckedModeBanner: false,
     );

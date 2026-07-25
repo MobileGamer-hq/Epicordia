@@ -42,6 +42,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final tasksAsync = ref.watch(allTasksProvider);
     final notesAsync = ref.watch(allNotesProvider);
     final boardsAsync = ref.watch(allBoardsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
 
     final boardsMap = boardsAsync.value?.fold<Map<String, BoardEntity>>(
           {},
@@ -74,23 +82,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         [];
 
     return Scaffold(
-      backgroundColor: EpicordiaColors.surfaceAppLight,
+      backgroundColor: bgApp,
       appBar: AppBar(
-        backgroundColor: EpicordiaColors.surfaceAppLight,
+        backgroundColor: bgApp,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
           onPressed: () => context.go('/'),
         ),
-        title: const Text(
+        title: Text(
           'Interactive Calendar',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
         ),
       ),
@@ -109,9 +117,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: EpicordiaColors.surfaceCardLight,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                      border: Border.all(color: borderClr),
                     ),
                     child: ActivityHeatmap(
                       selectedDate: _selectedDate,
@@ -129,10 +137,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               // Date header
               Text(
                 _formatDateHeader(_selectedDate),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: EpicordiaColors.textPrimaryLight,
+                  color: textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -147,15 +155,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               Icon(
                                 Icons.calendar_today_outlined,
                                 size: 48,
-                                color: EpicordiaColors.textTertiaryLight.withValues(alpha: 0.5),
+                                color: textTertiary.withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 12),
-                              const Text(
+                              Text(
                                 'No tasks or notes for this date',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: EpicordiaColors.textSecondaryLight,
+                                  color: textSecondary,
                                 ),
                               ),
                             ],
@@ -165,14 +173,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           padding: const EdgeInsets.only(bottom: 40),
                           children: [
                             if (dayTasks.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                                 child: Text(
                                   'Tasks',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: EpicordiaColors.textTertiaryLight,
+                                    color: textTertiary,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -200,14 +208,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               const SizedBox(height: 12),
                             ],
                             if (dayNotes.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                                 child: Text(
                                   'Notes',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: EpicordiaColors.textTertiaryLight,
+                                    color: textTertiary,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -256,15 +264,20 @@ class CardTaskItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = task.status == 'done';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: EpicordiaColors.surfaceCardLight,
+          color: cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: EpicordiaColors.borderSubtleLight),
+          border: Border.all(color: borderClr),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,12 +290,12 @@ class CardTaskItem extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isCompleted
-                      ? EpicordiaColors.successLight
+                      ? (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight)
                       : Colors.transparent,
                   border: Border.all(
                     color: isCompleted
-                        ? EpicordiaColors.successLight
-                        : EpicordiaColors.borderStrongLight,
+                        ? (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight)
+                        : (isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight),
                     width: 1.5,
                   ),
                 ),
@@ -301,9 +314,9 @@ class CardTaskItem extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: EpicordiaColors.textPrimaryLight,
+                      color: textPrimary,
                       decoration: isCompleted ? TextDecoration.lineThrough : null,
-                      decorationColor: EpicordiaColors.textTertiaryLight,
+                      decorationColor: textTertiary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -347,33 +360,39 @@ class CardNoteItem extends StatelessWidget {
     final lines = (note.content ?? '').split('\n');
     final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
     final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final accentBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: EpicordiaColors.surfaceCardLight,
+          color: cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: EpicordiaColors.borderSubtleLight),
+          border: Border.all(color: borderClr),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               preview,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 height: 1.4,
               ),
               maxLines: 2,
@@ -382,10 +401,10 @@ class CardNoteItem extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Board: $boardTitle',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: EpicordiaColors.blue600,
+                color: accentBlue,
               ),
             ),
           ],

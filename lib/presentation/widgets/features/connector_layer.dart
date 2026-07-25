@@ -99,8 +99,8 @@ class ConnectorLayerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
-      ..color = colorScheme.outline // Map borderStrong to outline
-      ..strokeWidth = 2
+      ..color = colorScheme.primary
+      ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
     for (final c in connectors) {

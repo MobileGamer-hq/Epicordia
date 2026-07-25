@@ -146,6 +146,24 @@ class EpicordiaTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: EpicordiaColors.surfaceCardDark,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: EpicordiaColors.borderSubtleDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: EpicordiaColors.borderSubtleDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: EpicordiaColors.darkPrimary, width: 1.5),
+        ),
+        hintStyle: GoogleFonts.inter(fontSize: 14, color: EpicordiaColors.textTertiaryDark),
+      ),
     );
   }
 }

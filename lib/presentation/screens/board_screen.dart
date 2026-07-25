@@ -7,7 +7,9 @@ import '../../core/theme.dart';
 import '../../data/database/database.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
+import '../../data/repository/task_repository.dart';
 import '../widgets/features/board_canvas.dart';
+import '../widgets/features/pin_editor_panel.dart';
 
 
 class BoardScreen extends ConsumerStatefulWidget {
@@ -21,6 +23,8 @@ class BoardScreen extends ConsumerStatefulWidget {
 class _BoardScreenState extends ConsumerState<BoardScreen> {
   String _viewMode = 'Canvas';
   final GlobalKey<BoardCanvasState> _canvasKey = GlobalKey<BoardCanvasState>();
+
+  bool _isEditingPin = false;
 
   Future<void> _addNote() async => _addPin('note', width: 220, height: 160, content: '');
   Future<void> _addTask() async => _addPin('task', width: 240, height: 110);
@@ -61,12 +65,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceSunkenLight;
+
     return Scaffold(
-      backgroundColor: EpicordiaColors.surfaceSunkenLight,
+      backgroundColor: bgApp,
       appBar: _BoardAppBar(boardId: widget.boardId),
       body: Column(
         children: [
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
@@ -74,38 +80,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               children: [
                 _ViewToggle(
                   selected: _viewMode,
-                  options: const ['Canvas', 'List', 'Focus'],
+                  options: const ['Canvas', 'List', 'Focus', 'Kanban'],
                   onSelect: (v) => setState(() => _viewMode = v),
                 ),
               ],
             ),
           ),
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 20),
-          //   child: Container(
-          //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          //     decoration: BoxDecoration(
-          //       color: const Color(0xFFFFF3CD),
-          //       borderRadius: BorderRadius.circular(10),
-          //       border: Border.all(color: const Color(0xFFE5A030).withValues(alpha: 0.4)),
-          //     ),
-          //     child: const Row(
-          //       mainAxisSize: MainAxisSize.min,
-          //       children: [
-          //         Icon(Icons.inbox_outlined, size: 16, color: Color(0xFFB5730A)),
-          //         SizedBox(width: 8),
-          //         Text(
-          //           '4 items unsorted',
-          //           style: TextStyle(
-          //             fontSize: 13,
-          //             fontWeight: FontWeight.w600,
-          //             color: Color(0xFFB5730A),
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //   ),
-          // ),
           const SizedBox(height: 8),
           Expanded(
             child: Stack(
@@ -116,13 +96,16 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     boardId: widget.boardId,
                     onAddNote: _addNote,
                     onAddTask: _addTask,
+                    onEditStateChanged: (editing) => setState(() => _isEditingPin = editing),
                   )
+                else if (_viewMode == 'Kanban')
+                  _BoardKanbanView(boardId: widget.boardId)
                 else
                   _BoardListView(
                     boardId: widget.boardId,
                     tasksOnly: _viewMode == 'Focus',
                   ),
-                if (_viewMode == 'Canvas')
+                if (_viewMode == 'Canvas' && !_isEditingPin)
                   Positioned(
                     left: 12,
                     top: 20,
@@ -135,6 +118,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       onAddImage: _addImage,
                       onAddHeading: _addHeading,
                       onAddFrame: _addFrame,
+                      onAddConnector: () => _canvasKey.currentState?.toggleConnectorMode(),
                       onDelete: _deleteSelection,
                     ),
                   ),
@@ -157,9 +141,15 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final boardRepo = ref.read(boardRepositoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
 
     return Material(
-      color: EpicordiaColors.surfaceAppLight,
+      color: bg,
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -178,10 +168,10 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     IconButton(
                       tooltip: 'Back to boards',
                       onPressed: () => context.go('/boards'),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
-                        color: EpicordiaColors.textSecondaryLight,
+                        color: textSecondary,
                       ),
                     ),
                     Expanded(
@@ -206,10 +196,10 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                               title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: EpicordiaColors.blue700,
+                                color: activeBlue,
                               ),
                             ),
                           ),
@@ -217,19 +207,11 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Notifications',
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        color: EpicordiaColors.textPrimaryLight,
-                      ),
-                    ),
-                    IconButton(
                       tooltip: 'Settings',
                       onPressed: () => context.push('/settings'),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.settings_outlined,
-                        color: EpicordiaColors.textPrimaryLight,
+                        color: textPrimary,
                       ),
                     ),
                   ],
@@ -261,15 +243,18 @@ class _BreadcrumbLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return GestureDetector(
       onTap: onTap,
       child: Text(
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
-          color: EpicordiaColors.textSecondaryLight,
+          color: textSecondary,
         ),
       ),
     );
@@ -281,12 +266,15 @@ class _BreadcrumbSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Icon(
         Icons.chevron_right_rounded,
         size: 16,
-        color: EpicordiaColors.textTertiaryLight,
+        color: textTertiary,
       ),
     );
   }
@@ -304,11 +292,17 @@ class _ViewToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue700;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return Container(
       decoration: BoxDecoration(
-        color: EpicordiaColors.surfaceCardLight,
+        color: cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: EpicordiaColors.borderSubtleLight),
+        border: Border.all(color: borderClr),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -318,9 +312,9 @@ class _ViewToggle extends StatelessWidget {
             onTap: () => onSelect(opt),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: isActive ? EpicordiaColors.blue700 : Colors.transparent,
+                color: isActive ? activeBlue : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Text(
@@ -328,7 +322,7 @@ class _ViewToggle extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isActive ? Colors.white : EpicordiaColors.textSecondaryLight,
+                  color: isActive ? Colors.white : textSecondary,
                 ),
               ),
             ),
@@ -345,8 +339,34 @@ class _BoardListView extends ConsumerWidget {
 
   const _BoardListView({required this.boardId, required this.tasksOnly});
 
+  IconData _iconForType(String type) {
+    switch (type) {
+      case 'task':
+        return Icons.check_circle_outline;
+      case 'checklist':
+        return Icons.checklist_rounded;
+      case 'drawing':
+        return Icons.draw_outlined;
+      case 'link':
+        return Icons.link_rounded;
+      case 'image':
+        return Icons.image_outlined;
+      case 'heading':
+        return Icons.title_rounded;
+      case 'frame':
+        return Icons.grid_view_rounded;
+      default:
+        return Icons.sticky_note_2_outlined;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final pinsStream = ref.watch(pinRepositoryProvider).watchPinsForBoard(boardId);
 
     return StreamBuilder<List<PinEntity>>(
@@ -359,33 +379,449 @@ class _BoardListView extends ConsumerWidget {
           return Center(
             child: Text(
               tasksOnly ? 'No tasks on this board' : 'No items on this board',
-              style: const TextStyle(color: EpicordiaColors.textSecondaryLight),
+              style: TextStyle(color: textSecondary),
             ),
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(20),
-          itemCount: filtered.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 8),
+        final sorted = List<PinEntity>.from(filtered)..sort((a, b) => a.y.compareTo(b.y));
+
+        return ReorderableListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          itemCount: sorted.length,
+          onReorder: (oldIndex, newIndex) async {
+            if (oldIndex < newIndex) newIndex -= 1;
+            final movedItem = sorted.removeAt(oldIndex);
+            sorted.insert(newIndex, movedItem);
+
+            final repo = ref.read(pinRepositoryProvider);
+            for (int i = 0; i < sorted.length; i++) {
+              final item = sorted[i];
+              final targetY = 80.0 + i * 90.0;
+              if ((item.y - targetY).abs() > 0.5) {
+                await repo.updatePinPosition(item.id, x: item.x, y: targetY);
+              }
+            }
+          },
           itemBuilder: (context, index) {
-            final pin = filtered[index];
-            final preview = pin.content?.split('\n').first ?? pin.type;
-            return ListTile(
-              tileColor: EpicordiaColors.surfaceCardLight,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: EpicordiaColors.borderSubtleLight),
+            final pin = sorted[index];
+            final preview = _getPreviewText(pin);
+
+            return Container(
+              key: ValueKey(pin.id),
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderClr),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              leading: Icon(
-                pin.type == 'task' ? Icons.check_circle_outline : Icons.sticky_note_2_outlined,
-                color: EpicordiaColors.textSecondaryLight,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                onTap: () => showPinEditorPanel(context, pinId: pin.id, boardId: boardId),
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: (isDark ? EpicordiaColors.blue400 : EpicordiaColors.blue600).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _iconForType(pin.type),
+                    size: 20,
+                    color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
+                  ),
+                ),
+                title: Text(
+                  preview,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceSunkenLight,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          pin.type.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ),
+                      if (pin.colorTag != null && pin.colorTag!.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colorFromTag(pin.colorTag),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                trailing: ReorderableDragStartListener(
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.drag_handle_rounded,
+                      color: textSecondary,
+                    ),
+                  ),
+                ),
               ),
-              title: Text(preview),
             );
           },
         );
       },
+    );
+  }
+
+  String _getPreviewText(PinEntity pin) {
+    if (pin.content == null || pin.content!.isEmpty) {
+      return pin.type.toUpperCase();
+    }
+    final firstLine = pin.content!.split('\n').first;
+    if (firstLine.startsWith('{')) {
+      return pin.type.toUpperCase();
+    }
+    return firstLine;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KANBAN VIEW IMPLEMENTATION
+// ─────────────────────────────────────────────────────────────────────────────
+class _BoardKanbanView extends ConsumerWidget {
+  final String boardId;
+  const _BoardKanbanView({required this.boardId});
+
+  static const List<(String, String, Color)> _columns = [
+    ('todo', 'To Do', Color(0xFFB9BCC2)),
+    ('in_progress', 'In Progress', Color(0xFF5FA8F5)),
+    ('done', 'Done', Color(0xFF5FC7A3)),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pinsStream = ref.watch(pinRepositoryProvider).watchPinsForBoard(boardId);
+    final tasksStream = ref.watch(taskRepositoryProvider).watchTasksForBoard(boardId);
+
+    return StreamBuilder<List<PinEntity>>(
+      stream: pinsStream,
+      builder: (context, pinSnapshot) {
+        final pins = pinSnapshot.data ?? const <PinEntity>[];
+        final taskPins = pins.where((p) => p.type == 'task').toList();
+
+        return StreamBuilder<List<TaskEntity>>(
+          stream: tasksStream,
+          builder: (context, taskSnapshot) {
+            final tasks = taskSnapshot.data ?? const <TaskEntity>[];
+            final taskMap = {for (var t in tasks) if (t.pinId != null) t.pinId!: t};
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 768;
+                final colWidth = isWide ? (constraints.maxWidth - 48) / 3 : constraints.maxWidth * 0.82;
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _columns.map((col) {
+                      final (statusKey, title, color) = col;
+                      final colPins = taskPins.where((p) {
+                        final t = taskMap[p.id];
+                        final status = t?.status ?? 'todo';
+                        return status == statusKey || (statusKey == 'todo' && status != 'in_progress' && status != 'done');
+                      }).toList();
+
+                      return Container(
+                        width: colWidth,
+                        margin: const EdgeInsets.only(right: 12),
+                        child: _KanbanColumn(
+                          boardId: boardId,
+                          statusKey: statusKey,
+                          title: title,
+                          color: color,
+                          pins: colPins,
+                          taskMap: taskMap,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _KanbanColumn extends ConsumerWidget {
+  final String boardId;
+  final String statusKey;
+  final String title;
+  final Color color;
+  final List<PinEntity> pins;
+  final Map<String, TaskEntity> taskMap;
+
+  const _KanbanColumn({
+    required this.boardId,
+    required this.statusKey,
+    required this.title,
+    required this.color,
+    required this.pins,
+    required this.taskMap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgCol = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceSunkenLight;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
+    return DragTarget<PinEntity>(
+      onAcceptWithDetails: (details) async {
+        final pin = details.data;
+        final existingTask = taskMap[pin.id];
+        final taskRepo = ref.read(taskRepositoryProvider);
+
+        if (existingTask != null) {
+          await taskRepo.updateTask(existingTask.copyWith(status: statusKey));
+        } else {
+          final taskId = DateTime.now().millisecondsSinceEpoch.toString();
+          final previewTitle = pin.content?.split('\n').first ?? 'Task';
+          await taskRepo.createTask(
+            TasksCompanion.insert(
+              id: taskId,
+              pinId: Value(pin.id),
+              boardId: Value(boardId),
+              title: previewTitle,
+              status: Value(statusKey),
+            ),
+          );
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovered = candidateData.isNotEmpty;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isHovered ? color.withValues(alpha: 0.08) : bgCol,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isHovered ? color : borderClr,
+              width: isHovered ? 2 : 1,
+            ),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Column header
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${pins.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (pins.isEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Text(
+                    'Drop tasks here',
+                    style: TextStyle(fontSize: 13, color: textSecondary),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: pins.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final pin = pins[index];
+                      final preview = pin.content?.split('\n').first ?? 'Task';
+
+                      return LongPressDraggable<PinEntity>(
+                        data: pin,
+                        feedback: Material(
+                          elevation: 12,
+                          borderRadius: BorderRadius.circular(14),
+                          color: cardBg,
+                          child: Container(
+                            width: 260,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: color, width: 1.5),
+                            ),
+                            child: Text(
+                              preview,
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                            ),
+                          ),
+                        ),
+                        childWhenDragging: Opacity(
+                          opacity: 0.3,
+                          child: _KanbanCard(
+                            pin: pin,
+                            preview: preview,
+                            boardId: boardId,
+                            color: color,
+                          ),
+                        ),
+                        child: _KanbanCard(
+                          pin: pin,
+                          preview: preview,
+                          boardId: boardId,
+                          color: color,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _KanbanCard extends StatelessWidget {
+  final PinEntity pin;
+  final String preview;
+  final String boardId;
+  final Color color;
+
+  const _KanbanCard({
+    required this.pin,
+    required this.preview,
+    required this.boardId,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => showPinEditorPanel(context, pinId: pin.id, boardId: boardId),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderClr),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      preview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: textPrimary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -399,6 +835,7 @@ class _CanvasToolbar extends StatelessWidget {
   final VoidCallback onAddImage;
   final VoidCallback onAddHeading;
   final VoidCallback onAddFrame;
+  final VoidCallback onAddConnector;
   final VoidCallback onDelete;
 
   const _CanvasToolbar({
@@ -410,6 +847,7 @@ class _CanvasToolbar extends StatelessWidget {
     required this.onAddImage,
     required this.onAddHeading,
     required this.onAddFrame,
+    required this.onAddConnector,
     required this.onDelete,
   });
 
@@ -424,6 +862,7 @@ class _CanvasToolbar extends StatelessWidget {
       (Icons.image_outlined, 'Image', onAddImage),
       (Icons.title_rounded, 'Heading', onAddHeading),
       (Icons.crop_free_rounded, 'Frame', onAddFrame),
+      (Icons.timeline_rounded, 'Connector Mode', onAddConnector),
     ];
 
     return Container(

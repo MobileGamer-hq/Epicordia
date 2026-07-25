@@ -6,8 +6,8 @@ import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../../data/repository/task_repository.dart';
-import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
+
 import '../../core/theme.dart';
 import 'search_screen.dart';
 
@@ -391,18 +391,33 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
 
   static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  Color _cellColor(int level) {
-    switch (level) {
-      case 1:
-        return EpicordiaColors.blue200;
-      case 2:
-        return EpicordiaColors.blue300;
-      case 3:
-        return EpicordiaColors.blue400;
-      case 4:
-        return EpicordiaColors.blue500;
-      default:
-        return EpicordiaColors.borderSubtleLight;
+  Color _cellColor(int level, bool isDark) {
+    if (isDark) {
+      switch (level) {
+        case 1:
+          return const Color(0xFF1B3A60);
+        case 2:
+          return const Color(0xFF1D5A94);
+        case 3:
+          return const Color(0xFF0096C7);
+        case 4:
+          return EpicordiaColors.darkPrimary;
+        default:
+          return EpicordiaColors.surfaceSunkenDark;
+      }
+    } else {
+      switch (level) {
+        case 1:
+          return EpicordiaColors.blue200;
+        case 2:
+          return EpicordiaColors.blue300;
+        case 3:
+          return EpicordiaColors.blue400;
+        case 4:
+          return EpicordiaColors.blue500;
+        default:
+          return EpicordiaColors.borderSubtleLight;
+      }
     }
   }
 
@@ -514,6 +529,12 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
   @override
   Widget build(BuildContext context) {
     final calendar = _generateCalendar();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final activeBorderColor = isDark ? EpicordiaColors.darkPrimary : EpicordiaColors.blue700;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,18 +542,18 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
         // Header
         Row(
           children: [
-            const Text(
+            Text(
               'Activity',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
               ),
             ),
 
             const Spacer(),
 
-            _HeatmapLegend(),
+            const _HeatmapLegend(),
           ],
         ),
 
@@ -544,10 +565,10 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
           children: [
             IconButton(
               onPressed: _previousMonth,
-              icon: const Icon(
+              icon: Icon(
                 Icons.chevron_left,
                 size: 18,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
               ),
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
@@ -556,19 +577,19 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
 
             Text(
               '${_monthName(_selectedMonth)} ${_selectedMonth.year}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
               ),
             ),
 
             IconButton(
               onPressed: _nextMonth,
-              icon: const Icon(
+              icon: Icon(
                 Icons.chevron_right,
                 size: 18,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
               ),
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
@@ -607,9 +628,9 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
                             alignment: Alignment.center,
                             child: Text(
                               day,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 9,
-                                color: EpicordiaColors.textTertiaryLight,
+                                color: textTertiary,
                               ),
                             ),
                           ),
@@ -657,10 +678,10 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
                                     width: cellWidth,
                                     height: cellHeight - 2,
                                     decoration: BoxDecoration(
-                                      color: _cellColor(activityLevel),
+                                      color: _cellColor(activityLevel, isDark),
                                       borderRadius: BorderRadius.circular(3),
                                       border: isSelected
-                                          ? Border.all(color: EpicordiaColors.blue700, width: 2.0)
+                                          ? Border.all(color: activeBorderColor, width: 2.0)
                                           : null,
                                     ),
                                   ),
@@ -683,20 +704,53 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
 }
 
 class _HeatmapLegend extends StatelessWidget {
+  const _HeatmapLegend();
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTertiary = isDark
+        ? EpicordiaColors.textTertiaryDark
+        : EpicordiaColors.textTertiaryLight;
+
+    final colors = isDark
+        ? [
+            EpicordiaColors.surfaceSunkenDark,
+            const Color(0xFF1B3A60),
+            const Color(0xFF1D5A94),
+            const Color(0xFF0096C7),
+            EpicordiaColors.darkPrimary,
+          ]
+        : [
+            EpicordiaColors.borderSubtleLight,
+            EpicordiaColors.blue200,
+            EpicordiaColors.blue300,
+            EpicordiaColors.blue400,
+            EpicordiaColors.blue500,
+          ];
+
     return Row(
       children: [
-        const Text('Less', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
+        Text('Less', style: TextStyle(fontSize: 9, color: textTertiary)),
         const SizedBox(width: 4),
-        ...([EpicordiaColors.borderSubtleLight, EpicordiaColors.blue200, EpicordiaColors.blue300, EpicordiaColors.blue400, EpicordiaColors.blue500].map((c) =>
+        ...colors.map((c) =>
             Padding(
               padding: const EdgeInsets.only(left: 3),
-              child: Container(width: 10, height: 10, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: c,
+                  borderRadius: BorderRadius.circular(2),
+                  border: isDark
+                      ? Border.all(color: EpicordiaColors.borderSubtleDark, width: 0.5)
+                      : null,
+                ),
+              ),
             ),
-        )),
+        ),
         const SizedBox(width: 4),
-        const Text('More', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
+        Text('More', style: TextStyle(fontSize: 9, color: textTertiary)),
       ],
     );
   }

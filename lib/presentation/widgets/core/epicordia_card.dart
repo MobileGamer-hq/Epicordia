@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
 
-/// Clean, flat card matching the mockup style - white with subtle shadow
+/// Clean, flat card matching the mockup style - adapts to Light & Dark theme
 class EpicordiaCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -18,14 +18,22 @@ class EpicordiaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg =
+        isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr =
+        isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     Widget cardBody = Container(
       decoration: BoxDecoration(
-        color: EpicordiaColors.surfaceCardLight,
+        color: cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EpicordiaColors.borderSubtleLight, width: 1),
+        border: Border.all(color: borderClr, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -33,22 +41,23 @@ class EpicordiaCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (indicatorColor != null)
-              Container(width: 4, color: indicatorColor),
-            Expanded(
-              child: Padding(
-                padding: padding,
-                child: child,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (indicatorColor != null)
+                Container(width: 4, color: indicatorColor),
+              Expanded(
+                child: Padding(
+                  padding: padding,
+                  child: child,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-
 
     if (onTap != null) {
       return Material(

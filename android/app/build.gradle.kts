@@ -15,8 +15,9 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.epicordia.live"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
+
 
     compileOptions {
         // 1. Enable core library desugaring for Kotlin DSL

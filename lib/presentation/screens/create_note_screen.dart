@@ -12,6 +12,11 @@ import '../../data/providers.dart';
 /// underline, links) live as the user types, instead of showing the raw
 /// "**text**" characters as plain text. The raw markdown is still what's
 /// stored/saved - this only changes how it's *displayed* in the editor.
+///
+/// The literal syntax characters ("**", "*", "<u>", "[](") are always
+/// hidden - they're never rendered, even while the cursor is inside that
+/// token - but they stay in the underlying text, so saving/loading and
+/// re-toggling formatting still works off the raw markdown.
 class MarkdownController extends TextEditingController {
   MarkdownController({super.text});
 
@@ -32,31 +37,53 @@ class MarkdownController extends TextEditingController {
     }
 
     final children = <TextSpan>[];
-    int cursor = 0;
+    int pos = 0;
 
     for (final match in _pattern.allMatches(source)) {
-      if (match.start > cursor) {
+      if (match.start > pos) {
         children.add(
-          TextSpan(text: source.substring(cursor, match.start), style: style),
+          TextSpan(text: source.substring(pos, match.start), style: style),
         );
       }
 
       final token = match.group(0)!;
-      children.add(_styledSpan(token, style));
-      cursor = match.end;
+      // Markers are always hidden - never revealed, even while the cursor
+      // is inside the token. They still exist in the raw text (so saving
+      // and re-parsing works correctly), just never rendered visibly.
+      children.add(_styledSpan(token, style, showMarkers: false));
+      pos = match.end;
     }
 
-    if (cursor < source.length) {
-      children.add(TextSpan(text: source.substring(cursor), style: style));
+    if (pos < source.length) {
+      children.add(TextSpan(text: source.substring(pos), style: style));
     }
 
     return TextSpan(style: style, children: children);
   }
 
-  TextSpan _styledSpan(String token, TextStyle? base) {
-    final markerStyle = (base ?? const TextStyle()).copyWith(
-      color: EpicordiaColors.textTertiaryLight,
+  /// Style used for the literal syntax characters. When [show] is false we
+  /// don't just recolor them - we collapse their font size to near-zero and
+  /// make them transparent so they take up (almost) no visible space, while
+  /// the characters stay in the string so cursor/selection offsets still
+  /// line up correctly with the raw text.
+  TextStyle _markerStyle(TextStyle base, {required bool show}) {
+    if (show) {
+      return base.copyWith(color: EpicordiaColors.textTertiaryLight);
+    }
+    return base.copyWith(
+      color: Colors.transparent,
+      fontSize: (base.fontSize ?? 14) * 0.02,
+      decoration: TextDecoration.none,
     );
+  }
+
+  TextSpan _styledSpan(
+      String token,
+      TextStyle? base, {
+        required bool showMarkers,
+      }) {
+    final baseStyle = base ?? const TextStyle();
+    final markerStyle = _markerStyle(baseStyle, show: showMarkers);
 
     if (token.startsWith('**') && token.endsWith('**')) {
       final inner = token.substring(2, token.length - 2);
@@ -65,9 +92,7 @@ class MarkdownController extends TextEditingController {
           TextSpan(text: '**', style: markerStyle),
           TextSpan(
             text: inner,
-            style: (base ?? const TextStyle()).copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: baseStyle.copyWith(fontWeight: FontWeight.w800),
           ),
           TextSpan(text: '**', style: markerStyle),
         ],
@@ -81,9 +106,7 @@ class MarkdownController extends TextEditingController {
           TextSpan(text: '<u>', style: markerStyle),
           TextSpan(
             text: inner,
-            style: (base ?? const TextStyle()).copyWith(
-              decoration: TextDecoration.underline,
-            ),
+            style: baseStyle.copyWith(decoration: TextDecoration.underline),
           ),
           TextSpan(text: '</u>', style: markerStyle),
         ],
@@ -99,7 +122,7 @@ class MarkdownController extends TextEditingController {
           TextSpan(text: '[', style: markerStyle),
           TextSpan(
             text: label,
-            style: (base ?? const TextStyle()).copyWith(
+            style: baseStyle.copyWith(
               color: EpicordiaColors.blue600,
               decoration: TextDecoration.underline,
             ),
@@ -118,9 +141,7 @@ class MarkdownController extends TextEditingController {
         TextSpan(text: '*', style: markerStyle),
         TextSpan(
           text: inner,
-          style: (base ?? const TextStyle()).copyWith(
-            fontStyle: FontStyle.italic,
-          ),
+          style: baseStyle.copyWith(fontStyle: FontStyle.italic),
         ),
         TextSpan(text: '*', style: markerStyle),
       ],
@@ -220,22 +241,22 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
       await ref
           .read(pinRepositoryProvider)
           .updatePin(
-            _existingNote!.copyWith(
-              content: drift.Value(content),
-              modifiedAt: DateTime.now(),
-            ),
-          );
+        _existingNote!.copyWith(
+          content: drift.Value(content),
+          modifiedAt: DateTime.now(),
+        ),
+      );
     } else {
       await ref
           .read(pinRepositoryProvider)
           .createPin(
-            PinsCompanion.insert(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              boardId: const drift.Value(null),
-              type: 'note',
-              content: drift.Value(content),
-            ),
-          );
+        PinsCompanion.insert(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          boardId: const drift.Value(null),
+          type: 'note',
+          content: drift.Value(content),
+        ),
+      );
     }
     if (mounted) context.go('/notes');
   }
@@ -298,8 +319,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 
     final alreadyWrapped =
         selectedText.startsWith(prefix) &&
-        selectedText.endsWith(suffix) &&
-        selectedText.length >= prefix.length + suffix.length;
+            selectedText.endsWith(suffix) &&
+            selectedText.length >= prefix.length + suffix.length;
 
     if (alreadyWrapped) {
       final inner = selectedText.substring(
@@ -409,25 +430,29 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.noteId != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgApp = isDark
+        ? EpicordiaColors.surfaceAppDark
+        : EpicordiaColors.surfaceAppLight;
+    final textPrimary = isDark
+        ? EpicordiaColors.textPrimaryDark
+        : EpicordiaColors.textPrimaryLight;
 
     return Scaffold(
-      backgroundColor: EpicordiaColors.surfaceAppLight,
+      backgroundColor: bgApp,
       appBar: AppBar(
-        backgroundColor: EpicordiaColors.surfaceAppLight,
+        backgroundColor: bgApp,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: EpicordiaColors.textPrimaryLight,
-          ),
+          icon: Icon(Icons.arrow_back, color: textPrimary),
           onPressed: () => context.go('/notes'),
         ),
         title: Text(
           isEditing ? 'Edit Note' : 'New Note',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
         ),
         actions: [
@@ -500,9 +525,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     filled: false,
-                    hintStyle: TextStyle(
-                      color: EpicordiaColors.textTertiaryLight,
-                    ),
+                    hintStyle: TextStyle(color: EpicordiaColors.textTertiaryLight),
                   ),
                 ),
               ),

@@ -53,6 +53,14 @@ class _NotesTabState extends ConsumerState<NotesTab> {
   Widget build(BuildContext context) {
     final notesAsync = ref.watch(allNotesProvider);
     final boardsAsync = ref.watch(allBoardsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgApp = Theme.of(context).scaffoldBackgroundColor;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue700;
 
     final boardsMap = boardsAsync.value?.fold<Map<String, BoardEntity>>(
           {},
@@ -68,18 +76,19 @@ class _NotesTabState extends ConsumerState<NotesTab> {
         children: [
           // Search + filters
           Container(
-            color: EpicordiaColors.surfaceAppLight,
+            color: bgApp,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Column(
               children: [
                 TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: textPrimary),
+                  decoration: InputDecoration(
                     hintText: 'Search across all notes...',
                     prefixIcon: Icon(
                       Icons.search,
                       size: 18,
-                      color: EpicordiaColors.textTertiaryLight,
+                      color: textTertiary,
                     ),
                   ),
                 ),
@@ -101,13 +110,13 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                             ),
                             decoration: BoxDecoration(
                               color: selected
-                                  ? EpicordiaColors.blue700
+                                  ? activeBlue
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: selected
-                                    ? EpicordiaColors.blue700
-                                    : EpicordiaColors.borderStrongLight,
+                                    ? activeBlue
+                                    : borderStrong,
                               ),
                             ),
                             child: Text(
@@ -117,7 +126,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                                   fontWeight: FontWeight.w500,
                                   color: selected
                                       ? Colors.white
-                                      : EpicordiaColors.textSecondaryLight),
+                                      : textSecondary),
                             ),
                           ),
                         ),
@@ -140,31 +149,27 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                   final query = _searchController.text.trim().toLowerCase();
                   var filtered = notes.where((note) {
                     if (query.isEmpty) return true;
-                    return (note.content ?? '')
-                        .toLowerCase()
-                        .contains(query);
+                    final title = (note.content ?? '').split('\n').first.toLowerCase();
+                    final body = (note.content ?? '').toLowerCase();
+                    return title.contains(query) || body.contains(query);
                   }).toList();
 
                   // 2. Chip Filter
                   if (_selectedFilter == 'Recent') {
-                    // Sort by modifiedAt descending
                     filtered.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
                   } else if (_selectedFilter == 'Pinned') {
-                    // Pinned notes are those placed on a board (boardId != null)
                     filtered = filtered.where((n) => n.boardId != null).toList();
                   } else if (_selectedFilter == 'Ideas') {
-                    // Ideas are notes on a board named 'Ideas' or containing 'idea' in content
                     filtered = filtered.where((n) {
-                      final boardName = n.boardId != null ? boardsMap[n.boardId]?.title.toLowerCase() : '';
-                      final contentLower = (n.content ?? '').toLowerCase();
-                      return boardName == 'ideas' || contentLower.contains('idea');
+                      final c = (n.content ?? '').toLowerCase();
+                      return c.contains('idea') || c.contains('thought');
                     }).toList();
                   }
 
                   return ListView.separated(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
                     itemCount: filtered.length + 1,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       if (index == filtered.length) {
                         return _CreateNoteButton(
@@ -218,6 +223,13 @@ class _NoteListItem extends StatelessWidget {
     final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content';
     final isPinned = note.boardId != null;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue600;
+
     return GestureDetector(
       onTap: onTap,
       child: EpicordiaCard(
@@ -230,10 +242,10 @@ class _NoteListItem extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: EpicordiaColors.textPrimaryLight,
+                      color: textPrimary,
                     ),
                   ),
                 ),
@@ -242,9 +254,9 @@ class _NoteListItem extends StatelessWidget {
                   height: 18,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isPinned ? EpicordiaColors.blue600 : Colors.transparent,
+                    color: isPinned ? activeBlue : Colors.transparent,
                     border: Border.all(
-                      color: isPinned ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight,
+                      color: isPinned ? activeBlue : borderStrong,
                       width: 1.5,
                     ),
                   ),
@@ -255,9 +267,9 @@ class _NoteListItem extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               preview,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 height: 1.45,
               ),
               maxLines: 3,
@@ -268,25 +280,25 @@ class _NoteListItem extends StatelessWidget {
               children: [
                 Text(
                   timeFormatted,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: EpicordiaColors.textTertiaryLight,
+                    color: textTertiary,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Board: $boardTitle',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: EpicordiaColors.blue600,
+                    color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
                   ),
                 ),
                 const Spacer(),
-                const Icon(
+                Icon(
                   Icons.more_horiz,
                   size: 16,
-                  color: EpicordiaColors.textTertiaryLight,
+                  color: textTertiary,
                 ),
               ],
             ),
@@ -303,6 +315,10 @@ class _CreateNoteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -310,26 +326,26 @@ class _CreateNoteButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: EpicordiaColors.borderStrongLight,
+            color: borderStrong,
             style: BorderStyle.solid,
             width: 1.5,
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.add,
               size: 18,
-              color: EpicordiaColors.textSecondaryLight,
+              color: textSecondary,
             ),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Text(
               'Create New Note',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
               ),
             ),
           ],

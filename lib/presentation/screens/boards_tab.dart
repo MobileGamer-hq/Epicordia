@@ -20,44 +20,75 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
   @override
   Widget build(BuildContext context) {
     final boardsAsync = ref.watch(boardRepositoryProvider).watchAllBoards();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
 
     return ResponsiveScaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AppBar(
-          backgroundColor: EpicordiaColors.surfaceAppLight,
-          elevation: 0,
-          titleSpacing: 20,
-          title: const EpicordiaLogo(),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _isGrid ? Icons.grid_view : Icons.list,
-                color: EpicordiaColors.textPrimaryLight,
-              ),
-              onPressed: () => setState(() => _isGrid = !_isGrid),
+      appBar: const EpicordiaAppBar(),
+      child: Column(
+        children: [
+          // Header with Title & View Mode Toggle
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Boards',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Visual workspaces for your ideas & tasks',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isGrid ? Icons.grid_view : Icons.list,
+                    color: textPrimary,
+                  ),
+                  onPressed: () => setState(() => _isGrid = !_isGrid),
+                  tooltip: _isGrid ? 'Switch to List View' : 'Switch to Grid View',
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-          ],
-        ),
-      ),
-      child: StreamBuilder(
-        stream: boardsAsync,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          ),
+          Expanded(
+            child: StreamBuilder(
+              stream: boardsAsync,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          final boards = snapshot.data ?? [];
+                final boards = snapshot.data ?? [];
 
-          if (boards.isEmpty) {
-            return _EmptyBoardsState();
-          }
+                if (boards.isEmpty) {
+                  return _EmptyBoardsState();
+                }
 
-          return _isGrid
-              ? _GridView(boards: boards)
-              : _ListView(boards: boards);
-        },
+                return _isGrid
+                    ? _GridView(boards: boards)
+                    : _ListView(boards: boards);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -67,6 +98,12 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
 class _EmptyBoardsState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -75,30 +112,30 @@ class _EmptyBoardsState extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: EpicordiaColors.surfaceSunkenLight,
+              color: sunkenBg,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.space_dashboard_outlined,
               size: 32,
-              color: EpicordiaColors.textTertiaryLight,
+              color: textTertiary,
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No boards yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: EpicordiaColors.textPrimaryLight,
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Create a board to start organizing visually',
             style: TextStyle(
               fontSize: 14,
-              color: EpicordiaColors.textSecondaryLight,
+              color: textSecondary,
             ),
           ),
         ],
@@ -114,6 +151,10 @@ class _GridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     return GridView.builder(
       padding: const EdgeInsets.all(20),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -163,19 +204,19 @@ class _GridView extends StatelessWidget {
                   children: [
                     Text(
                       board.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: EpicordiaColors.textPrimaryLight,
+                        color: textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const Text(
+                    Text(
                       '0 items',
                       style: TextStyle(
                         fontSize: 11,
-                        color: EpicordiaColors.textTertiaryLight,
+                        color: textTertiary,
                       ),
                     ),
                   ],
@@ -196,6 +237,12 @@ class _ListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final iconBg = isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100;
+    final iconClr = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
+
     return ListView.separated(
       padding: const EdgeInsets.all(20),
       itemCount: boards.length,
@@ -210,13 +257,13 @@ class _ListView extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: EpicordiaColors.blue100,
+                  color: iconBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.space_dashboard_outlined,
                   size: 20,
-                  color: EpicordiaColors.blue700,
+                  color: iconClr,
                 ),
               ),
               const SizedBox(width: 12),
@@ -226,25 +273,25 @@ class _ListView extends StatelessWidget {
                   children: [
                     Text(
                       board.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: EpicordiaColors.textPrimaryLight,
+                        color: textPrimary,
                       ),
                     ),
-                    const Text(
+                    Text(
                       '0 items',
                       style: TextStyle(
                         fontSize: 12,
-                        color: EpicordiaColors.textTertiaryLight,
+                        color: textTertiary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: EpicordiaColors.textTertiaryLight,
+                color: textTertiary,
               ),
             ],
           ),

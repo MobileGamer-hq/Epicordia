@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,7 +84,7 @@ class BoardPinCard extends ConsumerWidget {
       case 'table':
         return _TableCardBody(content: content);
       case 'frame':
-        return _FrameCardBody(content: content);
+        return _FrameCardBody(content: content, pinId: pinId);
       case 'board':
         return _BoardTileBody(content: content ?? '');
       case 'file':
@@ -458,40 +460,78 @@ class _ImageCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final caption = _parseCaption(content);
-    // Note: filePath comes from Attachments table, not content.
-    // For now we show a placeholder image icon.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final placeholderBg = isDark ? EpicordiaColors.surfaceSunkenDark : const Color(0xFFF4F5F7);
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final primaryIconColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
+    final data = _parseData(content);
+    final filePath = data['filePath'] as String? ?? '';
+    final caption = data['caption'] as String? ?? '';
+    final hasFile = filePath.isNotEmpty && File(filePath).existsSync();
+
     return Column(
       children: [
         Expanded(
           child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFF0F0F0),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: placeholderBg,
             ),
-            child: const Center(
-              child: Icon(Icons.image_outlined, size: 40, color: EpicordiaColors.textTertiaryLight),
-            ),
+            child: hasFile
+                ? ClipRRect(
+                    borderRadius: BorderRadius.vertical(
+                      top: const Radius.circular(14),
+                      bottom: caption.isEmpty ? const Radius.circular(14) : Radius.zero,
+                    ),
+                    child: Image.file(
+                      File(filePath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Center(
+                        child: Icon(Icons.broken_image_outlined, size: 36, color: textTertiary),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_a_photo_outlined, size: 32, color: primaryIconColor),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Double-tap to add image',
+                          style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ),
         if (caption.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.all(8),
-            child: Text(caption, style: const TextStyle(fontSize: 11, color: EpicordiaColors.textSecondaryLight)),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Text(
+              caption,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: textSecondary),
+            ),
           ),
       ],
     );
   }
 
-  String _parseCaption(String? content) {
-    if (content == null || content.isEmpty) return '';
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
     try {
-      final map = jsonDecode(content) as Map<String, dynamic>;
-      return map['caption'] as String? ?? '';
+      return jsonDecode(content) as Map<String, dynamic>;
     } catch (_) {
-      return '';
+      return {};
     }
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LINK CARD
@@ -574,7 +614,10 @@ class _DrawingCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
     final strokes = _parseStrokes(content);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -587,17 +630,17 @@ class _DrawingCardBody extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(type == 'handwriting' ? Icons.edit_note_outlined : Icons.gesture_outlined,
-                          size: 28, color: EpicordiaColors.textTertiaryLight),
+                          size: 28, color: textTertiary),
                       const SizedBox(height: 4),
                       Text(
                         'Double-tap to ${type == 'handwriting' ? 'write' : 'draw'}',
-                        style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight),
+                        style: TextStyle(fontSize: 10, color: textTertiary),
                       ),
                     ],
                   ),
                 )
               : CustomPaint(
-                  painter: _StrokePreviewPainter(strokes),
+                  painter: _StrokePreviewPainter(strokes, isDark: isDark),
                   size: Size.infinite,
                 ),
         ),
@@ -618,7 +661,8 @@ class _DrawingCardBody extends StatelessWidget {
 
 class _StrokePreviewPainter extends CustomPainter {
   final List<Map<String, dynamic>> strokes;
-  const _StrokePreviewPainter(this.strokes);
+  final bool isDark;
+  const _StrokePreviewPainter(this.strokes, {required this.isDark});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -627,7 +671,7 @@ class _StrokePreviewPainter extends CustomPainter {
       final width = (stroke['widthPx'] as num?)?.toDouble() ?? 2.0;
       final points = (stroke['points'] as List<dynamic>? ?? []);
 
-      final color = _hexToColor(colorHex);
+      final color = _hexToColor(colorHex, isDark);
       final paint = Paint()
         ..color = color
         ..strokeWidth = width
@@ -647,14 +691,17 @@ class _StrokePreviewPainter extends CustomPainter {
     }
   }
 
-  Color _hexToColor(String hex) {
-    final clean = hex.replaceFirst('#', '');
+  Color _hexToColor(String hex, bool isDark) {
+    final clean = hex.replaceFirst('#', '').toUpperCase();
+    if (clean == '16181C' && isDark) {
+      return const Color(0xFFE2E8F0);
+    }
     if (clean.length == 6) return Color(int.parse('FF$clean', radix: 16));
-    return const Color(0xFF16181C);
+    return isDark ? const Color(0xFFE2E8F0) : const Color(0xFF16181C);
   }
 
   @override
-  bool shouldRepaint(_StrokePreviewPainter old) => old.strokes != strokes;
+  bool shouldRepaint(_StrokePreviewPainter old) => old.strokes != strokes || old.isDark != isDark;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -915,38 +962,328 @@ class _TableCell extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // FRAME / GROUP CARD
 // ─────────────────────────────────────────────────────────────────────────────
-class _FrameCardBody extends StatelessWidget {
+class _FrameCardBody extends ConsumerWidget {
   final String? content;
-  const _FrameCardBody({this.content});
+  final String pinId;
+  const _FrameCardBody({super.key, this.content, required this.pinId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final data = _parseData(content);
+    final label = data['label'] as String? ?? '';
+    final isCollapsed = data['collapsed'] as bool? ?? false;
+    final titleText = label.isNotEmpty ? label : 'Column';
+
+    final primaryColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
+    final borderColor = isDark
+        ? EpicordiaColors.blue500.withValues(alpha: 0.4)
+        : EpicordiaColors.blue400.withValues(alpha: 0.4);
+    final headerBg = isDark
+        ? EpicordiaColors.surfaceCardDark.withValues(alpha: 0.9)
+        : EpicordiaColors.surfaceCardLight.withValues(alpha: 0.95);
+    final fillBg = isDark
+        ? EpicordiaColors.surfaceAppDark.withValues(alpha: 0.5)
+        : EpicordiaColors.blue50.withValues(alpha: 0.25);
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
+    final childPinsStream = ref.watch(pinRepositoryProvider).watchPinsForFrame(pinId);
+
+    return StreamBuilder<List<PinEntity>>(
+      stream: childPinsStream,
+      builder: (context, snapshot) {
+        final children = snapshot.data ?? const <PinEntity>[];
+
+        return DragTarget<PinEntity>(
+          onAcceptWithDetails: (details) async {
+            final pin = details.data;
+            if (pin.id != pinId && pin.parentFrameId != pinId) {
+              final pinRepo = ref.read(pinRepositoryProvider);
+              final updated = pin.copyWith(
+                parentFrameId: Value(pinId),
+                modifiedAt: DateTime.now(),
+              );
+              await pinRepo.updatePin(updated);
+            }
+          },
+          builder: (context, candidateData, rejectedData) {
+            final isTargeted = candidateData.isNotEmpty;
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                color: isTargeted ? primaryColor.withValues(alpha: 0.12) : fillBg,
+                border: Border.all(
+                  color: isTargeted ? primaryColor : borderColor,
+                  width: isTargeted ? 2.5 : 1.5,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Column Header Bar ─────────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: headerBg,
+                      borderRadius: BorderRadius.vertical(
+                        top: const Radius.circular(14),
+                        bottom: isCollapsed ? const Radius.circular(14) : Radius.zero,
+                      ),
+                      border: isCollapsed
+                          ? null
+                          : Border(bottom: BorderSide(color: borderColor.withValues(alpha: 0.3), width: 1)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.view_column_outlined,
+                          size: 18,
+                          color: primaryColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            titleText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${children.length} items',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () => _toggleCollapse(ref, data),
+                          child: Icon(
+                            isCollapsed ? Icons.unfold_more_rounded : Icons.remove_rounded,
+                            size: 18,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Stacked Child Cards List ───────────────────────────
+                  if (!isCollapsed)
+                    Expanded(
+                      child: children.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  'Drag cards here to stack',
+                                  style: TextStyle(fontSize: 11, color: textSecondary),
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(8),
+                              itemCount: children.length,
+                              itemBuilder: (context, index) {
+                                final childPin = children[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Draggable<PinEntity>(
+                                    data: childPin,
+                                    feedback: Material(
+                                      elevation: 8,
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        width: 200,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: cardBg,
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: primaryColor, width: 1.5),
+                                        ),
+                                        child: Text(
+                                          _childPreview(childPin),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    childWhenDragging: Opacity(
+                                      opacity: 0.3,
+                                      child: _ColumnItemTile(
+                                        pin: childPin,
+                                        isDark: isDark,
+                                        cardBg: cardBg,
+                                        borderSubtle: borderSubtle,
+                                        textSecondary: textSecondary,
+                                        onDetach: () => _detachChild(ref, childPin),
+                                      ),
+                                    ),
+                                    child: _ColumnItemTile(
+                                      pin: childPin,
+                                      isDark: isDark,
+                                      cardBg: cardBg,
+                                      borderSubtle: borderSubtle,
+                                      textSecondary: textSecondary,
+                                      onDetach: () => _detachChild(ref, childPin),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  static String _childPreview(PinEntity pin) {
+    if (pin.content == null || pin.content!.isEmpty) return '${pin.type.toUpperCase()} Card';
+    try {
+      final map = jsonDecode(pin.content!) as Map<String, dynamic>;
+      if (map.containsKey('title')) return map['title'] as String;
+      if (map.containsKey('text')) return map['text'] as String;
+      if (map.containsKey('label')) return map['label'] as String;
+    } catch (_) {}
+    return pin.content!.trim().split('\n').first;
+  }
+
+  Future<void> _detachChild(WidgetRef ref, PinEntity childPin) async {
+    final pinRepo = ref.read(pinRepositoryProvider);
+    final updated = childPin.copyWith(
+      parentFrameId: const Value(null),
+      x: childPin.x + 240,
+      y: childPin.y,
+      modifiedAt: DateTime.now(),
+    );
+    await pinRepo.updatePin(updated);
+  }
+
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return {'label': content};
+    }
+  }
+
+  Future<void> _toggleCollapse(WidgetRef ref, Map<String, dynamic> currentData) async {
+    final pinRepo = ref.read(pinRepositoryProvider);
+    final pin = await pinRepo.getPin(pinId);
+    if (pin != null) {
+      final isCurrentlyCollapsed = currentData['collapsed'] as bool? ?? false;
+      final newData = Map<String, dynamic>.from(currentData);
+      newData['collapsed'] = !isCurrentlyCollapsed;
+      final updated = pin.copyWith(
+        content: Value(jsonEncode(newData)),
+        modifiedAt: DateTime.now(),
+      );
+      await pinRepo.updatePin(updated);
+    }
+  }
+}
+
+class _ColumnItemTile extends StatelessWidget {
+  final PinEntity pin;
+  final bool isDark;
+  final Color cardBg;
+  final Color borderSubtle;
+  final Color textSecondary;
+  final VoidCallback onDetach;
+
+  const _ColumnItemTile({
+    required this.pin,
+    required this.isDark,
+    required this.cardBg,
+    required this.borderSubtle,
+    required this.textSecondary,
+    required this.onDetach,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final label = _parseLabel(content);
+    final preview = _FrameCardBody._childPreview(pin);
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: EpicordiaColors.borderSubtleLight, width: 1.5),
-        borderRadius: BorderRadius.circular(8),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderSubtle),
       ),
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          if (label.isNotEmpty)
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: EpicordiaColors.textSecondaryLight)),
-          const Spacer(),
+          Icon(_iconForType(pin.type), size: 16, color: EpicordiaColors.blue600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              preview,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.output_rounded, size: 16),
+            tooltip: 'Detach to canvas',
+            color: textSecondary,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: onDetach,
+          ),
         ],
       ),
     );
   }
 
-  String _parseLabel(String? content) {
-    if (content == null) return '';
-    try {
-      final map = jsonDecode(content) as Map<String, dynamic>;
-      return map['label'] as String? ?? '';
-    } catch (_) {
-      return '';
-    }
+  static IconData _iconForType(String type) {
+    return switch (type) {
+      'note' => Icons.sticky_note_2_outlined,
+      'task' => Icons.check_circle_outline,
+      'checklist' => Icons.checklist_rounded,
+      'image' => Icons.image_outlined,
+      'link' => Icons.link,
+      'drawing' => Icons.draw_outlined,
+      'audio' => Icons.mic_none_outlined,
+      'heading' => Icons.title,
+      'board' => Icons.dashboard_outlined,
+      _ => Icons.push_pin_outlined,
+    };
   }
 }
 

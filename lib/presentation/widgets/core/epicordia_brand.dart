@@ -8,6 +8,9 @@ class EpicordiaLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final logoColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue500;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -24,7 +27,7 @@ class EpicordiaLogo extends StatelessWidget {
             fontFamily: 'Inter',
             fontSize: size,
             fontWeight: FontWeight.w800,
-            color: EpicordiaColors.blue500,
+            color: logoColor,
             letterSpacing: -0.3,
           ),
         ),
@@ -32,9 +35,6 @@ class EpicordiaLogo extends StatelessWidget {
     );
   }
 }
-
-
-
 
 /// Standard Epicordia app bar with logo, search, and optional avatar
 class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -54,27 +54,21 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final iconColor = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return AppBar(
-      backgroundColor: EpicordiaColors.surfaceAppLight,
+      backgroundColor: bg,
       elevation: 0,
       titleSpacing: 20,
       title: const EpicordiaLogo(),
       actions: [
         if (showSearch)
           IconButton(
-            icon: const Icon(Icons.search, color: EpicordiaColors.textPrimaryLight),
+            icon: Icon(Icons.search, color: iconColor),
             onPressed: onSearch,
           ),
-        // if (showAvatar) ...[
-        //   Padding(
-        //     padding: const EdgeInsets.only(right: 16),
-        //     child: CircleAvatar(
-        //       radius: 16,
-        //       backgroundColor: EpicordiaColors.blue100,
-        //       child: const Icon(Icons.person, size: 18, color: EpicordiaColors.blue700),
-        //     ),
-        //   ),
-        // ],
       ],
     );
   }
@@ -91,18 +85,14 @@ class EpicordiaSimpleAppBar extends StatelessWidget implements PreferredSizeWidg
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+
     return AppBar(
-      backgroundColor: EpicordiaColors.surfaceAppLight,
+      backgroundColor: bg,
       elevation: 0,
       titleSpacing: 20,
       title: const EpicordiaLogo(),
-      // actions: [
-      //   IconButton(
-      //     icon: const Icon(Icons.settings, color: EpicordiaColors.textPrimaryLight),
-      //     onPressed: onSearch,
-      //   ),
-      //   const SizedBox(width: 8),
-      // ],
     );
   }
 }

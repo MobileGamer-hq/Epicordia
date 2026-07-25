@@ -20,3 +20,14 @@
 -task should have due date and time not just date
 -the search on the today dashboard should open a nice animation to search like screen, this will allow search for notes, task and boards.
 -edit the onboarding screen to ask and save the users name and what they will be using the app for with options like project management personal development etc
+
+
+Now lets work on the baord screen, issues i have
+-The photo card doesnt change with the theme
+-the draw card doesnt work
+- theres is no connectors
+- the group card ui doens tlook nice and it doesnt work
+- the popup is at the side of the screen should be centered
+remove the bell icon theres is no notification for now, the cards should be able to be moved around in the list and focus view and also their content should be able to be editied
+the kanban doesnt work its just the same as the normal board which is worng
+the create screen ui didnt change with the change in theme still on light theme

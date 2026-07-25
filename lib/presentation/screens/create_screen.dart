@@ -8,13 +8,18 @@ class CreateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return Scaffold(
-      backgroundColor: EpicordiaColors.surfaceAppLight,
+      backgroundColor: bgApp,
       appBar: AppBar(
-        backgroundColor: EpicordiaColors.surfaceAppLight,
+        backgroundColor: bgApp,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: EpicordiaColors.textPrimaryLight),
+          icon: Icon(Icons.close, color: textPrimary),
           onPressed: () => context.pop(),
         ),
         // title: const EpicordiaLogo(),
@@ -26,20 +31,20 @@ class CreateScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'What would you\nlike to create?',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: EpicordiaColors.textPrimaryLight,
+                  color: textPrimary,
                   height: 1.2,
                   letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Choose a type to get started.',
-                style: TextStyle(fontSize: 14, color: EpicordiaColors.textSecondaryLight),
+                style: TextStyle(fontSize: 14, color: textSecondary),
               ),
               const SizedBox(height: 32),
               Expanded(
@@ -47,8 +52,8 @@ class CreateScreen extends StatelessWidget {
                   children: [
                     _CreateTypeCard(
                       icon: Icons.check_box_outlined,
-                      iconColor: EpicordiaColors.blue600,
-                      iconBg: EpicordiaColors.blue50,
+                      iconColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
+                      iconBg: isDark ? EpicordiaColors.blue900.withValues(alpha: 0.4) : EpicordiaColors.blue50,
                       title: 'To-do List',
                       description: 'A structured list of tasks. Best for planning work, tracking checklists, and managing daily to-dos.',
                       previewWidget: const _TaskPreview(),
@@ -57,8 +62,8 @@ class CreateScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _CreateTypeCard(
                       icon: Icons.description_outlined,
-                      iconColor: const Color(0xFF785A00),
-                      iconBg: const Color(0xFFFFF3CD),
+                      iconColor: isDark ? const Color(0xFFFFD54F) : const Color(0xFF785A00),
+                      iconBg: isDark ? const Color(0xFF423300) : const Color(0xFFFFF3CD),
                       title: 'Note',
                       description: 'Rich text notes and quick captures. Best for journaling, ideas, and meeting notes.',
                       previewWidget: const _NotePreview(),
@@ -67,8 +72,8 @@ class CreateScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _CreateTypeCard(
                       icon: Icons.space_dashboard_outlined,
-                      iconColor: EpicordiaColors.blue700,
-                      iconBg: EpicordiaColors.blue100,
+                      iconColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
+                      iconBg: isDark ? EpicordiaColors.blue800.withValues(alpha: 0.4) : EpicordiaColors.blue100,
                       title: 'Board',
                       description: 'A visual, infinite canvas for spatial organization. Best for moodboarding, complex projects, and brainstorming.',
                       previewWidget: const _BoardPreview(),
@@ -114,6 +119,13 @@ class _CreateTypeCardState extends State<_CreateTypeCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final activeBorder = isDark ? EpicordiaColors.blue400 : EpicordiaColors.blue600;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -122,15 +134,15 @@ class _CreateTypeCardState extends State<_CreateTypeCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: EpicordiaColors.surfaceCardLight,
+            color: cardBg,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _hovered ? EpicordiaColors.blue600 : EpicordiaColors.borderSubtleLight,
+              color: _hovered ? activeBorder : borderSubtle,
               width: _hovered ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: _hovered ? 0.08 : 0.03),
+                color: Colors.black.withValues(alpha: _hovered ? (isDark ? 0.25 : 0.08) : (isDark ? 0.15 : 0.03)),
                 blurRadius: _hovered ? 16 : 8,
                 offset: const Offset(0, 4),
               ),
@@ -153,11 +165,11 @@ class _CreateTypeCardState extends State<_CreateTypeCard> {
                             child: Icon(widget.icon, size: 20, color: widget.iconColor),
                           ),
                           const SizedBox(width: 12),
-                          Text(widget.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
+                          Text(widget.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textPrimary)),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Text(widget.description, style: const TextStyle(fontSize: 13, color: EpicordiaColors.textSecondaryLight, height: 1.4)),
+                      Text(widget.description, style: TextStyle(fontSize: 13, color: textSecondary, height: 1.4)),
                     ],
                   ),
                 ),
@@ -178,15 +190,18 @@ class _TaskPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: EpicordiaColors.surfaceSunkenLight, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: sunkenBg, borderRadius: BorderRadius.circular(10)),
       child: Column(
-        children: [
+        children: const [
           _PreviewTaskRow(done: false),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           _PreviewTaskRow(done: false),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           _PreviewTaskRow(done: true),
         ],
       ),
@@ -200,6 +215,12 @@ class _PreviewTaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? EpicordiaColors.blue400 : EpicordiaColors.blue600;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderStrongLight;
+    final activeBar = isDark ? EpicordiaColors.blue800 : EpicordiaColors.blue200;
+    final inactiveBar = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     return Row(
       children: [
         Container(
@@ -207,8 +228,8 @@ class _PreviewTaskRow extends StatelessWidget {
           height: 14,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: done ? EpicordiaColors.blue600 : Colors.transparent,
-            border: Border.all(color: done ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight, width: 1.5),
+            color: done ? activeColor : Colors.transparent,
+            border: Border.all(color: done ? activeColor : borderClr, width: 1.5),
           ),
         ),
         const SizedBox(width: 6),
@@ -216,7 +237,7 @@ class _PreviewTaskRow extends StatelessWidget {
           child: Container(
             height: 8,
             decoration: BoxDecoration(
-              color: done ? EpicordiaColors.blue200 : EpicordiaColors.borderSubtleLight,
+              color: done ? activeBar : inactiveBar,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -231,19 +252,24 @@ class _NotePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final barClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: EpicordiaColors.surfaceSunkenLight, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: sunkenBg, borderRadius: BorderRadius.circular(10)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(height: 8, width: 60, decoration: BoxDecoration(color: EpicordiaColors.textPrimaryLight.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4))),
+          Container(height: 8, width: 60, decoration: BoxDecoration(color: textPrimary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4))),
           const SizedBox(height: 6),
-          Container(height: 6, decoration: BoxDecoration(color: EpicordiaColors.borderSubtleLight, borderRadius: BorderRadius.circular(4))),
+          Container(height: 6, decoration: BoxDecoration(color: barClr, borderRadius: BorderRadius.circular(4))),
           const SizedBox(height: 4),
-          Container(height: 6, width: 70, decoration: BoxDecoration(color: EpicordiaColors.borderSubtleLight, borderRadius: BorderRadius.circular(4))),
+          Container(height: 6, width: 70, decoration: BoxDecoration(color: barClr, borderRadius: BorderRadius.circular(4))),
           const SizedBox(height: 4),
-          Container(height: 6, width: 50, decoration: BoxDecoration(color: EpicordiaColors.borderSubtleLight, borderRadius: BorderRadius.circular(4))),
+          Container(height: 6, width: 50, decoration: BoxDecoration(color: barClr, borderRadius: BorderRadius.circular(4))),
         ],
       ),
     );
@@ -255,12 +281,15 @@ class _BoardPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+
     return Container(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(color: EpicordiaColors.surfaceSunkenLight, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: sunkenBg, borderRadius: BorderRadius.circular(10)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
+        children: const [
           _MiniCard(),
           _MiniCard(),
           _MiniCard(),
@@ -271,15 +300,21 @@ class _BoardPreview extends StatelessWidget {
 }
 
 class _MiniCard extends StatelessWidget {
+  const _MiniCard();
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     return Container(
       width: 24,
       height: 32,
       decoration: BoxDecoration(
-        color: EpicordiaColors.surfaceCardLight,
+        color: cardBg,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: EpicordiaColors.borderSubtleLight),
+        border: Border.all(color: borderClr),
       ),
     );
   }

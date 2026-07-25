@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_canvas/infinite_canvas.dart';
 
+
 import '../../../core/theme.dart';
 import '../../../data/database/database.dart';
+import '../../../data/repository/connector_repository.dart';
 import '../../../data/repository/pin_repository.dart';
 import 'board_pin_card.dart';
 import 'connector_layer.dart';
@@ -58,6 +62,7 @@ class BoardCanvas extends ConsumerStatefulWidget {
   final VoidCallback? onAddNote;
   final VoidCallback? onAddTask;
   final VoidCallback? onDeleteSelection;
+  final ValueChanged<bool>? onEditStateChanged;
 
   const BoardCanvas({
     super.key,
@@ -65,6 +70,7 @@ class BoardCanvas extends ConsumerStatefulWidget {
     this.onAddNote,
     this.onAddTask,
     this.onDeleteSelection,
+    this.onEditStateChanged,
   });
 
   @override
@@ -76,8 +82,80 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
   bool _wasDragging = false;
   List<PinEntity> _latestPins = const [];
 
+  // Connector Creation Mode
+  bool _isConnectingMode = false;
+  String? _connectorSourcePinId;
+
+  bool get isConnectingMode => _isConnectingMode;
+
+  void toggleConnectorMode() {
+    setState(() {
+      _isConnectingMode = !_isConnectingMode;
+      _connectorSourcePinId = null;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (_isConnectingMode) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connector Mode: Tap source card then tap target card to connect.'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  void _handlePinTap(String pinId) async {
+    if (_isConnectingMode) {
+      if (_connectorSourcePinId == null) {
+        setState(() => _connectorSourcePinId = pinId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Selected source card. Now tap target card to connect.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        if (_connectorSourcePinId != pinId) {
+          final id = DateTime.now().millisecondsSinceEpoch.toString();
+          await ref.read(connectorRepositoryProvider).createConnector(
+            ConnectorsCompanion.insert(
+              id: id,
+              boardId: widget.boardId,
+              fromPinId: _connectorSourcePinId!,
+              toPinId: pinId,
+              style: const Value('curved'),
+            ),
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Cards connected successfully!'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+        setState(() {
+          _connectorSourcePinId = null;
+          _isConnectingMode = false;
+        });
+      }
+    }
+  }
+
   // The pin currently open in the editor panel
   String? _editingPinId;
+
+  void _setEditingPinId(String? id) {
+    setState(() => _editingPinId = id);
+    widget.onEditStateChanged?.call(id != null);
+  }
 
   @override
   void initState() {
@@ -108,17 +186,37 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
 
   Future<void> _persistNodePositions() async {
     final repo = ref.read(pinRepositoryProvider);
+    final frames = _latestPins.where((p) => p.type == 'frame').toList();
+
     for (final node in _controller.nodes) {
       final pinId = (node.key as ValueKey<String>).value;
       final pin = _latestPins.where((p) => p.id == pinId).firstOrNull;
       if (pin == null) continue;
 
-      final moved = (pin.x - node.offset.dx).abs() > 0.5 ||
-          (pin.y - node.offset.dy).abs() > 0.5 ||
+      final deltaX = node.offset.dx - pin.x;
+      final deltaY = node.offset.dy - pin.y;
+
+      final moved = deltaX.abs() > 0.5 ||
+          deltaY.abs() > 0.5 ||
           (pin.width - node.size.width).abs() > 0.5 ||
           (pin.height - node.size.height).abs() > 0.5;
 
       if (!moved) continue;
+
+      String? newParentFrameId = pin.parentFrameId;
+      if (pin.type != 'frame') {
+        final pinCenter = Offset(
+          node.offset.dx + node.size.width / 2,
+          node.offset.dy + node.size.height / 2,
+        );
+        final containingFrame = frames.where((f) {
+          return pinCenter.dx >= f.x &&
+              pinCenter.dx <= (f.x + f.width) &&
+              pinCenter.dy >= f.y &&
+              pinCenter.dy <= (f.y + f.height);
+        }).firstOrNull;
+        newParentFrameId = containingFrame?.id;
+      }
 
       await repo.updatePinPosition(
         pinId,
@@ -127,6 +225,37 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
         width: node.size.width,
         height: node.size.height,
       );
+
+      if (newParentFrameId != pin.parentFrameId) {
+        final updated = pin.copyWith(
+          x: node.offset.dx,
+          y: node.offset.dy,
+          width: node.size.width,
+          height: node.size.height,
+          parentFrameId: Value(newParentFrameId),
+          modifiedAt: DateTime.now(),
+        );
+        await repo.updatePin(updated);
+      }
+
+      // If a frame pin moved, move all child pins inside it!
+      if (pin.type == 'frame' && (deltaX.abs() > 0.5 || deltaY.abs() > 0.5)) {
+        final children = _latestPins.where((p) => p.parentFrameId == pin.id);
+        for (final child in children) {
+          final childNodeKey = ValueKey<String>(child.id);
+          final childNode = _controller.getNode(childNodeKey);
+          final newX = child.x + deltaX;
+          final newY = child.y + deltaY;
+          if (childNode != null) {
+            childNode.offset = Offset(newX, newY);
+          }
+          await repo.updatePinPosition(
+            child.id,
+            x: newX,
+            y: newY,
+          );
+        }
+      }
     }
   }
 
@@ -134,15 +263,24 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
     _latestPins = pins;
     if (_controller.mouseDown) return;
 
-    final pinIds = pins.map((p) => p.id).toSet();
+    // Only top-level pins spawn canvas nodes on the main board canvas
+    final topLevelPins = List<PinEntity>.from(pins.where((p) => p.parentFrameId == null))
+      ..sort((a, b) {
+        if (a.type == 'frame' && b.type != 'frame') return -1;
+        if (a.type != 'frame' && b.type == 'frame') return 1;
+        return a.zIndex.compareTo(b.zIndex);
+      });
+
+    final topLevelIds = topLevelPins.map((p) => p.id).toSet();
+
     for (final node in List<InfiniteCanvasNode>.from(_controller.nodes)) {
       final id = (node.key as ValueKey<String>).value;
-      if (!pinIds.contains(id)) {
+      if (!topLevelIds.contains(id)) {
         _controller.remove(node.key);
       }
     }
 
-    for (final pin in pins) {
+    for (final pin in topLevelPins) {
       final key = ValueKey<String>(pin.id);
       final existing = _controller.getNode(key);
       if (existing != null) {
@@ -153,25 +291,59 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
         _controller.add(_pinToNode(pin));
       }
     }
+
+    // Reorder nodes in controller so frame nodes are drawn first (background layer)
+    final nodeMap = {for (var n in _controller.nodes) (n.key as ValueKey<String>).value: n};
+    _controller.nodes.clear();
+    for (final pin in topLevelPins) {
+      final node = nodeMap[pin.id];
+      if (node != null) {
+        _controller.nodes.add(node);
+      }
+    }
+
     // Trigger a repaint without calling the protected notifyListeners
     if (mounted) setState(() {});
   }
 
   InfiniteCanvasNode _pinToNode(PinEntity pin) {
     final isHeading = pin.type == 'heading';
+    final isSelectedSource = _connectorSourcePinId == pin.id;
 
     return InfiniteCanvasNode(
       key: ValueKey<String>(pin.id),
       offset: Offset(pin.x, pin.y),
       size: Size(pin.width, pin.height),
       resizeMode: isHeading ? ResizeMode.disabled : ResizeMode.corners,
-      child: SizedBox.expand(
-        child: BoardPinCard(
-          pinId: pin.id,
-          type: pin.type,
-          content: pin.content,
-          colorTag: pin.colorTag,
-          onEdit: (id) => setState(() => _editingPinId = id),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (_isConnectingMode) {
+            _handlePinTap(pin.id);
+          }
+        },
+        child: Container(
+          decoration: isSelectedSource
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: EpicordiaColors.blue600, width: 3),
+                )
+              : null,
+          child: SizedBox.expand(
+            child: BoardPinCard(
+              pinId: pin.id,
+              type: pin.type,
+              content: pin.content,
+              colorTag: pin.colorTag,
+              onEdit: (id) {
+                if (_isConnectingMode) {
+                  _handlePinTap(id);
+                } else {
+                  _setEditingPinId(id);
+                }
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -206,8 +378,28 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
 
         final showEmptyHint = pins.isEmpty && snapshot.connectionState == ConnectionState.active;
 
-        return Stack(
-          children: [
+        return DragTarget<PinEntity>(
+          onAcceptWithDetails: (details) async {
+            final pin = details.data;
+            final renderBox = context.findRenderObject() as RenderBox?;
+            if (renderBox == null) return;
+            final localPos = renderBox.globalToLocal(details.offset);
+            final transform = _controller.transform.value;
+            final inverse = Matrix4.tryInvert(transform);
+            final worldPos = inverse != null ? MatrixUtils.transformPoint(inverse, localPos) : localPos;
+
+            final pinRepo = ref.read(pinRepositoryProvider);
+            final updated = pin.copyWith(
+              x: worldPos.dx,
+              y: worldPos.dy,
+              parentFrameId: const Value(null),
+              modifiedAt: DateTime.now(),
+            );
+            await pinRepo.updatePin(updated);
+          },
+          builder: (context, candidateData, rejectedData) {
+            return Stack(
+              children: [
             // ── Background fill ───────────────────────────────────────────
             Positioned.fill(child: ColoredBox(color: bgColor)),
 
@@ -264,23 +456,26 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
               ),
 
             // ── Zoom toolbar (bottom-right) ────────────────────────────────
-            Positioned(
-              right: 16,
-              bottom: 24,
-              child: _ZoomToolbar(controller: _controller),
-            ),
+            if (_editingPinId == null)
+              Positioned(
+                right: 16,
+                bottom: 24,
+                child: _ZoomToolbar(controller: _controller),
+              ),
 
             // ── Pin Editor Panel / Bottom Sheet ────────────────────────────
             if (_editingPinId != null)
               _PinEditorOverlay(
                 pinId: _editingPinId!,
                 boardId: widget.boardId,
-                onClose: () => setState(() => _editingPinId = null),
+                onClose: () => _setEditingPinId(null),
               ),
           ],
         );
       },
     );
+  },
+);
   }
 }
 
@@ -300,79 +495,48 @@ class _PinEditorOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isWide = width >= 600;
+    final screenSize = MediaQuery.of(context).size;
 
-    if (isWide) {
-      return Positioned(
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: math.min(400, width * 0.4),
-        child: Material(
-          elevation: 8,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            bottomLeft: Radius.circular(16),
-          ),
-          color: Theme.of(context).colorScheme.surface,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              bottomLeft: Radius.circular(16),
-            ),
-            child: PinEditorPanel(
-              pinId: pinId,
-              boardId: boardId,
-              onClose: onClose,
+    return Stack(
+      children: [
+        // Modal barrier
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: onClose,
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.45),
             ),
           ),
         ),
-      );
-    } else {
-      return Positioned(
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: MediaQuery.of(context).size.height * 0.65,
-        child: Material(
-          elevation: 8,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          color: Theme.of(context).colorScheme.surface,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: EpicordiaColors.borderSubtleLight,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Material(
+              elevation: 20,
+              borderRadius: BorderRadius.circular(20),
+              color: Theme.of(context).colorScheme.surface,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: math.min(580, screenSize.width * 0.9),
+                  maxHeight: math.min(760, screenSize.height * 0.85),
                 ),
-                Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
                   child: PinEditorPanel(
                     pinId: pinId,
                     boardId: boardId,
                     onClose: onClose,
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
-      );
-    }
+      ],
+    );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Zoom toolbar

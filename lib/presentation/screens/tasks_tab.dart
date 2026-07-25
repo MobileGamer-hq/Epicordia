@@ -72,6 +72,14 @@ class _TasksTabState extends ConsumerState<TasksTab> {
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(allTasksProvider);
     final boardsAsync = ref.watch(allBoardsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgApp = Theme.of(context).scaffoldBackgroundColor;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue700;
 
     final boardsMap = boardsAsync.value?.fold<Map<String, BoardEntity>>(
           {},
@@ -87,19 +95,20 @@ class _TasksTabState extends ConsumerState<TasksTab> {
         children: [
           // Search + filters
           Container(
-            color: EpicordiaColors.surfaceAppLight,
+            color: bgApp,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Column(
               children: [
                 // Search bar
                 TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: textPrimary),
+                  decoration: InputDecoration(
                     hintText: 'Filter tasks by name, tag, or board...',
                     prefixIcon: Icon(
                       Icons.search,
                       size: 18,
-                      color: EpicordiaColors.textTertiaryLight,
+                      color: textTertiary,
                     ),
                   ),
                 ),
@@ -122,13 +131,13 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                             ),
                             decoration: BoxDecoration(
                               color: selected
-                                  ? EpicordiaColors.blue700
+                                  ? activeBlue
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: selected
-                                    ? EpicordiaColors.blue700
-                                    : EpicordiaColors.borderStrongLight,
+                                    ? activeBlue
+                                    : borderStrong,
                               ),
                             ),
                             child: Text(
@@ -138,7 +147,7 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                                 fontWeight: FontWeight.w500,
                                 color: selected
                                     ? Colors.white
-                                    : EpicordiaColors.textSecondaryLight,
+                                    : textSecondary,
                               ),
                             ),
                           ),
@@ -261,6 +270,13 @@ class _TaskListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = task.status == 'done';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final successClr = isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight;
+    final errorClr = isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight;
 
     return GestureDetector(
       onTap: onTap,
@@ -279,14 +295,14 @@ class _TaskListItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isCompleted
-                        ? EpicordiaColors.successLight
+                        ? successClr
                         : Colors.transparent,
                     border: Border.all(
                       color: isOverdue
-                          ? EpicordiaColors.errorLight.withValues(alpha: 0.6)
+                          ? errorClr.withValues(alpha: 0.6)
                           : isCompleted
-                              ? EpicordiaColors.successLight
-                              : EpicordiaColors.borderStrongLight,
+                              ? successClr
+                              : borderStrong,
                       width: 1.5,
                     ),
                   ),
@@ -301,27 +317,15 @@ class _TaskListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          task.title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: EpicordiaColors.textPrimaryLight,
-                            decoration: isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
-                            decorationColor: EpicordiaColors.textTertiaryLight,
-                          ),
-                        ),
-                      ),
-                      if (isOverdue) ...[
-                        const SizedBox(width: 6),
-                        const Text('⚠️', style: TextStyle(fontSize: 14)),
-                      ],
-                    ],
+                  Text(
+                    task.title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: textPrimary,
+                      decoration: isCompleted ? TextDecoration.lineThrough : null,
+                      decorationColor: textTertiary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -330,18 +334,11 @@ class _TaskListItem extends StatelessWidget {
                         dueFormatted,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isOverdue
-                              ? EpicordiaColors.errorLight
-                              : EpicordiaColors.textTertiaryLight,
+                          color: isOverdue ? errorClr : textTertiary,
+                          fontWeight: isOverdue ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
-                      const Text(
-                        ' • ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: EpicordiaColors.textTertiaryLight,
-                        ),
-                      ),
+                      const SizedBox(width: 10),
                       Text(
                         boardTitle,
                         style: TextStyle(
@@ -369,6 +366,10 @@ class _CreateTaskButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -376,26 +377,26 @@ class _CreateTaskButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: EpicordiaColors.borderStrongLight,
+            color: borderStrong,
             style: BorderStyle.solid,
             width: 1.5,
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.add,
               size: 18,
-              color: EpicordiaColors.textSecondaryLight,
+              color: textSecondary,
             ),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Text(
               'Create New Task',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
               ),
             ),
           ],

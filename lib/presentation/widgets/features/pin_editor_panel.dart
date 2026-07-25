@@ -1,15 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show Value;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:epicordia/core/theme.dart';
 import 'package:epicordia/data/database/database.dart';
 import 'package:epicordia/data/providers.dart';
 import 'package:epicordia/data/repository/pin_repository.dart';
 import 'package:epicordia/data/repository/task_repository.dart';
+import 'drawing_canvas.dart';
+
 
 
 // ---------------------------------------------------------------------------
@@ -18,15 +24,15 @@ import 'package:epicordia/data/repository/task_repository.dart';
 
 const Map<String, Color> _kTagColors = {
   'yellow': Color(0xFFF4C453),
+  'orange': Color(0xFFF2994A),
   'coral': Color(0xFFF0806B),
-  'mint': Color(0xFF5FC7A3),
-  'lavender': Color(0xFF9C8CF0),
-  'sky': Color(0xFF5FA8F5),
-  'grey': Color(0xFFB9BCC2),
+  'purple': Color(0xFFBB6BD9),
+  'blue': Color(0xFF2F80ED),
+  'green': Color(0xFF27AE60),
 };
 
-Color? _colorFromTag(String? tag) {
-  if (tag == null || tag.isEmpty) return null;
+Color? colorFromTag(String? tag) {
+  if (tag == null) return null;
   return _kTagColors[tag.toLowerCase()];
 }
 
@@ -34,22 +40,42 @@ Color? _colorFromTag(String? tag) {
 // Entry-point helper
 // ---------------------------------------------------------------------------
 
-/// Opens [PinEditorPanel] as a modal bottom sheet.
+/// Opens [PinEditorPanel] as a centered modal popup.
 void showPinEditorPanel(
   BuildContext context, {
   required String pinId,
   required String boardId,
 }) {
-  showModalBottomSheet<void>(
+  showDialog<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => PinEditorPanel(
-      pinId: pinId,
-      boardId: boardId,
-      onClose: () => Navigator.of(context).pop(),
-    ),
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    builder: (dialogContext) {
+      final screenSize = MediaQuery.of(dialogContext).size;
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Material(
+            elevation: 20,
+            borderRadius: BorderRadius.circular(20),
+            color: Theme.of(dialogContext).colorScheme.surface,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: math.min(580, screenSize.width * 0.9),
+                maxHeight: math.min(760, screenSize.height * 0.85),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: PinEditorPanel(
+                  pinId: pinId,
+                  boardId: boardId,
+                  onClose: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
   );
 }
 
@@ -265,10 +291,21 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
           onPinSaved: _refreshPin,
           onTaskSaved: _refreshTask,
         ),
+      'tasklist' => _TaskListEditor(pin: pin, onSaved: _refreshPin),
       'checklist' => _ChecklistEditor(pin: pin, onSaved: _refreshPin),
+      'image' => _ImageEditor(pin: pin, onSaved: _refreshPin),
+      'drawing' || 'handwriting' => _DrawingEditor(pin: pin, onSaved: _refreshPin),
+      'frame' => _FrameEditor(pin: pin, onSaved: _refreshPin),
+      'heading' => _HeadingEditor(pin: pin, onSaved: _refreshPin),
+      'colorSwatch' => _ColorSwatchEditor(pin: pin, onSaved: _refreshPin),
+      'link' => _LinkEditor(pin: pin, onSaved: _refreshPin),
+      'file' => _FileEditor(pin: pin, onSaved: _refreshPin),
+      'table' => _TableEditor(pin: pin, onSaved: _refreshPin),
+      'board' => _BoardTileEditor(pin: pin, onSaved: _refreshPin),
       _ => _PlaceholderEditor(pinType: pin.type),
     };
   }
+
 }
 
 // ---------------------------------------------------------------------------
@@ -298,7 +335,7 @@ class _PanelHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = _typeIcons[pin.type] ?? Icons.push_pin_outlined;
-    final indicatorColor = _colorFromTag(pin.colorTag);
+    final indicatorColor = colorFromTag(pin.colorTag);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -431,6 +468,11 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     return Column(
       children: [
         Flexible(
@@ -441,14 +483,14 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
               maxLines: null,
               expands: true,
               keyboardType: TextInputType.multiline,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
                 height: 1.6,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Start writing\u2026',
-                hintStyle: TextStyle(color: EpicordiaColors.textTertiaryLight),
+                hintStyle: TextStyle(color: textTertiary),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -460,9 +502,8 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
         // Formatting toolbar
         Container(
           height: 44,
-          decoration: const BoxDecoration(
-            border:
-                Border(top: BorderSide(color: EpicordiaColors.borderSubtleLight)),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: borderSubtle)),
           ),
           child: Row(
             children: [
@@ -656,6 +697,9 @@ class _TaskEditorState extends ConsumerState<_TaskEditor> {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
@@ -670,12 +714,12 @@ class _TaskEditorState extends ConsumerState<_TaskEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _titleCtrl,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: EpicordiaColors.textPrimaryLight,
+              color: textPrimary,
             ),
-            decoration: _inputDeco('What needs to be done?'),
+            decoration: _inputDeco('What needs to be done?', context),
           ),
           const SizedBox(height: 16),
 
@@ -685,12 +729,12 @@ class _TaskEditorState extends ConsumerState<_TaskEditor> {
           TextField(
             controller: _notesCtrl,
             maxLines: 4,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: EpicordiaColors.textPrimaryLight,
+              color: textPrimary,
               height: 1.5,
             ),
-            decoration: _inputDeco('Additional details\u2026'),
+            decoration: _inputDeco('Additional details\u2026', context),
           ),
           const SizedBox(height: 16),
 
@@ -728,29 +772,35 @@ class _TaskEditorState extends ConsumerState<_TaskEditor> {
   }
 }
 
-InputDecoration _inputDeco(String hint) {
+InputDecoration _inputDeco(String hint, [BuildContext? context]) {
+  final isDark = context != null && Theme.of(context).brightness == Brightness.dark;
   return InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(
-        color: EpicordiaColors.textTertiaryLight, fontSize: 14),
+    hintStyle: TextStyle(
+      color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+      fontSize: 14,
+    ),
     filled: true,
-    fillColor: EpicordiaColors.surfaceSunkenLight,
-    contentPadding:
-        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    fillColor: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide:
-          const BorderSide(color: EpicordiaColors.borderSubtleLight),
+      borderSide: BorderSide(
+        color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight,
+      ),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide:
-          const BorderSide(color: EpicordiaColors.borderSubtleLight),
+      borderSide: BorderSide(
+        color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight,
+      ),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide:
-          const BorderSide(color: EpicordiaColors.blue600, width: 1.5),
+      borderSide: BorderSide(
+        color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
+        width: 1.5,
+      ),
     ),
   );
 }
@@ -1222,8 +1272,1182 @@ class _ChecklistRowState extends State<_ChecklistRow> {
 }
 
 // ---------------------------------------------------------------------------
+// IMAGE EDITOR
+// ---------------------------------------------------------------------------
+
+class _ImageEditor extends ConsumerStatefulWidget {
+  const _ImageEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_ImageEditor> createState() => _ImageEditorState();
+}
+
+class _ImageEditorState extends ConsumerState<_ImageEditor> {
+  late final TextEditingController _captionCtrl;
+  String? _filePath;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = _parseData(widget.pin.content);
+    _filePath = data['filePath'] as String?;
+    _captionCtrl = TextEditingController(text: data['caption'] as String? ?? '');
+    _captionCtrl.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _captionCtrl.removeListener(_onChanged);
+    _captionCtrl.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), _save);
+  }
+
+  Future<void> _save() async {
+    final json = jsonEncode({
+      'filePath': _filePath ?? '',
+      'caption': _captionCtrl.text,
+    });
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source);
+      if (picked != null) {
+        setState(() => _filePath = picked.path);
+        _save();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFile = _filePath != null && _filePath!.isNotEmpty && File(_filePath!).existsSync();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('IMAGE SOURCE'),
+          const SizedBox(height: 8),
+          if (hasFile)
+            Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: EpicordiaColors.borderSubtleLight),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  File(_filePath!),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
+          else
+            Container(
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: EpicordiaColors.surfaceSunkenLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: EpicordiaColors.borderSubtleLight),
+              ),
+              child: const Center(
+                child: Icon(Icons.image_outlined, size: 48, color: EpicordiaColors.textTertiaryLight),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined, size: 18),
+                  label: const Text('From Device Gallery'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: EpicordiaColors.blue600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () => _pickImage(ImageSource.camera),
+                icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                label: const Text('Camera'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: EpicordiaColors.textPrimaryLight,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const _SectionLabel('CAPTION'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _captionCtrl,
+            decoration: _inputDeco('Optional image caption…'),
+            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DRAWING EDITOR
+// ---------------------------------------------------------------------------
+
+class _DrawingEditor extends ConsumerWidget {
+  const _DrawingEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DrawingEditorCanvas(
+      initialContent: pin.content,
+      onChanged: (jsonContent) async {
+        final updated = pin.copyWith(
+          content: Value(jsonContent),
+          modifiedAt: DateTime.now(),
+        );
+        await ref.read(pinRepositoryProvider).updatePin(updated);
+        onSaved();
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// HEADING EDITOR
+// ---------------------------------------------------------------------------
+
+class _HeadingEditor extends ConsumerStatefulWidget {
+  const _HeadingEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_HeadingEditor> createState() => _HeadingEditorState();
+}
+
+class _HeadingEditorState extends ConsumerState<_HeadingEditor> {
+  late final TextEditingController _ctrl;
+  String _style = 'heading';
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = _parseData(widget.pin.content);
+    _style = data['style'] as String? ?? 'heading';
+    _ctrl = TextEditingController(text: data['text'] as String? ?? widget.pin.content ?? '');
+    _ctrl.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _ctrl.removeListener(_onChanged);
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return {'text': content};
+    }
+
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _save);
+  }
+
+  Future<void> _save() async {
+    final json = jsonEncode({'text': _ctrl.text, 'style': _style});
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('STYLE'),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'heading', label: Text('Heading Text'), icon: Icon(Icons.title)),
+              ButtonSegment(value: 'divider', label: Text('Divider Line'), icon: Icon(Icons.horizontal_rule)),
+            ],
+            selected: {_style},
+            onSelectionChanged: (set) {
+              setState(() => _style = set.first);
+              _save();
+            },
+          ),
+          if (_style == 'heading') ...[
+            const SizedBox(height: 20),
+            const _SectionLabel('HEADING TEXT'),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _ctrl,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
+              decoration: _inputDeco('Enter section heading…'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// COLOR SWATCH EDITOR
+// ---------------------------------------------------------------------------
+
+class _ColorSwatchEditor extends ConsumerStatefulWidget {
+  const _ColorSwatchEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_ColorSwatchEditor> createState() => _ColorSwatchEditorState();
+}
+
+class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
+  late String _hex;
+  late final TextEditingController _hexCtrl;
+
+  static const List<String> _swatchPalette = [
+    '#3D68EE',
+    '#F4C453',
+    '#F0806B',
+    '#5FC7A3',
+    '#9C8CF0',
+    '#5FA8F5',
+    '#16181C',
+    '#8E8E93',
+    '#E5A030',
+    '#D9534F',
+    '#2E7D32',
+    '#FFFFFF',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _hex = _parseHex(widget.pin.content);
+    _hexCtrl = TextEditingController(text: _hex);
+  }
+
+  @override
+  void dispose() {
+    _hexCtrl.dispose();
+    super.dispose();
+  }
+
+  String _parseHex(String? content) {
+    if (content == null || content.isEmpty) return '#3D68EE';
+    try {
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      return map['hex'] as String? ?? '#3D68EE';
+    } catch (_) {
+      return content.startsWith('#') ? content : '#3D68EE';
+    }
+  }
+
+  Future<void> _save(String hex) async {
+    setState(() {
+      _hex = hex;
+      _hexCtrl.text = hex;
+    });
+    final json = jsonEncode({'hex': hex});
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      colorTag: Value(hex),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('SWATCH PREVIEW'),
+          const SizedBox(height: 8),
+          Container(
+            height: 100,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: _hexToColor(_hex),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: EpicordiaColors.borderSubtleLight),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              _hex.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const _SectionLabel('COLOR PALETTE'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _swatchPalette.map((h) {
+              final isSelected = _hex.toUpperCase() == h.toUpperCase();
+              return GestureDetector(
+                onTap: () => _save(h),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _hexToColor(h),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight,
+                      width: isSelected ? 3 : 1,
+                    ),
+                  ),
+                  child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _hexToColor(String hex) {
+    final clean = hex.replaceFirst('#', '');
+    if (clean.length == 6) return Color(int.parse('FF$clean', radix: 16));
+    return Colors.blue;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TASK LIST EDITOR
+// ---------------------------------------------------------------------------
+
+class _TaskListEditor extends ConsumerStatefulWidget {
+  const _TaskListEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_TaskListEditor> createState() => _TaskListEditorState();
+}
+
+class _TaskListEditorState extends ConsumerState<_TaskListEditor> {
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _newItemCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final title = _parseTitle(widget.pin.content);
+    _titleCtrl = TextEditingController(text: title);
+    _newItemCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _newItemCtrl.dispose();
+    super.dispose();
+  }
+
+  String _parseTitle(String? content) {
+    if (content == null || content.isEmpty) return '';
+    try {
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      return map['title'] as String? ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<void> _saveTitle() async {
+    final json = jsonEncode({'title': _titleCtrl.text});
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  Future<void> _addSubTask() async {
+    final text = _newItemCtrl.text.trim();
+    if (text.isEmpty) return;
+
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final taskRepo = ref.read(taskRepositoryProvider);
+    await taskRepo.createTask(
+      TasksCompanion.insert(
+        id: id,
+        groupPinId: Value(widget.pin.id),
+        boardId: Value(widget.pin.boardId),
+        title: text,
+        status: const Value('todo'),
+      ),
+    );
+
+    _newItemCtrl.clear();
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tasksStream = ref.watch(tasksForGroupPinProvider(widget.pin.id));
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('LIST TITLE'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _titleCtrl,
+            onChanged: (_) => _saveTitle(),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
+            decoration: _inputDeco('e.g. Packing list, Sprint tasks…'),
+          ),
+          const SizedBox(height: 16),
+          const _SectionLabel('SUB-TASKS'),
+          const SizedBox(height: 6),
+          Expanded(
+            child: tasksStream.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Text('Error loading tasks: $err'),
+              data: (tasks) {
+                return ListView.builder(
+                  itemCount: tasks.length,
+                  itemBuilder: (ctx, i) {
+                    final t = tasks[i];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              final next = t.status == 'done' ? 'todo' : 'done';
+                              ref.read(taskRepositoryProvider).updateTask(t.copyWith(status: next));
+                            },
+                            child: _MiniStatusRing(isDone: t.status == 'done'),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              t.title,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: t.status == 'done' ? EpicordiaColors.textTertiaryLight : EpicordiaColors.textPrimaryLight,
+                                decoration: t.status == 'done' ? TextDecoration.lineThrough : null,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18, color: EpicordiaColors.textTertiaryLight),
+                            onPressed: () {
+                              ref.read(taskRepositoryProvider).deleteTask(t.id);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newItemCtrl,
+                  onSubmitted: (_) => _addSubTask(),
+                  decoration: _inputDeco('Add a new task…'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: _addSubTask,
+                icon: const Icon(Icons.add),
+                style: IconButton.styleFrom(backgroundColor: EpicordiaColors.blue600),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// FRAME EDITOR
+// ---------------------------------------------------------------------------
+
+class _FrameEditor extends ConsumerStatefulWidget {
+  const _FrameEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_FrameEditor> createState() => _FrameEditorState();
+}
+
+class _FrameEditorState extends ConsumerState<_FrameEditor> {
+  late final TextEditingController _titleCtrl;
+  bool _isCollapsed = false;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = _parseData(widget.pin.content);
+    _titleCtrl = TextEditingController(text: data['label'] as String? ?? '');
+    _isCollapsed = data['collapsed'] as bool? ?? false;
+    _titleCtrl.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _titleCtrl.removeListener(_onChanged);
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return {'label': content};
+    }
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _save);
+  }
+
+  Future<void> _save() async {
+    final data = {
+      'label': _titleCtrl.text,
+      'collapsed': _isCollapsed,
+    };
+    final json = jsonEncode(data);
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final primaryColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('COLUMN TITLE'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _titleCtrl,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+            decoration: _inputDeco('e.g. To Do, In Progress, Ideas…', context),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: sunkenBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderSubtle),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.unfold_less_rounded, size: 20, color: primaryColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Collapse Column',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                  ),
+                ),
+                Switch.adaptive(
+                  value: _isCollapsed,
+                  activeColor: primaryColor,
+                  onChanged: (val) {
+                    setState(() => _isCollapsed = val);
+                    _save();
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          const _SectionLabel('COLUMN LAYOUT HINT'),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: sunkenBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderSubtle),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18, color: primaryColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Drag any card into this column to add it to the vertical stack. Moving this column header moves all stacked items together as one unit.',
+                    style: TextStyle(fontSize: 12, color: textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// LINK EDITOR
+// ---------------------------------------------------------------------------
+
+class _LinkEditor extends ConsumerStatefulWidget {
+  const _LinkEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_LinkEditor> createState() => _LinkEditorState();
+}
+
+class _LinkEditorState extends ConsumerState<_LinkEditor> {
+  late final TextEditingController _urlCtrl;
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _descCtrl;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = _parseData(widget.pin.content);
+    _urlCtrl = TextEditingController(text: data['url'] as String? ?? widget.pin.content ?? '');
+    _titleCtrl = TextEditingController(text: data['cachedTitle'] as String? ?? '');
+    _descCtrl = TextEditingController(text: data['cachedDescription'] as String? ?? '');
+
+    _urlCtrl.addListener(_onChanged);
+    _titleCtrl.addListener(_onChanged);
+    _descCtrl.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _urlCtrl.dispose();
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return {'url': content};
+    }
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), _save);
+  }
+
+  Future<void> _save() async {
+    final json = jsonEncode({
+      'url': _urlCtrl.text,
+      'cachedTitle': _titleCtrl.text.isEmpty ? _urlCtrl.text : _titleCtrl.text,
+      'cachedDescription': _descCtrl.text,
+    });
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('URL'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _urlCtrl,
+            decoration: _inputDeco('https://example.com'),
+            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+          ),
+          const SizedBox(height: 16),
+          const _SectionLabel('LINK TITLE'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _titleCtrl,
+            decoration: _inputDeco('Page title…'),
+            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+          ),
+          const SizedBox(height: 16),
+          const _SectionLabel('DESCRIPTION'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _descCtrl,
+            maxLines: 2,
+            decoration: _inputDeco('Brief summary or note…'),
+            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// FILE EDITOR
+// ---------------------------------------------------------------------------
+
+class _FileEditor extends ConsumerStatefulWidget {
+  const _FileEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_FileEditor> createState() => _FileEditorState();
+}
+
+class _FileEditorState extends ConsumerState<_FileEditor> {
+  late final TextEditingController _nameCtrl;
+  String? _filePath;
+  int? _fileSize;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = _parseData(widget.pin.content);
+    _filePath = data['filePath'] as String?;
+    _fileSize = data['fileSize'] as int?;
+    _nameCtrl = TextEditingController(text: data['displayName'] as String? ?? '');
+    _nameCtrl.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), _save);
+  }
+
+  Future<void> _save() async {
+    final json = jsonEncode({
+      'filePath': _filePath ?? '',
+      'displayName': _nameCtrl.text,
+      'fileSize': _fileSize ?? 0,
+    });
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final res = await FilePicker.platform.pickFiles();
+      if (res != null && res.files.single.path != null) {
+        final f = res.files.single;
+        setState(() {
+          _filePath = f.path;
+          _fileSize = f.size;
+          if (_nameCtrl.text.isEmpty) {
+            _nameCtrl.text = f.name;
+          }
+        });
+        _save();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick file: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFile = _filePath != null && _filePath!.isNotEmpty;
+    final fileName = _filePath != null ? _filePath!.split(Platform.pathSeparator).last : 'No file selected';
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('ATTACHED FILE'),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: EpicordiaColors.surfaceSunkenLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: EpicordiaColors.borderSubtleLight),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.insert_drive_file_outlined, size: 28, color: EpicordiaColors.blue600),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: _pickFile,
+                  child: Text(hasFile ? 'Replace' : 'Choose'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const _SectionLabel('DISPLAY NAME'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _nameCtrl,
+            decoration: _inputDeco('File display label…'),
+            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TableEditor extends ConsumerStatefulWidget {
+  const _TableEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_TableEditor> createState() => _TableEditorState();
+}
+
+class _TableEditorState extends ConsumerState<_TableEditor> {
+  late List<String> _columns;
+  late List<List<String>> _rows;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = _parseTable(widget.pin.content);
+    _columns = data['columns'] as List<String>? ?? ['Item', 'Quantity', 'Notes'];
+    _rows = data['rows'] as List<List<String>>? ?? [
+      ['Item 1', '1', 'Details'],
+      ['Item 2', '2', 'Details'],
+    ];
+  }
+
+  Map<String, dynamic> _parseTable(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      return {
+        'columns': (map['columns'] as List<dynamic>? ?? []).cast<String>(),
+        'rows': (map['rows'] as List<dynamic>? ?? []).map((r) => (r as List<dynamic>).cast<String>()).toList(),
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> _save() async {
+    final json = jsonEncode({
+      'columns': _columns,
+      'rows': _rows,
+    });
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  void _addColumn() {
+    setState(() {
+      _columns.add('Col ${_columns.length + 1}');
+      for (final r in _rows) {
+        r.add('');
+      }
+    });
+    _save();
+  }
+
+  void _addRow() {
+    setState(() {
+      _rows.add(List.filled(_columns.length, ''));
+    });
+    _save();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const _SectionLabel('TABLE GRID'),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _addColumn,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Column'),
+              ),
+              TextButton.icon(
+                onPressed: _addRow,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Row'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SingleChildScrollView(
+                child: DataTable(
+                  columns: _columns
+                      .asMap()
+                      .entries
+                      .map((entry) => DataColumn(
+                            label: SizedBox(
+                              width: 90,
+                              child: TextFormField(
+                                initialValue: entry.value,
+                                decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                onChanged: (val) {
+                                  _columns[entry.key] = val;
+                                  _save();
+                                },
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                  rows: _rows
+                      .asMap()
+                      .entries
+                      .map((rowEntry) => DataRow(
+                            cells: rowEntry.value
+                                .asMap()
+                                .entries
+                                .map((colEntry) => DataCell(
+                                      SizedBox(
+                                        width: 90,
+                                        child: TextFormField(
+                                          initialValue: colEntry.value,
+                                          decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                                          style: const TextStyle(fontSize: 12),
+                                          onChanged: (val) {
+                                            _rows[rowEntry.key][colEntry.key] = val;
+                                            _save();
+                                          },
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BoardTileEditor extends ConsumerStatefulWidget {
+  const _BoardTileEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_BoardTileEditor> createState() => _BoardTileEditorState();
+}
+
+class _BoardTileEditorState extends ConsumerState<_BoardTileEditor> {
+  late final TextEditingController _ctrl;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.pin.content ?? '');
+    _ctrl.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _save);
+  }
+
+  Future<void> _save() async {
+    final updated = widget.pin.copyWith(
+      content: Value(_ctrl.text),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('BOARD TILE NAME'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _ctrl,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
+            decoration: _inputDeco('Enter sub-board title…'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // PLACEHOLDER for unsupported pin types
 // ---------------------------------------------------------------------------
+
 
 class _PlaceholderEditor extends StatelessWidget {
   const _PlaceholderEditor({required this.pinType});
@@ -1378,14 +2602,38 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 10,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.9,
-        color: EpicordiaColors.textTertiaryLight,
+        color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
       ),
     );
   }
 }
+
+class _MiniStatusRing extends StatelessWidget {
+  final bool isDone;
+  const _MiniStatusRing({required this.isDone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isDone ? EpicordiaColors.successLight : Colors.transparent,
+        border: Border.all(
+          color: isDone ? EpicordiaColors.successLight : EpicordiaColors.borderStrongLight,
+          width: 1.5,
+        ),
+      ),
+      child: isDone ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
+    );
+  }
+}
+
