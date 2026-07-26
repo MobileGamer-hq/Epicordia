@@ -31,3 +31,8 @@ Now lets work on the baord screen, issues i have
 remove the bell icon theres is no notification for now, the cards should be able to be moved around in the list and focus view and also their content should be able to be editied
 the kanban doesnt work its just the same as the normal board which is worng
 the create screen ui didnt change with the change in theme still on light theme
+
+
+-for the kamban its not all screens that it will be in a row so for phones now tit will be in a column, so to do, in progress and done will be in a column
+-theres no way to get to settings from the todays dashboard
+-edit tasks screen doesnt change with change in theme fix it

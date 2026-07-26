@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:epicordia/domain/services/notification_service.dart';
 import 'package:epicordia/domain/services/device_reminder_service.dart';
@@ -26,7 +27,6 @@ void main() {
     });
 
     test('Allows local notification scheduling when osReminderId is null', () async {
-      // With past date, it should return false due to scheduledDate check
       final pastResult = await notificationService.scheduleTaskNotification(
         id: 102,
         title: 'Past Task',
@@ -40,25 +40,37 @@ void main() {
 
   group('DeviceReminderService', () {
     test('isSupported evaluates to false on non-iOS platforms in test environment', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
       final reminderService = DeviceReminderService();
-      // Test environment default is TargetPlatform.android or similar (non-iOS)
       expect(reminderService.isSupported, isFalse);
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    test('isSupported evaluates to true when platform is iOS', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final reminderService = DeviceReminderService();
+      expect(reminderService.isSupported, isTrue);
+      debugDefaultTargetPlatformOverride = null;
     });
   });
 
   group('DeviceTimerAlarmService', () {
-    test('startTimer returns iosNotificationScheduled on non-Android platform in test', () async {
+    test('startTimer returns iosNotificationScheduled on iOS platform', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       final timerService = DeviceTimerAlarmService();
       final result = await timerService.startTimer(minutes: 15, title: 'Focus Session');
 
       expect(result, equals(TimerActionResult.iosNotificationScheduled));
+      debugDefaultTargetPlatformOverride = null;
     });
 
-    test('createAlarm returns iosNotificationScheduled on non-Android platform in test', () async {
+    test('createAlarm returns iosNotificationScheduled on iOS platform', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       final timerService = DeviceTimerAlarmService();
       final result = await timerService.createAlarm(hour: 8, minute: 30, title: 'Morning Alarm');
 
       expect(result, equals(TimerActionResult.iosNotificationScheduled));
+      debugDefaultTargetPlatformOverride = null;
     });
   });
 }

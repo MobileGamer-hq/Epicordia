@@ -35,7 +35,6 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   String? _osReminderId;
 
   final _reminderService = DeviceReminderService();
-  final _calendarService = DeviceCalendarService();
   final _notificationService = NotificationService();
 
   @override
@@ -367,6 +366,8 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                               pickedDate.day,
                             );
                           });
+                        }
+                      }
                     },
                   ),
                   const SizedBox(height: 12),

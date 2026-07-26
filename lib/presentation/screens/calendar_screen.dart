@@ -138,7 +138,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               for (final task in tasks) {
                 if (task.dueDate != null) {
                   final eventId = await calendarService.syncTaskToCalendar(
-                    calendarId: primaryCalendar.id!,
+                    calendarId: primaryCalendar.id,
                     title: task.title,
                     notes: task.notes,
                     startDate: task.dueDate!,

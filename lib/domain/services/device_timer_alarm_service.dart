@@ -44,7 +44,7 @@ class DeviceTimerAlarmService {
       try {
         FlutterAlarmClock.createAlarm(
           hour: hour,
-          minute: minute,
+          minutes: minute,
           title: title ?? 'Epicordia Alarm',
         );
         return TimerActionResult.androidSystemHandoffSuccess;

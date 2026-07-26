@@ -29,7 +29,7 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
-          await m.addColumn(tasks, tasks.osReminderId);
+          await m.addColumn(this.tasks, this.tasks.osReminderId as GeneratedColumn<Object>);
         }
       },
       beforeOpen: (details) async {

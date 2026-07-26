@@ -23,7 +23,7 @@ class NotificationService {
       macOS: darwinSettings,
     );
 
-    await _notificationsPlugin.initialize(initSettings);
+    await _notificationsPlugin.initialize(settings: initSettings);
   }
 
   /// Schedule a notification for a task due date.
@@ -64,14 +64,12 @@ class NotificationService {
 
     try {
       await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body ?? 'Task due now',
-        tzDate,
-        notificationDetails,
+        id: id,
+        title: title,
+        body: body ?? 'Task due now',
+        scheduledDate: tzDate,
+        notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
       );
       return true;
     } catch (e) {
@@ -108,19 +106,17 @@ class NotificationService {
     );
 
     await _notificationsPlugin.zonedSchedule(
-      id,
-      title,
-      'Timer finished (${duration.inMinutes}m)',
-      tzDate,
-      details,
+      id: id,
+      title: title,
+      body: 'Timer finished (${duration.inMinutes}m)',
+      scheduledDate: tzDate,
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
   /// Cancel a scheduled notification by ID.
   Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id);
+    await _notificationsPlugin.cancel(id: id);
   }
 }

@@ -401,10 +401,9 @@ packages:
   flutter_alarm_clock:
     dependency: "direct main"
     description:
-      name: flutter_alarm_clock
-      sha256: "681dcf04ad043cb249f0100ed359afe57360d8ffcb96f3e3e3af20218ed08dd8"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/flutter_alarm_clock"
+      relative: true
+    source: path
     version: "0.1.2"
   flutter_launcher_icons:
     dependency: "direct dev"

@@ -1540,6 +1540,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _osReminderIdMeta = const VerificationMeta(
+    'osReminderId',
+  );
+  @override
+  late final GeneratedColumn<String> osReminderId = GeneratedColumn<String>(
+    'os_reminder_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1579,6 +1590,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
     recurrenceParentId,
     recurrenceRule,
     calendarEventId,
+    osReminderId,
     createdAt,
     modifiedAt,
   ];
@@ -1688,6 +1700,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         ),
       );
     }
+    if (data.containsKey('os_reminder_id')) {
+      context.handle(
+        _osReminderIdMeta,
+        osReminderId.isAcceptableOrUnknown(
+          data['os_reminder_id']!,
+          _osReminderIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1761,6 +1782,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskEntity> {
         DriftSqlType.string,
         data['${effectivePrefix}calendar_event_id'],
       ),
+      osReminderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}os_reminder_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1792,6 +1817,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
   final String? recurrenceParentId;
   final String? recurrenceRule;
   final String? calendarEventId;
+  final String? osReminderId;
   final DateTime createdAt;
   final DateTime modifiedAt;
   const TaskEntity({
@@ -1808,6 +1834,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     this.recurrenceParentId,
     this.recurrenceRule,
     this.calendarEventId,
+    this.osReminderId,
     required this.createdAt,
     required this.modifiedAt,
   });
@@ -1844,6 +1871,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     }
     if (!nullToAbsent || calendarEventId != null) {
       map['calendar_event_id'] = Variable<String>(calendarEventId);
+    }
+    if (!nullToAbsent || osReminderId != null) {
+      map['os_reminder_id'] = Variable<String>(osReminderId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['modified_at'] = Variable<DateTime>(modifiedAt);
@@ -1883,6 +1913,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       calendarEventId: calendarEventId == null && nullToAbsent
           ? const Value.absent()
           : Value(calendarEventId),
+      osReminderId: osReminderId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(osReminderId),
       createdAt: Value(createdAt),
       modifiedAt: Value(modifiedAt),
     );
@@ -1909,6 +1942,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       ),
       recurrenceRule: serializer.fromJson<String?>(json['recurrenceRule']),
       calendarEventId: serializer.fromJson<String?>(json['calendarEventId']),
+      osReminderId: serializer.fromJson<String?>(json['osReminderId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
     );
@@ -1930,6 +1964,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       'recurrenceParentId': serializer.toJson<String?>(recurrenceParentId),
       'recurrenceRule': serializer.toJson<String?>(recurrenceRule),
       'calendarEventId': serializer.toJson<String?>(calendarEventId),
+      'osReminderId': serializer.toJson<String?>(osReminderId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
     };
@@ -1949,6 +1984,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     Value<String?> recurrenceParentId = const Value.absent(),
     Value<String?> recurrenceRule = const Value.absent(),
     Value<String?> calendarEventId = const Value.absent(),
+    Value<String?> osReminderId = const Value.absent(),
     DateTime? createdAt,
     DateTime? modifiedAt,
   }) => TaskEntity(
@@ -1973,6 +2009,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     calendarEventId: calendarEventId.present
         ? calendarEventId.value
         : this.calendarEventId,
+    osReminderId: osReminderId.present ? osReminderId.value : this.osReminderId,
     createdAt: createdAt ?? this.createdAt,
     modifiedAt: modifiedAt ?? this.modifiedAt,
   );
@@ -2001,6 +2038,9 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
       calendarEventId: data.calendarEventId.present
           ? data.calendarEventId.value
           : this.calendarEventId,
+      osReminderId: data.osReminderId.present
+          ? data.osReminderId.value
+          : this.osReminderId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       modifiedAt: data.modifiedAt.present
           ? data.modifiedAt.value
@@ -2024,6 +2064,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           ..write('recurrenceParentId: $recurrenceParentId, ')
           ..write('recurrenceRule: $recurrenceRule, ')
           ..write('calendarEventId: $calendarEventId, ')
+          ..write('osReminderId: $osReminderId, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt')
           ..write(')'))
@@ -2045,6 +2086,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
     recurrenceParentId,
     recurrenceRule,
     calendarEventId,
+    osReminderId,
     createdAt,
     modifiedAt,
   );
@@ -2065,6 +2107,7 @@ class TaskEntity extends DataClass implements Insertable<TaskEntity> {
           other.recurrenceParentId == this.recurrenceParentId &&
           other.recurrenceRule == this.recurrenceRule &&
           other.calendarEventId == this.calendarEventId &&
+          other.osReminderId == this.osReminderId &&
           other.createdAt == this.createdAt &&
           other.modifiedAt == this.modifiedAt);
 }
@@ -2083,6 +2126,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
   final Value<String?> recurrenceParentId;
   final Value<String?> recurrenceRule;
   final Value<String?> calendarEventId;
+  final Value<String?> osReminderId;
   final Value<DateTime> createdAt;
   final Value<DateTime> modifiedAt;
   final Value<int> rowid;
@@ -2100,6 +2144,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.recurrenceParentId = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
     this.calendarEventId = const Value.absent(),
+    this.osReminderId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2118,6 +2163,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     this.recurrenceParentId = const Value.absent(),
     this.recurrenceRule = const Value.absent(),
     this.calendarEventId = const Value.absent(),
+    this.osReminderId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2137,6 +2183,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Expression<String>? recurrenceParentId,
     Expression<String>? recurrenceRule,
     Expression<String>? calendarEventId,
+    Expression<String>? osReminderId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? modifiedAt,
     Expression<int>? rowid,
@@ -2156,6 +2203,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
         'recurrence_parent_id': recurrenceParentId,
       if (recurrenceRule != null) 'recurrence_rule': recurrenceRule,
       if (calendarEventId != null) 'calendar_event_id': calendarEventId,
+      if (osReminderId != null) 'os_reminder_id': osReminderId,
       if (createdAt != null) 'created_at': createdAt,
       if (modifiedAt != null) 'modified_at': modifiedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2176,6 +2224,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     Value<String?>? recurrenceParentId,
     Value<String?>? recurrenceRule,
     Value<String?>? calendarEventId,
+    Value<String?>? osReminderId,
     Value<DateTime>? createdAt,
     Value<DateTime>? modifiedAt,
     Value<int>? rowid,
@@ -2194,6 +2243,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
       recurrenceParentId: recurrenceParentId ?? this.recurrenceParentId,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       calendarEventId: calendarEventId ?? this.calendarEventId,
+      osReminderId: osReminderId ?? this.osReminderId,
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
       rowid: rowid ?? this.rowid,
@@ -2242,6 +2292,9 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
     if (calendarEventId.present) {
       map['calendar_event_id'] = Variable<String>(calendarEventId.value);
     }
+    if (osReminderId.present) {
+      map['os_reminder_id'] = Variable<String>(osReminderId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2270,6 +2323,7 @@ class TasksCompanion extends UpdateCompanion<TaskEntity> {
           ..write('recurrenceParentId: $recurrenceParentId, ')
           ..write('recurrenceRule: $recurrenceRule, ')
           ..write('calendarEventId: $calendarEventId, ')
+          ..write('osReminderId: $osReminderId, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt, ')
           ..write('rowid: $rowid')
@@ -4900,6 +4954,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<String?> recurrenceParentId,
       Value<String?> recurrenceRule,
       Value<String?> calendarEventId,
+      Value<String?> osReminderId,
       Value<DateTime> createdAt,
       Value<DateTime> modifiedAt,
       Value<int> rowid,
@@ -4919,6 +4974,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<String?> recurrenceParentId,
       Value<String?> recurrenceRule,
       Value<String?> calendarEventId,
+      Value<String?> osReminderId,
       Value<DateTime> createdAt,
       Value<DateTime> modifiedAt,
       Value<int> rowid,
@@ -5047,6 +5103,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get calendarEventId => $composableBuilder(
     column: $table.calendarEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get osReminderId => $composableBuilder(
+    column: $table.osReminderId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5207,6 +5268,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get osReminderId => $composableBuilder(
+    column: $table.osReminderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5349,6 +5415,11 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<String> get calendarEventId => $composableBuilder(
     column: $table.calendarEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get osReminderId => $composableBuilder(
+    column: $table.osReminderId,
     builder: (column) => column,
   );
 
@@ -5499,6 +5570,7 @@ class $$TasksTableTableManager
                 Value<String?> recurrenceParentId = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
                 Value<String?> calendarEventId = const Value.absent(),
+                Value<String?> osReminderId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5516,6 +5588,7 @@ class $$TasksTableTableManager
                 recurrenceParentId: recurrenceParentId,
                 recurrenceRule: recurrenceRule,
                 calendarEventId: calendarEventId,
+                osReminderId: osReminderId,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 rowid: rowid,
@@ -5535,6 +5608,7 @@ class $$TasksTableTableManager
                 Value<String?> recurrenceParentId = const Value.absent(),
                 Value<String?> recurrenceRule = const Value.absent(),
                 Value<String?> calendarEventId = const Value.absent(),
+                Value<String?> osReminderId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5552,6 +5626,7 @@ class $$TasksTableTableManager
                 recurrenceParentId: recurrenceParentId,
                 recurrenceRule: recurrenceRule,
                 calendarEventId: calendarEventId,
+                osReminderId: osReminderId,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 rowid: rowid,

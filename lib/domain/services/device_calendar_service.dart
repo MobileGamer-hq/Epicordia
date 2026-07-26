@@ -1,21 +1,20 @@
 import 'package:device_calendar_plus/device_calendar_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 class DeviceCalendarService {
-  final DeviceCalendarPlugin _plugin;
+  final DeviceCalendar _plugin;
 
-  DeviceCalendarService({DeviceCalendarPlugin? plugin})
-      : _plugin = plugin ?? DeviceCalendarPlugin();
+  DeviceCalendarService({DeviceCalendar? plugin})
+      : _plugin = plugin ?? DeviceCalendar();
 
   /// Check and request calendar permissions from the OS.
   Future<bool> requestPermissions() async {
-    final permissionsGranted = await _plugin.hasPermissions();
-    if (permissionsGranted.isSuccess && (permissionsGranted.data ?? false)) {
+    final status = await _plugin.hasPermissions();
+    if (status == CalendarPermissionStatus.granted) {
       return true;
     }
-    final result = await _plugin.requestPermissions();
-    return result.isSuccess && (result.data ?? false);
+    final newStatus = await _plugin.requestPermissions();
+    return newStatus == CalendarPermissionStatus.granted;
   }
 
   /// Retrieve all available calendars on the user's device.
@@ -23,11 +22,13 @@ class DeviceCalendarService {
     final hasPerm = await requestPermissions();
     if (!hasPerm) return [];
 
-    final result = await _plugin.retrieveCalendars();
-    if (result.isSuccess && result.data != null) {
-      return result.data!.where((cal) => cal.isReadOnly != true).toList();
+    try {
+      final calendars = await _plugin.listCalendars();
+      return calendars.where((cal) => cal.readOnly != true).toList();
+    } catch (e) {
+      debugPrint('DeviceCalendarService list error: $e');
+      return [];
     }
-    return [];
   }
 
   /// Create or update an event on the device calendar.
@@ -44,35 +45,33 @@ class DeviceCalendarService {
     final hasPerm = await requestPermissions();
     if (!hasPerm) return null;
 
-    final location = tz.getLocation('UTC');
-    final startTz = tz.TZDateTime.from(startDate.toUtc(), location);
-    final endTz = tz.TZDateTime.from(
-      (endDate ?? startDate.add(const Duration(hours: 1))).toUtc(),
-      location,
-    );
+    final start = startDate;
+    final end = endDate ?? startDate.add(const Duration(hours: 1));
 
-    RecurrenceRule? recurrenceRule;
-    if (rruleString != null && rruleString.isNotEmpty) {
-      recurrenceRule = _parseRRule(rruleString);
+    try {
+      if (existingEventId != null && existingEventId.isNotEmpty) {
+        await _plugin.updateEvent(
+          instanceId: existingEventId,
+          title: title,
+          description: notes,
+          startDate: start,
+          endDate: end,
+        );
+        return existingEventId;
+      } else {
+        final eventId = await _plugin.createEvent(
+          calendarId: calendarId,
+          title: title,
+          description: notes,
+          startDate: start,
+          endDate: end,
+        );
+        return eventId;
+      }
+    } catch (e) {
+      debugPrint('DeviceCalendarService sync error: $e');
+      return null;
     }
-
-    final event = Event(
-      calendarId,
-      eventId: existingEventId,
-      title: title,
-      description: notes,
-      start: startTz,
-      end: endTz,
-      recurrenceRule: recurrenceRule,
-    );
-
-    final result = await _plugin.createOrUpdateEvent(event);
-    if (result != null && result.isSuccess) {
-      return result.data;
-    } else if (result != null && result.errors.isNotEmpty) {
-      debugPrint('DeviceCalendarService sync error: ${result.errors.first.errorMessage}');
-    }
-    return null;
   }
 
   /// Delete an event from the device calendar by ID.
@@ -80,27 +79,12 @@ class DeviceCalendarService {
     final hasPerm = await requestPermissions();
     if (!hasPerm) return false;
 
-    final result = await _plugin.deleteEvent(calendarId, eventId);
-    return result.isSuccess && (result.data ?? false);
-  }
-
-  /// Simple parser converting basic RRULE strings (FREQ=DAILY, WEEKLY, MONTHLY)
-  /// into device_calendar_plus RecurrenceRule objects.
-  RecurrenceRule? _parseRRule(String rruleStr) {
     try {
-      final upperStr = rruleStr.toUpperCase();
-      RecurrenceFrequency freq = RecurrenceFrequency.Daily;
-      if (upperStr.contains('FREQ=WEEKLY')) {
-        freq = RecurrenceFrequency.Weekly;
-      } else if (upperStr.contains('FREQ=MONTHLY')) {
-        freq = RecurrenceFrequency.Monthly;
-      } else if (upperStr.contains('FREQ=YEARLY')) {
-        freq = RecurrenceFrequency.Yearly;
-      }
-      return RecurrenceRule(freq);
+      await _plugin.deleteEvent(eventId);
+      return true;
     } catch (e) {
-      debugPrint('Error parsing RRULE: $e');
-      return null;
+      debugPrint('DeviceCalendarService delete error: $e');
+      return false;
     }
   }
 }

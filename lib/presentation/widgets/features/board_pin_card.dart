@@ -965,7 +965,7 @@ class _TableCell extends StatelessWidget {
 class _FrameCardBody extends ConsumerWidget {
   final String? content;
   final String pinId;
-  const _FrameCardBody({super.key, this.content, required this.pinId});
+  const _FrameCardBody({this.content, required this.pinId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

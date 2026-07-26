@@ -291,13 +291,20 @@ class _SectionEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg =
+    isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr =
+    isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textClr = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
-        color: EpicordiaColors.surfaceCardLight,
+        color: cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EpicordiaColors.borderSubtleLight),
+        border: Border.all(color: borderClr),
       ),
       child: Column(
         children: [
@@ -305,33 +312,33 @@ class _SectionEmptyState extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: EpicordiaColors.surfaceSunkenLight,
+              color: isDark ?   EpicordiaColors.surfaceSunkenDark  :EpicordiaColors.surfaceSunkenLight,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 24, color: EpicordiaColors.textTertiaryLight),
+            child: Icon(icon, size: 24, color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight),
           ),
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight),
+            style:  TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textClr),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: EpicordiaColors.textTertiaryLight),
+            style:  TextStyle(fontSize: 12, color: textClr),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: EpicordiaColors.borderStrongLight),
+              side:  BorderSide(color: borderClr),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),
             onPressed: onCreate,
-            icon: const Icon(Icons.add, size: 14, color: EpicordiaColors.textSecondaryLight),
-            label: Text(createLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: EpicordiaColors.textSecondaryLight)),
+            icon:  Icon(Icons.add, size: 14, color: isDark ?  EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight),
+            label: Text(createLabel, style:  TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDark  ?EpicordiaColors.textSecondaryDark: EpicordiaColors.textSecondaryLight)),
           ),
         ],
       ),
