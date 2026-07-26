@@ -6,6 +6,8 @@ import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/theme.dart';
+import '../../domain/services/device_calendar_service.dart';
+import '../widgets/permission_explanation_dialog.dart';
 import 'today_dashboard.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -101,6 +103,63 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             color: textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Sync Device Calendar',
+            onPressed: () async {
+              final proceed = await PermissionExplanationDialog.show(
+                context: context,
+                title: 'Sync Device Calendar',
+                description:
+                    'Epicordia will sync your tasks with your native device calendar.',
+                icon: Icons.calendar_month_outlined,
+              );
+              if (!proceed || !context.mounted) return;
+
+              final calendarService = DeviceCalendarService();
+              final calendars = await calendarService.getWritableCalendars();
+              if (!context.mounted) return;
+
+              if (calendars.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No writable device calendars found or permission denied.'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+
+              final primaryCalendar = calendars.first;
+              int syncedCount = 0;
+              final tasks = tasksAsync.value ?? [];
+
+              for (final task in tasks) {
+                if (task.dueDate != null) {
+                  final eventId = await calendarService.syncTaskToCalendar(
+                    calendarId: primaryCalendar.id!,
+                    title: task.title,
+                    notes: task.notes,
+                    startDate: task.dueDate!,
+                    existingEventId: task.calendarEventId,
+                    rruleString: task.recurrenceRule,
+                  );
+                  if (eventId != null) syncedCount++;
+                }
+              }
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Synced $syncedCount tasks to calendar "${primaryCalendar.name}"'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(

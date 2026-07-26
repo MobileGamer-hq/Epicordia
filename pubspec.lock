@@ -257,6 +257,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.13"
+  device_calendar_plus:
+    dependency: "direct main"
+    description:
+      name: device_calendar_plus
+      sha256: "73421d0a041e8bf5bbf1f330f1ebb0c2db401a3ba65ac914b3d811d5d343354e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
+  device_calendar_plus_android:
+    dependency: transitive
+    description:
+      name: device_calendar_plus_android
+      sha256: "4d6db666f6cde3f48ecf894669dfe09812874a3e01eaaa34352f09f64446bb73"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
+  device_calendar_plus_ios:
+    dependency: transitive
+    description:
+      name: device_calendar_plus_ios
+      sha256: "5e006fed225a7c96f7326050388d5b4b28df0869ee2689a6a16dde54d6abd233"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
+  device_calendar_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: device_calendar_plus_platform_interface
+      sha256: b6439c7400321805d0a61e9650e4b88929f0962a24cc8647901899d0d8dcac93
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   directed_graph:
     dependency: transitive
     description:
@@ -366,6 +398,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_alarm_clock:
+    dependency: "direct main"
+    description:
+      name: flutter_alarm_clock
+      sha256: "681dcf04ad043cb249f0100ed359afe57360d8ffcb96f3e3e3af20218ed08dd8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -632,6 +672,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
+  in_app_reminder:
+    dependency: "direct main"
+    description:
+      name: in_app_reminder
+      sha256: "3bb3e1cf0e78db38175947cfcba193dd4e8e06727b8db10116a1fd9c84b3e7fb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.7"
   infinite_canvas:
     dependency: "direct main"
     description:

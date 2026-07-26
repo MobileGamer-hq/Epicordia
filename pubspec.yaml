@@ -50,6 +50,9 @@ dependencies:
   shared_preferences: ^2.3.2
   image_picker: ^1.1.2
   file_picker: ^8.1.7
+  device_calendar_plus: ^0.1.0
+  in_app_reminder: ^0.0.4
+  flutter_alarm_clock: ^0.1.2
 
 dev_dependencies:
   flutter_test:

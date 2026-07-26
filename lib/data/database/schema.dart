@@ -52,6 +52,7 @@ class Tasks extends Table {
   TextColumn get recurrenceParentId => text().nullable().references(Tasks, #id, onDelete: KeyAction.cascade)();
   TextColumn get recurrenceRule => text().nullable()();
   TextColumn get calendarEventId => text().nullable()();
+  TextColumn get osReminderId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get modifiedAt => dateTime().withDefault(currentDateAndTime)();
 

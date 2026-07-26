@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/foundation.dart';
 import '../../data/database/database.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/providers.dart';
 import '../../core/theme.dart';
+import '../../domain/services/device_reminder_service.dart';
+import '../../domain/services/device_calendar_service.dart';
+import '../../domain/services/notification_service.dart';
+import '../widgets/timer_picker_popover.dart';
+import '../widgets/permission_explanation_dialog.dart';
 
 class EditTaskScreen extends ConsumerStatefulWidget {
   final String taskId;
@@ -25,6 +31,12 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   String? _selectedBoardId;
   String _selectedStatus = 'todo';
   int _selectedPriority = 0;
+  bool _alsoAddToReminders = false;
+  String? _osReminderId;
+
+  final _reminderService = DeviceReminderService();
+  final _calendarService = DeviceCalendarService();
+  final _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -43,6 +55,8 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
         _selectedBoardId = task.boardId;
         _selectedStatus = task.status;
         _selectedPriority = task.priority;
+        _osReminderId = task.osReminderId;
+        _alsoAddToReminders = task.osReminderId != null;
       });
     }
   }
@@ -73,6 +87,9 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
       ),
     );
     if (confirm == true) {
+      if (_osReminderId != null) {
+        await _reminderService.deleteReminder(_osReminderId!);
+      }
       await ref.read(taskRepositoryProvider).deleteTask(widget.taskId);
       if (mounted) context.go('/tasks');
     }
@@ -81,6 +98,29 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
+
+    String? reminderId = _osReminderId;
+
+    if (_alsoAddToReminders && defaultTargetPlatform == TargetPlatform.iOS) {
+      if (reminderId == null) {
+        final proceed = await PermissionExplanationDialog.show(
+          context: context,
+          title: 'Sync to iOS Reminders',
+          description: 'Epicordia will add this task to your native Reminders app.',
+          icon: Icons.notifications_active_outlined,
+        );
+        if (proceed) {
+          reminderId = await _reminderService.createReminder(
+            title: title,
+            notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+            dueDate: _dueDate,
+          );
+        }
+      }
+    } else if (!_alsoAddToReminders && reminderId != null) {
+      await _reminderService.deleteReminder(reminderId);
+      reminderId = null;
+    }
 
     if (_task != null) {
       await ref.read(taskRepositoryProvider).updateTask(
@@ -91,8 +131,19 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
               boardId: drift.Value(_selectedBoardId),
               status: _selectedStatus,
               priority: _selectedPriority,
+              osReminderId: drift.Value(reminderId),
             ),
           );
+
+      if (_dueDate != null) {
+        await _notificationService.scheduleTaskNotification(
+          id: _task!.id.hashCode,
+          title: title,
+          body: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          scheduledDate: _dueDate!,
+          osReminderId: reminderId,
+        );
+      }
     }
     if (mounted) context.go('/tasks');
   }
@@ -316,10 +367,42 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                               pickedDate.day,
                             );
                           });
-                        }
-                      }
                     },
                   ),
+                  const SizedBox(height: 12),
+
+                  // Timer / Alarm option row
+                  _OptionRow(
+                    icon: Icons.timer_outlined,
+                    label: 'Start Timer / Set Alarm',
+                    onTap: () {
+                      TimerPickerPopover.show(
+                        context,
+                        taskTitle: _titleController.text.trim().isEmpty ? 'Task' : _titleController.text.trim(),
+                      );
+                    },
+                  ),
+
+                  if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      value: _alsoAddToReminders,
+                      onChanged: (val) {
+                        setState(() {
+                          _alsoAddToReminders = val;
+                        });
+                      },
+                      title: const Text(
+                        'Also add to Reminders',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: const Text(
+                        'Syncs task directly with native iOS Reminders app',
+                        style: TextStyle(fontSize: 12, color: EpicordiaColors.textSecondaryLight),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
                 ],
               ),
       ),

@@ -2,6 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>NSCalendarsUsageDescription</key>
+		<string>Epicordia uses your calendar to sync tasks and events seamlessly.</string>
+		<key>NSCalendarsFullAccessUsageDescription</key>
+		<string>Epicordia uses full calendar access to keep your tasks and events in two-way sync.</string>
+		<key>NSRemindersUsageDescription</key>
+		<string>Epicordia syncs task reminders directly to your iOS Reminders app upon request.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Epicordia requires access to your photo library to allow you to attach images to your notes and board pins.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Epicordia requires permission to save generated or edited images to your photo library.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Epicordia requires access to your camera to take photos and attach them directly to your notes and board pins.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Epicordia uses your location when requested to attach location details to notes or board pins.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>

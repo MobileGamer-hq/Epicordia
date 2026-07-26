@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -28,9 +28,8 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Stub for future data migration strategy
         if (from < 2) {
-          // Future migrations go here
+          await m.addColumn(tasks, tasks.osReminderId);
         }
       },
       beforeOpen: (details) async {
