@@ -8,6 +8,7 @@ import '../../data/database/database.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/task_repository.dart';
+import '../../core/board_settings_provider.dart';
 import '../widgets/features/board_canvas.dart';
 import '../widgets/features/pin_editor_panel.dart';
 
@@ -106,21 +107,44 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     tasksOnly: _viewMode == 'Focus',
                   ),
                 if (_viewMode == 'Canvas' && !_isEditingPin)
-                  Positioned(
-                    left: 12,
-                    top: 20,
-                    child: _CanvasToolbar(
-                      onAddNote: _addNote,
-                      onAddTask: _addTask,
-                      onAddChecklist: _addChecklist,
-                      onAddDrawing: _addDrawing,
-                      onAddLink: _addLink,
-                      onAddImage: _addImage,
-                      onAddHeading: _addHeading,
-                      onAddFrame: _addFrame,
-                      onAddConnector: () => _canvasKey.currentState?.toggleConnectorMode(),
-                      onDelete: _deleteSelection,
-                    ),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final toolbarPos = ref.watch(toolbarPositionProvider);
+                      final toolbarWidget = _CanvasToolbar(
+                        onAddNote: _addNote,
+                        onAddTask: _addTask,
+                        onAddChecklist: _addChecklist,
+                        onAddDrawing: _addDrawing,
+                        onAddLink: _addLink,
+                        onAddImage: _addImage,
+                        onAddHeading: _addHeading,
+                        onAddFrame: _addFrame,
+                        onAddConnector: () => _canvasKey.currentState?.toggleConnectorMode(),
+                        onDelete: _deleteSelection,
+                      );
+
+                      switch (toolbarPos) {
+                        case ToolbarPosition.left:
+                          return Positioned(
+                            left: 12,
+                            top: 20,
+                            child: toolbarWidget,
+                          );
+                        case ToolbarPosition.right:
+                          return Positioned(
+                            right: 12,
+                            top: 20,
+                            child: toolbarWidget,
+                          );
+                        case ToolbarPosition.bottom:
+                          return Positioned(
+                            left: 12,
+                            right: 12,
+                            bottom: 16,
+                            child: Center(child: toolbarWidget),
+                          );
+                      }
+                    },
                   ),
               ],
             ),
@@ -544,36 +568,67 @@ class _BoardKanbanView extends ConsumerWidget {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth >= 768;
-                final colWidth = isWide ? (constraints.maxWidth - 48) / 3 : constraints.maxWidth * 0.82;
 
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _columns.map((col) {
-                      final (statusKey, title, color) = col;
-                      final colPins = taskPins.where((p) {
-                        final t = taskMap[p.id];
-                        final status = t?.status ?? 'todo';
-                        return status == statusKey || (statusKey == 'todo' && status != 'in_progress' && status != 'done');
-                      }).toList();
+                if (isWide) {
+                  final colWidth = (constraints.maxWidth - 48) / 3;
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _columns.map((col) {
+                        final (statusKey, title, color) = col;
+                        final colPins = taskPins.where((p) {
+                          final t = taskMap[p.id];
+                          final status = t?.status ?? 'todo';
+                          return status == statusKey || (statusKey == 'todo' && status != 'in_progress' && status != 'done');
+                        }).toList();
 
-                      return Container(
-                        width: colWidth,
-                        margin: const EdgeInsets.only(right: 12),
-                        child: _KanbanColumn(
-                          boardId: boardId,
-                          statusKey: statusKey,
-                          title: title,
-                          color: color,
-                          pins: colPins,
-                          taskMap: taskMap,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
+                        return Container(
+                          width: colWidth,
+                          margin: const EdgeInsets.only(right: 12),
+                          child: _KanbanColumn(
+                            boardId: boardId,
+                            statusKey: statusKey,
+                            title: title,
+                            color: color,
+                            pins: colPins,
+                            taskMap: taskMap,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                } else {
+                  // Phone / Narrow screen -> Stack To Do, In Progress, and Done vertically in a Column
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _columns.map((col) {
+                        final (statusKey, title, color) = col;
+                        final colPins = taskPins.where((p) {
+                          final t = taskMap[p.id];
+                          final status = t?.status ?? 'todo';
+                          return status == statusKey || (statusKey == 'todo' && status != 'in_progress' && status != 'done');
+                        }).toList();
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: _KanbanColumn(
+                            boardId: boardId,
+                            statusKey: statusKey,
+                            title: title,
+                            color: color,
+                            pins: colPins,
+                            taskMap: taskMap,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                }
               },
             );
           },
@@ -826,7 +881,7 @@ class _KanbanCard extends StatelessWidget {
   }
 }
 
-class _CanvasToolbar extends StatelessWidget {
+class _CanvasToolbar extends ConsumerWidget {
   final VoidCallback onAddNote;
   final VoidCallback onAddTask;
   final VoidCallback onAddChecklist;
@@ -852,7 +907,21 @@ class _CanvasToolbar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final position = ref.watch(toolbarPositionProvider);
+    final activeMode = ref.watch(canvasToolModeProvider);
+    final isHorizontal = position == ToolbarPosition.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
+    final modeTools = [
+      (CanvasToolMode.select, Icons.near_me_rounded, 'Select Tool'),
+      (CanvasToolMode.pan, Icons.pan_tool_outlined, 'Pan Tool (Hand)'),
+      (CanvasToolMode.zoom, Icons.search_rounded, 'Zoom Tool'),
+    ];
+
     final addTools = [
       (Icons.sticky_note_2_outlined, 'Note', onAddNote),
       (Icons.check_circle_outline, 'Task', onAddTask),
@@ -865,39 +934,83 @@ class _CanvasToolbar extends StatelessWidget {
       (Icons.timeline_rounded, 'Connector Mode', onAddConnector),
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: EpicordiaColors.surfaceCardLight,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(2, 4),
-          ),
-        ],
-        border: Border.all(color: EpicordiaColors.borderSubtleLight, width: 0.8),
+    Widget buildDivider() {
+      return isHorizontal
+          ? Container(
+              width: 1,
+              height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              color: borderClr,
+            )
+          : Container(
+              height: 1,
+              width: 24,
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              color: borderClr,
+            );
+    }
+
+    final children = <Widget>[
+      // Grip Handle (Cycle Position)
+      _ToolButton(
+        icon: isHorizontal ? Icons.drag_handle_rounded : Icons.drag_indicator_rounded,
+        tooltip: 'Change toolbar position (Left / Right / Bottom)',
+        onTap: () => ref.read(toolbarPositionProvider.notifier).cyclePosition(),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 4),
-          ...addTools.map((t) {
-            final (icon, label, action) = t;
-            return _ToolButton(icon: icon, tooltip: label, onTap: action);
-          }),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Divider(height: 8, thickness: 1, color: EpicordiaColors.borderSubtleLight),
-          ),
-          _ToolButton(
-            icon: Icons.delete_outline_rounded,
-            tooltip: 'Delete selected',
-            onTap: onDelete,
-            isDanger: true,
-          ),
-          const SizedBox(height: 4),
-        ],
+      buildDivider(),
+
+      // Mutually Exclusive Mode Buttons
+      ...modeTools.map((m) {
+        final (mode, icon, label) = m;
+        final isActive = activeMode == mode;
+        return _ToolButton(
+          icon: icon,
+          tooltip: label,
+          isActive: isActive,
+          onTap: () => ref.read(canvasToolModeProvider.notifier).setMode(mode),
+        );
+      }),
+      buildDivider(),
+
+      // Pin Creation Tools
+      ...addTools.map((t) {
+        final (icon, label, action) = t;
+        return _ToolButton(icon: icon, tooltip: label, onTap: action);
+      }),
+      buildDivider(),
+
+      // Delete Selection
+      _ToolButton(
+        icon: Icons.delete_outline_rounded,
+        tooltip: 'Delete selected pin(s)',
+        onTap: onDelete,
+        isDanger: true,
+      ),
+    ];
+
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(16),
+      color: bg,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderClr, width: 0.8),
+        ),
+        child: isHorizontal
+            ? SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: children,
+                ),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: children,
+              ),
       ),
     );
   }
@@ -906,31 +1019,45 @@ class _CanvasToolbar extends StatelessWidget {
 class _ToolButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
+  final bool isActive;
   final bool isDanger;
   final VoidCallback onTap;
 
   const _ToolButton({
     required this.icon,
     required this.tooltip,
+    this.isActive = false,
     this.isDanger = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeBg = isDark ? EpicordiaColors.blue600.withValues(alpha: 0.25) : EpicordiaColors.blue100;
+    final activeIconClr = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
+    final defaultIconClr = isDanger
+        ? (isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight)
+        : (isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight);
+
     return Tooltip(
       message: tooltip,
       preferBelow: false,
-      waitDuration: const Duration(milliseconds: 400),
+      waitDuration: const Duration(milliseconds: 300),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: isActive ? activeBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Icon(
             icon,
             size: 20,
-            color: isDanger ? EpicordiaColors.errorLight : EpicordiaColors.textSecondaryLight,
+            color: isActive ? activeIconClr : defaultIconClr,
           ),
         ),
       ),

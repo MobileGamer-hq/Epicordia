@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme.dart';
 import '../../../data/database/database.dart';
@@ -36,7 +37,8 @@ class BoardPinCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onDoubleTap: () => onEdit?.call(pinId),
+      onTap: () => _handlePrimaryTap(context, ref),
+      onLongPress: () => _showCardContextMenu(context, ref),
       child: EpicordiaCard(
         indicatorColor: _colorFromTag(colorTag),
         padding: _paddingForType(type),
@@ -45,14 +47,443 @@ class BoardPinCard extends ConsumerWidget {
     );
   }
 
+  void _handlePrimaryTap(BuildContext context, WidgetRef ref) {
+    switch (type) {
+      case 'note':
+      case 'drawing':
+      case 'handwriting':
+      case 'task':
+      case 'tasklist':
+      case 'checklist':
+      case 'table':
+        onEdit?.call(pinId);
+        break;
+      case 'heading':
+        _showHeadingEditDialog(context, ref);
+        break;
+      case 'image':
+        _showImageLightbox(context, ref);
+        break;
+      case 'link':
+        _showLinkEditPopover(context, ref);
+        break;
+      case 'file':
+        _showFileEditPopover(context, ref);
+        break;
+      case 'audio':
+        _showAudioPlayOrRenamePopover(context, ref);
+        break;
+      case 'colorSwatch':
+        _showColorPickerPopover(context, ref);
+        break;
+      case 'board':
+        _handleBoardTap(context, ref);
+        break;
+      default:
+        onEdit?.call(pinId);
+        break;
+    }
+  }
+
+  void _showCardContextMenu(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: EpicordiaColors.borderSubtleLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: Text('Edit Card', style: TextStyle(color: textPrimary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onEdit?.call(pinId);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.palette_outlined),
+                  title: Text('Change Color Tag', style: TextStyle(color: textPrimary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showColorTagPicker(context, ref);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.copy_rounded),
+                  title: Text('Duplicate Pin', style: TextStyle(color: textPrimary)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _duplicatePin(ref);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: EpicordiaColors.errorLight),
+                  title: const Text('Remove from Board', style: TextStyle(color: EpicordiaColors.errorLight)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await ref.read(pinRepositoryProvider).deletePin(pinId);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _duplicatePin(WidgetRef ref) async {
+    final repo = ref.read(pinRepositoryProvider);
+    final pin = await repo.getPin(pinId);
+    if (pin != null) {
+      final newId = DateTime.now().millisecondsSinceEpoch.toString();
+      await repo.createPin(
+        PinsCompanion.insert(
+          id: newId,
+          boardId: Value(pin.boardId),
+          type: pin.type,
+          x: Value(pin.x + 20),
+          y: Value(pin.y + 20),
+          width: Value(pin.width),
+          height: Value(pin.height),
+          content: Value(pin.content),
+          colorTag: Value(pin.colorTag),
+        ),
+      );
+    }
+  }
+
+  void _showColorTagPicker(BuildContext context, WidgetRef ref) {
+    const tags = ['yellow', 'coral', 'mint', 'lavender', 'sky', 'grey'];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Color Tag'),
+          content: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              ...tags.map((tag) {
+                final clr = _colorFromTag(tag);
+                return GestureDetector(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final repo = ref.read(pinRepositoryProvider);
+                    final pin = await repo.getPin(pinId);
+                    if (pin != null) {
+                      await repo.updatePin(pin.copyWith(colorTag: Value(tag)));
+                    }
+                  },
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: clr,
+                    ),
+                  ),
+                );
+              }),
+              GestureDetector(
+                onTap: () async {
+                  Navigator.pop(context);
+                  final repo = ref.read(pinRepositoryProvider);
+                  final pin = await repo.getPin(pinId);
+                  if (pin != null) {
+                    await repo.updatePin(pin.copyWith(colorTag: const Value(null)));
+                  }
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: EpicordiaColors.borderStrongLight),
+                  ),
+                  child: const Icon(Icons.clear, size: 18),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showImageLightbox(BuildContext context, WidgetRef ref) {
+    Map<String, dynamic> data = {};
+    try {
+      if (content != null && content!.isNotEmpty) {
+        data = jsonDecode(content!) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+
+    final filePath = data['filePath'] as String? ?? '';
+    final captionController = TextEditingController(text: data['caption'] as String? ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(16),
+          child: Material(
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 400),
+                  width: double.infinity,
+                  color: Colors.black,
+                  child: filePath.isNotEmpty && File(filePath).existsSync()
+                      ? Image.file(File(filePath), fit: BoxFit.contain)
+                      : const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Icon(Icons.image_outlined, size: 64, color: Colors.white54),
+                          ),
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: captionController,
+                          decoration: const InputDecoration(
+                            hintText: 'Add or edit caption...',
+                            isDense: true,
+                          ),
+                          onSubmitted: (val) async {
+                            final updatedData = {...data, 'caption': val};
+                            await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                            if (context.mounted) Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.check),
+                        onPressed: () async {
+                          final updatedData = {...data, 'caption': captionController.text};
+                          await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                          if (context.mounted) Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLinkEditPopover(BuildContext context, WidgetRef ref) {
+    Map<String, dynamic> data = {};
+    try {
+      if (content != null && content!.isNotEmpty) {
+        data = jsonDecode(content!) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+
+    final urlController = TextEditingController(text: data['url'] as String? ?? content ?? '');
+    final titleController = TextEditingController(text: data['cachedTitle'] as String? ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Link'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: urlController,
+                decoration: const InputDecoration(labelText: 'URL', hintText: 'https://example.com'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Title / Label'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                final updatedData = {
+                  ...data,
+                  'url': urlController.text,
+                  'cachedTitle': titleController.text,
+                };
+                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFileEditPopover(BuildContext context, WidgetRef ref) {
+    Map<String, dynamic> data = {};
+    try {
+      if (content != null && content!.isNotEmpty) {
+        data = jsonDecode(content!) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+
+    final nameController = TextEditingController(text: data['displayName'] as String? ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Rename File'),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: 'Display Name'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                final updatedData = {...data, 'displayName': nameController.text};
+                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAudioPlayOrRenamePopover(BuildContext context, WidgetRef ref) {
+    onEdit?.call(pinId);
+  }
+
+  void _showColorPickerPopover(BuildContext context, WidgetRef ref) {
+    const swatches = ['#F4C453', '#F0806B', '#5FC7A3', '#9C8CF0', '#5FA8F5', '#B9BCC2', '#E5A030', '#E53935', '#009688', '#3F51B5'];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Color Swatch'),
+          content: Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: swatches.map((hex) {
+              final color = Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+              return GestureDetector(
+                onTap: () async {
+                  await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode({'hex': hex}));
+                  if (context.mounted) Navigator.pop(context);
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showHeadingEditDialog(BuildContext context, WidgetRef ref) {
+    Map<String, dynamic> data = {};
+    try {
+      if (content != null && content!.isNotEmpty) {
+        data = jsonDecode(content!) as Map<String, dynamic>;
+      }
+    } catch (_) {
+      data = {'text': content ?? ''};
+    }
+
+    final textController = TextEditingController(text: data['text'] as String? ?? content ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Heading'),
+          content: TextField(
+            controller: textController,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Heading text...'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                final updated = {...data, 'text': textController.text, 'style': 'heading'};
+                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updated));
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleBoardTap(BuildContext context, WidgetRef ref) {
+    if (content != null && content!.isNotEmpty && !content!.startsWith('{')) {
+      context.push('/board/$content');
+    } else {
+      onEdit?.call(pinId);
+    }
+  }
+
   EdgeInsets _paddingForType(String t) {
     switch (t) {
       case 'image':
-        return EdgeInsets.zero; // image is edge-to-edge
+      case 'link':
       case 'colorSwatch':
         return EdgeInsets.zero;
       case 'heading':
-        return const EdgeInsets.symmetric(horizontal: 8, vertical: 4);
+        return const EdgeInsets.symmetric(horizontal: 4, vertical: 4);
+      case 'audio':
+      case 'file':
+        return const EdgeInsets.all(12);
       default:
         return const EdgeInsets.all(14);
     }
@@ -1450,17 +1881,22 @@ class _StatusRing extends StatelessWidget {
       onTap: onToggle,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: fillColor ?? Colors.transparent,
-          border: Border.all(
-            color: ringColor,
-            width: status == 'in_progress' ? 2.5 : 1.5,
+        width: 44,
+        height: 44,
+        alignment: Alignment.center,
+        child: Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: fillColor ?? Colors.transparent,
+            border: Border.all(
+              color: ringColor,
+              width: status == 'in_progress' ? 2.5 : 1.5,
+            ),
           ),
+          child: icon != null ? Icon(icon, size: 12, color: Colors.white) : null,
         ),
-        child: icon != null ? Icon(icon, size: 12, color: Colors.white) : null,
       ),
     );
   }

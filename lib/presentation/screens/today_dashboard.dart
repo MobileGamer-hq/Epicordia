@@ -88,6 +88,12 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
         : now.hour < 17
         ? 'Good afternoon'
         : 'Good evening';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg =
+    isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr =
+    isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
 
     return ResponsiveScaffold(
       appBar: EpicordiaAppBar(
@@ -107,19 +113,19 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                   children: [
                     Text(
                       '$greeting, $_userName',
-                      style: const TextStyle(
+                      style:  TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
-                        color: EpicordiaColors.textPrimaryLight,
+                        color: isDark ?EpicordiaColors.textPrimaryDark :  EpicordiaColors.textPrimaryLight,
                         letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                     Text(
                       "Here's your workspace overview for today.",
                       style: TextStyle(
                         fontSize: 14,
-                        color: EpicordiaColors.textTertiaryLight,
+                        color: isDark ? EpicordiaColors.textTertiaryLight : EpicordiaColors.textTertiaryLight,
                       ),
                     ),
                   ],
@@ -772,10 +778,16 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg =
+    isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr =
+    isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
+        Text(title, style:  TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color:  isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight)),
         if (actionLabel != null && onAction != null)
           GestureDetector(
             onTap: onAction,

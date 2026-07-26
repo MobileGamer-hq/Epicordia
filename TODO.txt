@@ -36,3 +36,7 @@ the create screen ui didnt change with the change in theme still on light theme
 -for the kamban its not all screens that it will be in a row so for phones now tit will be in a column, so to do, in progress and done will be in a column
 -theres no way to get to settings from the todays dashboard
 -edit tasks screen doesnt change with change in theme fix it
+-go through all screens and make sure they use the theme correctly so it works perfectly with dark and light theme
+
+
+

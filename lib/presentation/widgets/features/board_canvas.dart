@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_canvas/infinite_canvas.dart';
 
 
+import '../../../core/board_settings_provider.dart';
 import '../../../core/theme.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/connector_repository.dart';
@@ -481,7 +482,7 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Pin Editor overlay — side panel on wide / bottom sheet on narrow
 // ─────────────────────────────────────────────────────────────────────────────
-class _PinEditorOverlay extends StatelessWidget {
+class _PinEditorOverlay extends ConsumerWidget {
   final String pinId;
   final String boardId;
   final VoidCallback onClose;
@@ -493,8 +494,27 @@ class _PinEditorOverlay extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final toolbarPos = ref.watch(toolbarPositionProvider);
     final screenSize = MediaQuery.of(context).size;
+
+    Alignment alignment;
+    EdgeInsets padding;
+
+    switch (toolbarPos) {
+      case ToolbarPosition.left:
+        alignment = Alignment.centerRight;
+        padding = const EdgeInsets.only(right: 20, top: 20, bottom: 20);
+        break;
+      case ToolbarPosition.right:
+        alignment = Alignment.centerLeft;
+        padding = const EdgeInsets.only(left: 20, top: 20, bottom: 20);
+        break;
+      case ToolbarPosition.bottom:
+        alignment = Alignment.bottomCenter;
+        padding = const EdgeInsets.only(left: 20, right: 20, bottom: 70, top: 20);
+        break;
+    }
 
     return Stack(
       children: [
@@ -507,9 +527,10 @@ class _PinEditorOverlay extends StatelessWidget {
             ),
           ),
         ),
-        Center(
+        Align(
+          alignment: alignment,
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: padding,
             child: Material(
               elevation: 20,
               borderRadius: BorderRadius.circular(20),

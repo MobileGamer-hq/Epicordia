@@ -150,38 +150,46 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   @override
   Widget build(BuildContext context) {
     final boardsAsync = ref.watch(allBoardsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     return Scaffold(
-      backgroundColor: EpicordiaColors.surfaceAppLight,
+      backgroundColor: bgApp,
       appBar: AppBar(
-        backgroundColor: EpicordiaColors.surfaceAppLight,
+        backgroundColor: bgApp,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
           onPressed: () => context.go('/tasks'),
         ),
-        title: const Text(
+        title: Text(
           'Edit Task',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: EpicordiaColors.errorLight),
+            icon: Icon(Icons.delete_outline, color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight),
             onPressed: _delete,
           ),
           TextButton(
             onPressed: _save,
-            child: const Text(
+            child: Text(
               'Save',
               style: TextStyle(
-                color: EpicordiaColors.blue600,
+                color: activeBlue,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -198,12 +206,12 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                   // Title field
                   TextField(
                     controller: _titleController,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: EpicordiaColors.textPrimaryLight,
+                      color: textPrimary,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Task title...',
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -212,39 +220,39 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                       hintStyle: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: EpicordiaColors.textTertiaryLight,
+                        color: textTertiary,
                       ),
                     ),
                   ),
-                  const Divider(color: EpicordiaColors.borderSubtleLight),
+                  Divider(color: borderClr),
                   const SizedBox(height: 8),
 
                   // Description / notes
                   TextField(
                     controller: _notesController,
                     maxLines: 3,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: EpicordiaColors.textPrimaryLight,
+                      color: textPrimary,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Add description / notes...',
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       filled: false,
                       hintStyle: TextStyle(
-                        color: EpicordiaColors.textTertiaryLight,
+                        color: textTertiary,
                       ),
                     ),
                   ),
-                  const Divider(color: EpicordiaColors.borderSubtleLight),
+                  Divider(color: borderClr),
                   const SizedBox(height: 16),
 
                   // Status Selector
-                  const Text(
+                  Text(
                     'Status',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: EpicordiaColors.textSecondaryLight),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textSecondary),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -266,9 +274,9 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                   const SizedBox(height: 16),
 
                   // Priority Selector
-                  const Text(
+                  Text(
                     'Priority',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: EpicordiaColors.textSecondaryLight),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textSecondary),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -290,9 +298,9 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                   const SizedBox(height: 16),
 
                   // Board Selection
-                  const Text(
+                  Text(
                     'Board',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: EpicordiaColors.textSecondaryLight),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textSecondary),
                   ),
                   const SizedBox(height: 8),
                   boardsAsync.when(
@@ -308,21 +316,21 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: EpicordiaColors.surfaceCardLight,
+                            color: cardBg,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                            border: Border.all(color: borderClr),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.space_dashboard_outlined, size: 18, color: EpicordiaColors.textSecondaryLight),
+                              Icon(Icons.space_dashboard_outlined, size: 18, color: textSecondary),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   _selectedBoardId == null ? 'None (Inbox)' : (selectedBoard?.title ?? 'None (Inbox)'),
-                                  style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+                                  style: TextStyle(fontSize: 14, color: textPrimary),
                                 ),
                               ),
-                              const Icon(Icons.keyboard_arrow_down, size: 18, color: EpicordiaColors.textSecondaryLight),
+                              Icon(Icons.keyboard_arrow_down, size: 18, color: textSecondary),
                             ],
                           ),
                         ),
@@ -393,13 +401,13 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                           _alsoAddToReminders = val;
                         });
                       },
-                      title: const Text(
+                      title: Text(
                         'Also add to Reminders',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
                       ),
-                      subtitle: const Text(
+                      subtitle: Text(
                         'Syncs task directly with native iOS Reminders app',
-                        style: TextStyle(fontSize: 12, color: EpicordiaColors.textSecondaryLight),
+                        style: TextStyle(fontSize: 12, color: textSecondary),
                       ),
                       contentPadding: EdgeInsets.zero,
                     ),
@@ -419,8 +427,14 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   }
 
   void _showBoardSelectionBottomSheet(BuildContext context, List<BoardEntity> boards) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
     showModalBottomSheet(
       context: context,
+      backgroundColor: bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -431,18 +445,18 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: Text(
                   'Select Board',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textPrimary),
                 ),
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.inbox_outlined),
-                title: const Text('None (Inbox)'),
-                trailing: _selectedBoardId == null ? const Icon(Icons.check, color: EpicordiaColors.blue600) : null,
+                leading: Icon(Icons.inbox_outlined, color: textPrimary),
+                title: Text('None (Inbox)', style: TextStyle(color: textPrimary)),
+                trailing: _selectedBoardId == null ? Icon(Icons.check, color: activeBlue) : null,
                 onTap: () {
                   setState(() => _selectedBoardId = null);
                   Navigator.of(context).pop();
@@ -451,9 +465,9 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
               ...boards.map((board) {
                 final isSelected = _selectedBoardId == board.id;
                 return ListTile(
-                  leading: const Icon(Icons.dashboard_outlined, color: EpicordiaColors.blue600),
-                  title: Text(board.title),
-                  trailing: isSelected ? const Icon(Icons.check, color: EpicordiaColors.blue600) : null,
+                  leading: Icon(Icons.dashboard_outlined, color: activeBlue),
+                  title: Text(board.title, style: TextStyle(color: textPrimary)),
+                  trailing: isSelected ? Icon(Icons.check, color: activeBlue) : null,
                   onTap: () {
                     setState(() => _selectedBoardId = board.id);
                     Navigator.of(context).pop();
@@ -480,6 +494,9 @@ class _OptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -487,13 +504,13 @@ class _OptionRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: EpicordiaColors.textSecondaryLight),
+            Icon(icon, size: 18, color: textSecondary),
             const SizedBox(width: 12),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
               ),
             ),
           ],

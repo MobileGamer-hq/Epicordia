@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 
 /// The Epicordia brand logo widget: logo image + "Epicordia" in bold blue
@@ -36,17 +37,21 @@ class EpicordiaLogo extends StatelessWidget {
   }
 }
 
-/// Standard Epicordia app bar with logo, search, and optional avatar
+/// Standard Epicordia app bar with logo, search, and settings button
 class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showSearch;
   final bool showAvatar;
+  final bool showSettings;
   final VoidCallback? onSearch;
+  final VoidCallback? onSettings;
 
   const EpicordiaAppBar({
     super.key,
     this.showSearch = true,
     this.showAvatar = true,
+    this.showSettings = true,
     this.onSearch,
+    this.onSettings,
   });
 
   @override
@@ -68,6 +73,12 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
           IconButton(
             icon: Icon(Icons.search, color: iconColor),
             onPressed: onSearch,
+          ),
+        if (showSettings)
+          IconButton(
+            icon: Icon(Icons.settings_outlined, color: iconColor),
+            tooltip: 'Settings',
+            onPressed: onSettings ?? () => context.push('/settings'),
           ),
       ],
     );

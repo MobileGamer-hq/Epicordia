@@ -7,6 +7,9 @@ class EpicordiaCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? indicatorColor;
   final EdgeInsetsGeometry padding;
+  final Color? backgroundColor;
+  final BorderRadiusGeometry? borderRadius;
+  final BoxBorder? border;
 
   const EpicordiaCard({
     super.key,
@@ -14,21 +17,25 @@ class EpicordiaCard extends StatelessWidget {
     this.onTap,
     this.indicatorColor,
     this.padding = const EdgeInsets.all(16),
+    this.backgroundColor,
+    this.borderRadius,
+    this.border,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg =
-        isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final cardBg = backgroundColor ??
+        (isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight);
     final borderClr =
         isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final effectiveRadius = borderRadius ?? BorderRadius.circular(16);
 
     Widget cardBody = Container(
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderClr, width: 1),
+        borderRadius: effectiveRadius,
+        border: border ?? Border.all(color: borderClr, width: 1),
         boxShadow: [
           BoxShadow(
             color: isDark
@@ -40,7 +47,7 @@ class EpicordiaCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: effectiveRadius,
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,7 +71,7 @@ class EpicordiaCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: effectiveRadius as BorderRadius?,
           child: cardBody,
         ),
       );

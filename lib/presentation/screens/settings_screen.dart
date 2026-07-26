@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/core/epicordia_brand.dart';
+import '../../core/board_settings_provider.dart';
 import '../../core/theme.dart';
 import '../../core/theme_provider.dart';
 
@@ -80,6 +81,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     selected: selectedThemeString,
                     onSelect: (v) {
                       ref.read(themeModeProvider.notifier).setThemeMode(v);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(height: 1, color: EpicordiaColors.borderSubtleLight),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Board Toolbar Position',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark
+                          ? EpicordiaColors.textSecondaryDark
+                          : EpicordiaColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final pos = ref.watch(toolbarPositionProvider);
+                      final currentLabel = pos.name[0].toUpperCase() + pos.name.substring(1);
+                      return _SegmentedToggle(
+                        options: const ['Left', 'Right', 'Bottom'],
+                        selected: currentLabel,
+                        onSelect: (v) {
+                          final targetPos = ToolbarPosition.values.firstWhere(
+                            (e) => e.name.toLowerCase() == v.toLowerCase(),
+                            orElse: () => ToolbarPosition.left,
+                          );
+                          ref.read(toolbarPositionProvider.notifier).setPosition(targetPos);
+                        },
+                      );
                     },
                   ),
                 ],
