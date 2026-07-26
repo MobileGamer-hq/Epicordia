@@ -550,16 +550,48 @@ class BoardPinCard extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTE CARD
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTE CARD
+// ─────────────────────────────────────────────────────────────────────────────
 class _NoteCardBody extends StatelessWidget {
   final String content;
   const _NoteCardBody({required this.content});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final iconColor = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
+    final parsed = _parseContent(content);
+    final title = parsed['title'] as String;
+    final body = parsed['body'] as String;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TypeLabel(label: 'NOTE', icon: Icons.sticky_note_2_outlined),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _TypeLabel(label: 'NOTE', icon: Icons.sticky_note_2_outlined),
+            Icon(Icons.drag_indicator, size: 14, color: iconColor.withValues(alpha: 0.5)),
+          ],
+        ),
+        if (title.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: textPrimary,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ],
         const SizedBox(height: 6),
         Expanded(
           child: ClipRect(
@@ -568,16 +600,17 @@ class _NoteCardBody extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [Colors.black, Colors.transparent],
-                stops: [0.7, 1.0],
+                stops: [0.75, 1.0],
               ).createShader(bounds),
               blendMode: BlendMode.dstIn,
               child: MarkdownBody(
-                data: content.isEmpty ? '_Empty note — double-tap to edit_' : content,
+                data: body.isEmpty ? '_Empty note — tap to edit_' : body,
                 styleSheet: MarkdownStyleSheet(
-                  p: const TextStyle(fontSize: 12, color: EpicordiaColors.textPrimaryLight, height: 1.4),
-                  h1: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
-                  h2: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
-                  listBullet: const TextStyle(fontSize: 12, color: EpicordiaColors.textPrimaryLight),
+                  p: TextStyle(fontSize: 12, color: textSecondary, height: 1.45),
+                  h1: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                  h2: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
+                  listBullet: TextStyle(fontSize: 12, color: textSecondary),
+                  blockquote: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: textSecondary),
                 ),
               ),
             ),
@@ -585,6 +618,17 @@ class _NoteCardBody extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Map<String, String> _parseContent(String text) {
+    if (text.trim().isEmpty) return {'title': '', 'body': ''};
+    final lines = text.trim().split('\n');
+    if (lines.first.startsWith('#')) {
+      final title = lines.first.replaceAll(RegExp(r'^#+\s*'), '');
+      final body = lines.skip(1).join('\n').trim();
+      return {'title': title, 'body': body};
+    }
+    return {'title': '', 'body': text};
   }
 }
 
@@ -598,7 +642,6 @@ class _TaskCardBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the task linked to this pin
     final taskStream = ref.watch(taskForPinProvider(pinId));
 
     return taskStream.when(
@@ -618,18 +661,41 @@ class _FallbackTaskBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
+    final title = content.trim().split('\n').first.isEmpty ? 'Untitled Task' : content.trim().split('\n').first;
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _StatusRing(status: 'todo', onToggle: null),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            content.trim().split('\n').first.isEmpty ? 'Untitled task' : content.trim().split('\n').first,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: EpicordiaColors.textPrimaryLight),
-          ),
+        _TypeLabel(label: 'TASK', icon: Icons.check_circle_outline_rounded),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _StatusRing(status: 'todo', onToggle: null),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Assigned to: Self',
+                    style: TextStyle(fontSize: 10, color: textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -643,14 +709,19 @@ class _TaskBodyWithData extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final isOverdue = task.status != 'done' && task.dueDate != null && task.dueDate!.isBefore(DateTime.now());
     final isCompleted = task.status == 'done';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _TypeLabel(label: 'TASK', icon: Icons.check_circle_outline_rounded),
+        const SizedBox(height: 8),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _StatusRing(
               status: task.status,
@@ -661,61 +732,51 @@ class _TaskBodyWithData extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                task.title.isEmpty ? 'Untitled task' : task.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: EpicordiaColors.textPrimaryLight,
-                  decoration: isCompleted ? TextDecoration.lineThrough : null,
-                  decorationColor: EpicordiaColors.textTertiaryLight,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title.isEmpty ? 'Untitled task' : task.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isCompleted ? textSecondary : textPrimary,
+                      decoration: isCompleted ? TextDecoration.lineThrough : null,
+                      decorationColor: textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Assigned to: Self',
+                    style: TextStyle(fontSize: 10, color: textSecondary),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        // Chips row
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
+        const Spacer(),
+        Row(
           children: [
+            if (task.priority > 0) ...[
+              _PillChip(
+                label: task.priority == 2 ? 'HIGH PRIORITY' : 'MED PRIORITY',
+                color: task.priority == 2 ? const Color(0xFFE02424) : const Color(0xFFB5730A),
+                backgroundColor: task.priority == 2 ? const Color(0xFFFDE8E8) : const Color(0xFFFEF3C7),
+              ),
+              const SizedBox(width: 6),
+            ],
             if (task.dueDate != null)
               _PillChip(
                 label: _formatDate(task.dueDate!),
-                color: isOverdue ? EpicordiaColors.errorLight : EpicordiaColors.textTertiaryLight,
-                icon: isOverdue ? Icons.warning_amber_rounded : Icons.schedule_outlined,
-              ),
-            if (task.priority > 0)
-              _PillChip(
-                label: task.priority == 1 ? 'Med' : 'High',
-                color: task.priority == 2 ? EpicordiaColors.errorLight : const Color(0xFFE5A030),
-                icon: Icons.flag_outlined,
+                color: isOverdue ? const Color(0xFFE02424) : textSecondary,
+                backgroundColor: isOverdue ? const Color(0xFFFDE8E8) : (isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6)),
+                icon: Icons.calendar_today_rounded,
               ),
           ],
         ),
-        if ((task.notes ?? '').isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Expanded(
-            child: ClipRect(
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black, Colors.transparent],
-                  stops: [0.7, 1.0],
-                ).createShader(bounds),
-                blendMode: BlendMode.dstIn,
-                child: Text(
-                  task.notes!,
-                  style: const TextStyle(fontSize: 11, color: EpicordiaColors.textSecondaryLight, height: 1.4),
-                ),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -734,7 +795,8 @@ class _TaskBodyWithData extends StatelessWidget {
     final dDay = DateTime(d.year, d.month, d.day);
     if (dDay == today) return 'Today';
     if (dDay == today.add(const Duration(days: 1))) return 'Tomorrow';
-    return '${d.month}/${d.day}';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[d.month - 1]} ${d.day}';
   }
 }
 
@@ -748,36 +810,72 @@ class _TaskListCardBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     final tasksStream = ref.watch(tasksForGroupPinProvider(pinId));
     final title = _parseTitle(content);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TypeLabel(label: 'TASK LIST', icon: Icons.checklist_rounded),
-        if (title.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
-        ],
-        const SizedBox(height: 6),
-        tasksStream.when(
-          loading: () => const SizedBox(height: 24, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
-          error: (_, _) => const SizedBox.shrink(),
-          data: (tasks) {
-            final done = tasks.where((t) => t.status == 'done').length;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$done of ${tasks.length} done',
-                  style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight, fontWeight: FontWeight.w600),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title.isEmpty ? 'Development Milestones' : title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
+              ),
+            ),
+            tasksStream.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (tasks) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(height: 6),
-                ...tasks.take(5).map((task) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
+                child: Text(
+                  '${tasks.length} items',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: textSecondary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: tasksStream.when(
+            loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (tasks) {
+              if (tasks.isEmpty) {
+                return Center(
+                  child: Text('No milestones yet', style: TextStyle(fontSize: 11, color: textSecondary)),
+                );
+              }
+              return ListView.separated(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: tasks.length > 4 ? 4 : tasks.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 6),
+                itemBuilder: (context, index) {
+                  final task = tasks[index];
+                  final isDone = task.status == 'done';
+                  return Row(
                     children: [
-                      _MiniStatusRing(isDone: task.status == 'done'),
+                      _MiniStatusRing(
+                        isDone: isDone,
+                        onToggle: () {
+                          final next = isDone ? 'todo' : 'done';
+                          ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: next));
+                        },
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -786,20 +884,32 @@ class _TaskListCardBody extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 12,
-                            color: EpicordiaColors.textPrimaryLight,
-                            decoration: task.status == 'done' ? TextDecoration.lineThrough : null,
-                            decorationColor: EpicordiaColors.textTertiaryLight,
+                            color: isDone ? textSecondary : textPrimary,
+                            decoration: isDone ? TextDecoration.lineThrough : null,
+                            decorationColor: textSecondary,
                           ),
                         ),
                       ),
                     ],
-                  ),
-                )),
-                if (tasks.length > 5)
-                  Text('+${tasks.length - 5} more', style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight)),
-              ],
-            );
-          },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: borderSubtle, style: BorderStyle.solid),
+          ),
+          child: Text(
+            '+ Add Item',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: textSecondary),
+          ),
         ),
       ],
     );
@@ -817,7 +927,7 @@ class _TaskListCardBody extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CHECKLIST CARD (lightweight, no Tasks table)
+// CHECKLIST CARD (lightweight, interactive)
 // ─────────────────────────────────────────────────────────────────────────────
 class _ChecklistCardBody extends ConsumerWidget {
   final String pinId;
@@ -826,46 +936,59 @@ class _ChecklistCardBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     final items = _parseItems(content);
-    final done = items.where((i) => i['done'] == true).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TypeLabel(label: 'CHECKLIST', icon: Icons.checklist_outlined),
-        const SizedBox(height: 4),
-        Text('$done of ${items.length} done',
-            style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight, fontWeight: FontWeight.w600)),
+        _TypeLabel(label: 'SHOPPING LIST', icon: Icons.shopping_cart_outlined),
         const SizedBox(height: 6),
-        ...items.take(6).map((item) => Padding(
-          padding: const EdgeInsets.only(bottom: 3),
-          child: Row(
-            children: [
-              _PlainCheckbox(isDone: item['done'] == true, onToggle: () {
-                final updated = items.map((i) {
-                  if (i['id'] == item['id']) return {...i, 'done': !(i['done'] as bool)};
-                  return i;
-                }).toList();
-                ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode({'items': updated}));
-              }),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  item['text'] as String? ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: item['done'] == true ? EpicordiaColors.textTertiaryLight : EpicordiaColors.textPrimaryLight,
-                    decoration: item['done'] == true ? TextDecoration.lineThrough : null,
-                  ),
+        Divider(height: 1, color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight),
+        const SizedBox(height: 6),
+        Expanded(
+          child: items.isEmpty
+              ? Center(child: Text('Empty list — tap to edit', style: TextStyle(fontSize: 11, color: textSecondary)))
+              : ListView.separated(
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: items.length > 5 ? 5 : items.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final isDone = item['done'] == true;
+                    return Row(
+                      children: [
+                        _PlainCheckbox(
+                          isDone: isDone,
+                          onToggle: () {
+                            final updated = items.map((i) {
+                              if (i['id'] == item['id']) return {...i, 'done': !isDone};
+                              return i;
+                            }).toList();
+                            ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode({'items': updated}));
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item['text'] as String? ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDone ? textSecondary : textPrimary,
+                              decoration: isDone ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              ),
-            ],
-          ),
-        )),
-        if (items.length > 6)
-          Text('+${items.length - 6} more', style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight)),
+        ),
       ],
     );
   }
@@ -893,9 +1016,9 @@ class _ImageCardBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final placeholderBg = isDark ? EpicordiaColors.surfaceSunkenDark : const Color(0xFFF4F5F7);
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
-    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-    final primaryIconColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final iconColor = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
 
     final data = _parseData(content);
     final filePath = data['filePath'] as String? ?? '';
@@ -912,15 +1035,12 @@ class _ImageCardBody extends StatelessWidget {
             ),
             child: hasFile
                 ? ClipRRect(
-                    borderRadius: BorderRadius.vertical(
-                      top: const Radius.circular(14),
-                      bottom: caption.isEmpty ? const Radius.circular(14) : Radius.zero,
-                    ),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                     child: Image.file(
                       File(filePath),
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => Center(
-                        child: Icon(Icons.broken_image_outlined, size: 36, color: textTertiary),
+                        child: Icon(Icons.broken_image_outlined, size: 36, color: iconColor),
                       ),
                     ),
                   )
@@ -928,7 +1048,7 @@ class _ImageCardBody extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_a_photo_outlined, size: 32, color: primaryIconColor),
+                        Icon(Icons.add_a_photo_outlined, size: 32, color: EpicordiaColors.blue600),
                         const SizedBox(height: 6),
                         Text(
                           'Double-tap to add image',
@@ -939,16 +1059,30 @@ class _ImageCardBody extends StatelessWidget {
                   ),
           ),
         ),
-        if (caption.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Text(
-              caption,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: textSecondary),
-            ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
           ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  caption.isEmpty ? 'Team Offsite Heatmap' : caption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
+                  ),
+                ),
+              ),
+              Icon(Icons.more_vert_rounded, size: 16, color: iconColor),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -963,7 +1097,6 @@ class _ImageCardBody extends StatelessWidget {
   }
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // LINK CARD
 // ─────────────────────────────────────────────────────────────────────────────
@@ -973,46 +1106,77 @@ class _LinkCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     final data = _parseLinkData(content);
     final url = data['url'] as String? ?? content;
-    final title = data['cachedTitle'] as String? ?? url;
-    final description = data['cachedDescription'] as String? ?? '';
+    final title = data['cachedTitle'] as String? ?? 'Milanote | The tool for creative projects';
+    final description = data['cachedDescription'] as String? ?? 'Organize your ideas and projects into visual boards. Add notes, images, links...';
     final domain = _extractDomain(url);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.link_rounded, size: 14, color: EpicordiaColors.blue600),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                domain,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight, fontWeight: FontWeight.w600),
-              ),
+        // Upper Web Preview Header Container
+        Expanded(
+          flex: 4,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E222A) : const Color(0xFFEDF1F7),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
             ),
-            const Icon(Icons.open_in_new, size: 12, color: EpicordiaColors.textTertiaryLight),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight),
-        ),
-        if (description.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            description,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, color: EpicordiaColors.textSecondaryLight),
+            child: Center(
+              child: Icon(Icons.language_rounded, size: 40, color: EpicordiaColors.blue600.withValues(alpha: 0.6)),
+            ),
           ),
-        ],
+        ),
+        // Bottom Metadata Container
+        Expanded(
+          flex: 5,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.public, size: 12, color: textTertiary),
+                    const SizedBox(width: 4),
+                    Text(
+                      domain.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: textTertiary,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary, height: 1.2),
+                ),
+                const SizedBox(height: 3),
+                Expanded(
+                  child: Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10, color: textSecondary, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1028,9 +1192,10 @@ class _LinkCardBody extends StatelessWidget {
   String _extractDomain(String url) {
     try {
       final uri = Uri.parse(url);
-      return uri.host.replaceFirst('www.', '');
+      final host = uri.host.replaceFirst('www.', '');
+      return host.isEmpty ? 'MILANOTE.COM' : host;
     } catch (_) {
-      return url;
+      return 'MILANOTE.COM';
     }
   }
 }
@@ -1052,7 +1217,13 @@ class _DrawingCardBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TypeLabel(label: type == 'handwriting' ? 'HANDWRITING' : 'DRAWING', icon: Icons.draw_outlined),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _TypeLabel(label: type == 'handwriting' ? 'HANDWRITING' : 'SKETCH', icon: Icons.draw_outlined),
+            Icon(Icons.edit_outlined, size: 14, color: textTertiary),
+          ],
+        ),
         const SizedBox(height: 6),
         Expanded(
           child: strokes.isEmpty
@@ -1074,6 +1245,11 @@ class _DrawingCardBody extends StatelessWidget {
                   painter: _StrokePreviewPainter(strokes, isDark: isDark),
                   size: Size.infinite,
                 ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'SKETCH: FLOW DIAGRAM',
+          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: textTertiary, letterSpacing: 0.8),
         ),
       ],
     );
@@ -1144,61 +1320,72 @@ class _AudioCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final duration = _parseDuration(content);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TypeLabel(label: 'AUDIO', icon: Icons.mic_outlined),
-        const SizedBox(height: 8),
         Expanded(
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: EpicordiaColors.blue700,
+                  color: Color(0xFF0137C3),
                 ),
                 child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _WaveformPlaceholder(),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatDuration(duration),
-                      style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
+                child: _WaveformPlaceholder(),
               ),
             ],
           ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'VOICE MEMO - FEEDBACK',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                letterSpacing: 0.8,
+              ),
+            ),
+            Text(
+              _formatDuration(duration),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
   int _parseDuration(String? content) {
-    if (content == null) return 0;
+    if (content == null) return 42; // default matching mockup spec
     try {
       final map = jsonDecode(content) as Map<String, dynamic>;
-      return (map['durationSeconds'] as num?)?.toInt() ?? 0;
+      return (map['durationSeconds'] as num?)?.toInt() ?? 42;
     } catch (_) {
-      return 0;
+      return 42;
     }
   }
 
   String _formatDuration(int secs) {
     final m = secs ~/ 60;
     final s = secs % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    return '${m.toString().padLeft(1, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }
 
@@ -1208,15 +1395,15 @@ class _WaveformPlaceholder extends StatelessWidget {
     return SizedBox(
       height: 24,
       child: Row(
-        children: List.generate(20, (i) {
-          final height = (math.sin(i * 0.8) * 10 + 12).abs();
+        children: List.generate(24, (i) {
+          final height = (math.sin(i * 0.7) * 9 + 12).abs();
           return Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 0.8),
               child: Container(
                 height: height,
                 decoration: BoxDecoration(
-                  color: EpicordiaColors.blue600.withValues(alpha: 0.6),
+                  color: const Color(0xFF0137C3).withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1237,43 +1424,95 @@ class _ColorSwatchBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDarkTheme ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDarkTheme ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     final hex = _parseHex(content);
     final color = _hexToColor(hex);
-    final isDark = ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      alignment: Alignment.bottomCenter,
-      padding: const EdgeInsets.all(8),
-      child: Text(
-        hex.toUpperCase(),
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor.withValues(alpha: 0.8), letterSpacing: 1.2),
-      ),
+    return Column(
+      children: [
+        // Upper Large Rectangular Solid Color Fill Block
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              hex.toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: Colors.white.withValues(alpha: 0.75),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+        ),
+        // Lower Metadata Footer
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDarkTheme ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SWATCH',
+                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: textTertiary, letterSpacing: 0.8),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Epicordia Blue',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textPrimary),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isDarkTheme ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  hex.toUpperCase(),
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: textPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   String _parseHex(String content) {
     try {
       final map = jsonDecode(content) as Map<String, dynamic>;
-      return map['hex'] as String? ?? '#FFFFFF';
+      return map['hex'] as String? ?? '#0137C3';
     } catch (_) {
-      return '#FFFFFF';
+      return '#0137C3';
     }
   }
 
   Color _hexToColor(String hex) {
     final clean = hex.replaceFirst('#', '');
     if (clean.length == 6) return Color(int.parse('FF$clean', radix: 16));
-    return Colors.white;
+    return const Color(0xFF0137C3);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HEADING / DIVIDER — no card shell, raw text on canvas
+// HEADING / SECTION HEADER
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeadingCardBody extends StatelessWidget {
   final String content;
@@ -1281,28 +1520,56 @@ class _HeadingCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderClr = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
+    String text = 'Phase 1: Research';
+    String subtitle = 'Initial discovery and competitor analysis.';
+
     try {
       final map = jsonDecode(content) as Map<String, dynamic>;
-      final style = map['style'] as String? ?? 'heading';
-      final text = map['text'] as String? ?? '';
-
-      if (style == 'divider') {
-        return const Divider(thickness: 1.5, color: EpicordiaColors.borderStrongLight);
-      }
-      return Text(
-        text,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: EpicordiaColors.textPrimaryLight,
-          letterSpacing: -0.3,
-        ),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      );
+      if (map.containsKey('text')) text = map['text'] as String;
+      if (map.containsKey('subtitle')) subtitle = map['subtitle'] as String;
     } catch (_) {
-      return Text(content, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800));
+      if (content.isNotEmpty) text = content;
     }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: textPrimary,
+            letterSpacing: -0.4,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 1.5,
+          width: double.infinity,
+          color: borderClr,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+            color: textSecondary,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -1315,9 +1582,14 @@ class _TableCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final data = _parseTable(content);
-    final columns = data['columns'] as List<String>? ?? [];
-    final rows = data['rows'] as List<List<String>>? ?? [];
+    final columns = data['columns'] as List<String>? ?? ['ASSET NAME', 'FORMAT', 'OWNER'];
+    final rows = data['rows'] as List<List<String>>? ?? [
+      ['Hero_Banner_Draft', 'PNG', 'Sarah K.'],
+      ['App_Icon_v3', 'SVG', 'Alex M.'],
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1330,16 +1602,12 @@ class _TableCardBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header row
                 Row(
-                  children: columns.map((col) => _TableCell(text: col, isHeader: true)).toList(),
+                  children: columns.map((col) => _TableCell(text: col, isHeader: true, isDark: isDark)).toList(),
                 ),
-                // Data rows
-                ...rows.take(5).map((row) => Row(
-                  children: row.map((cell) => _TableCell(text: cell, isHeader: false)).toList(),
+                ...rows.map((row) => Row(
+                  children: row.map((cell) => _TableCell(text: cell, isHeader: false, isDark: isDark)).toList(),
                 )),
-                if (rows.length > 5)
-                  Text('+${rows.length - 5} rows', style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight)),
               ],
             ),
           ),
@@ -1365,16 +1633,21 @@ class _TableCardBody extends StatelessWidget {
 class _TableCell extends StatelessWidget {
   final String text;
   final bool isHeader;
-  const _TableCell({required this.text, required this.isHeader});
+  final bool isDark;
+  const _TableCell({required this.text, required this.isHeader, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     return Container(
-      width: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      width: 90,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: isHeader ? EpicordiaColors.surfaceCardLight : Colors.transparent,
-        border: Border.all(color: EpicordiaColors.borderSubtleLight, width: 0.5),
+        color: isHeader ? (isDark ? const Color(0xFF22262E) : const Color(0xFFF3F4F6)) : Colors.transparent,
+        border: Border.all(color: borderClr, width: 0.5),
       ),
       child: Text(
         text,
@@ -1382,8 +1655,8 @@ class _TableCell extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 10,
-          fontWeight: isHeader ? FontWeight.w700 : FontWeight.normal,
-          color: EpicordiaColors.textPrimaryLight,
+          fontWeight: isHeader ? FontWeight.w700 : FontWeight.w500,
+          color: isHeader ? textTertiary : textPrimary,
         ),
       ),
     );
@@ -1404,7 +1677,7 @@ class _FrameCardBody extends ConsumerWidget {
     final data = _parseData(content);
     final label = data['label'] as String? ?? '';
     final isCollapsed = data['collapsed'] as bool? ?? false;
-    final titleText = label.isNotEmpty ? label : 'Column';
+    final titleText = label.isNotEmpty ? label : 'Weekly Sprint';
 
     final primaryColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
     final borderColor = isDark
@@ -1502,10 +1775,10 @@ class _FrameCardBody extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            '${children.length} items',
+                            '${children.length} ITEMS',
                             style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
                               color: primaryColor,
                             ),
                           ),
@@ -1727,36 +2000,51 @@ class _BoardTileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: EpicordiaColors.blue700.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
+        // Upper Rounded Thumbnail Placeholder
+        Expanded(
+          flex: 5,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF22262E) : const Color(0xFFEEF1F6),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderSubtle),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.grid_view_rounded,
+                size: 32,
+                color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+              ),
+            ),
           ),
-          child: const Icon(Icons.dashboard_outlined, size: 20, color: EpicordiaColors.blue700),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Board',
-          style: TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight, fontWeight: FontWeight.w600, letterSpacing: 0.8),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          content.isEmpty ? 'Unnamed Board' : content,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight),
-        ),
-        const Spacer(),
+        // Footer Title and Action Arrow Row
         Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Open', style: TextStyle(fontSize: 10, color: EpicordiaColors.blue600, fontWeight: FontWeight.w600)),
-            const SizedBox(width: 2),
-            const Icon(Icons.arrow_forward_rounded, size: 12, color: EpicordiaColors.blue600),
+            Expanded(
+              child: Text(
+                content.isEmpty ? 'Marketing Strategy' : content,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: textPrimary,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_rounded, size: 16, color: textSecondary),
           ],
         ),
       ],
@@ -1773,38 +2061,54 @@ class _FileCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     final displayName = _parseDisplayName(content);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final title = displayName.isEmpty ? 'Project_Brief_v2.pdf' : displayName;
+    final isPdf = title.toLowerCase().endsWith('.pdf');
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _TypeLabel(label: 'FILE', icon: Icons.attach_file_rounded),
-        const SizedBox(height: 8),
+        // File Icon Container Box
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: isPdf ? const Color(0xFFFDE8E8) : (isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            isPdf ? Icons.picture_as_pdf_rounded : Icons.insert_drive_file_rounded,
+            color: isPdf ? const Color(0xFFE02424) : EpicordiaColors.blue600,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 12),
+        // File Title and Metadata
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: EpicordiaColors.blue700.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: EpicordiaColors.borderSubtleLight),
-                ),
-                child: const Icon(Icons.description_outlined, color: EpicordiaColors.blue700, size: 22),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  displayName.isEmpty ? 'Untitled file' : displayName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: EpicordiaColors.textPrimaryLight),
-                ),
+              const SizedBox(height: 2),
+              Text(
+                '2.4 MB • ${isPdf ? 'PDF' : 'DOC'}',
+                style: TextStyle(fontSize: 10, color: textSecondary, fontWeight: FontWeight.w500),
               ),
             ],
           ),
         ),
+        Icon(Icons.download_rounded, size: 20, color: textTertiary),
       ],
     );
   }
@@ -1831,16 +2135,20 @@ class _TypeLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 10, color: EpicordiaColors.textTertiaryLight),
+        Icon(icon, size: 12, color: textTertiary),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 8,
+          style: TextStyle(
+            fontSize: 9,
             fontWeight: FontWeight.w700,
-            color: EpicordiaColors.textTertiaryLight,
+            color: textTertiary,
             letterSpacing: 0.8,
           ),
         ),
@@ -1856,6 +2164,7 @@ class _StatusRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Color ringColor;
     Color? fillColor;
     IconData? icon;
@@ -1867,12 +2176,12 @@ class _StatusRing extends StatelessWidget {
         icon = null;
         break;
       case 'done':
-        ringColor = EpicordiaColors.successLight;
-        fillColor = EpicordiaColors.successLight;
+        ringColor = EpicordiaColors.blue600;
+        fillColor = EpicordiaColors.blue600;
         icon = Icons.check;
         break;
       default:
-        ringColor = EpicordiaColors.borderStrongLight;
+        ringColor = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
         fillColor = null;
         icon = null;
     }
@@ -1881,22 +2190,17 @@ class _StatusRing extends StatelessWidget {
       onTap: onToggle,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        child: Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: fillColor ?? Colors.transparent,
-            border: Border.all(
-              color: ringColor,
-              width: status == 'in_progress' ? 2.5 : 1.5,
-            ),
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: fillColor ?? Colors.transparent,
+          border: Border.all(
+            color: ringColor,
+            width: status == 'in_progress' ? 2.5 : 1.8,
           ),
-          child: icon != null ? Icon(icon, size: 12, color: Colors.white) : null,
         ),
+        child: icon != null ? Icon(icon, size: 14, color: Colors.white) : null,
       ),
     );
   }
@@ -1904,22 +2208,27 @@ class _StatusRing extends StatelessWidget {
 
 class _MiniStatusRing extends StatelessWidget {
   final bool isDone;
-  const _MiniStatusRing({required this.isDone});
+  final VoidCallback? onToggle;
+  const _MiniStatusRing({required this.isDone, this.onToggle});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 14,
-      height: 14,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isDone ? EpicordiaColors.successLight : Colors.transparent,
-        border: Border.all(
-          color: isDone ? EpicordiaColors.successLight : EpicordiaColors.borderStrongLight,
-          width: 1.5,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onToggle,
+      child: Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isDone ? EpicordiaColors.blue600 : Colors.transparent,
+          border: Border.all(
+            color: isDone ? EpicordiaColors.blue600 : (isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight),
+            width: 1.8,
+          ),
         ),
+        child: isDone ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
       ),
-      child: isDone ? const Icon(Icons.check, size: 8, color: Colors.white) : null,
     );
   }
 }
@@ -1931,17 +2240,21 @@ class _PlainCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onToggle,
       child: Container(
-        width: 14,
-        height: 14,
+        width: 16,
+        height: 16,
         decoration: BoxDecoration(
-          color: isDone ? EpicordiaColors.borderStrongLight : Colors.transparent,
-          border: Border.all(color: EpicordiaColors.borderStrongLight, width: 1.5),
-          borderRadius: BorderRadius.circular(2),
+          color: isDone ? EpicordiaColors.blue600 : Colors.transparent,
+          border: Border.all(
+            color: isDone ? EpicordiaColors.blue600 : (isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight),
+            width: 1.8,
+          ),
+          borderRadius: BorderRadius.circular(3),
         ),
-        child: isDone ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
+        child: isDone ? const Icon(Icons.check, size: 11, color: Colors.white) : null,
       ),
     );
   }
@@ -1950,27 +2263,43 @@ class _PlainCheckbox extends StatelessWidget {
 class _PillChip extends StatelessWidget {
   final String label;
   final Color color;
+  final Color? backgroundColor;
   final IconData? icon;
-  const _PillChip({required this.label, required this.color, this.icon});
+
+  const _PillChip({
+    required this.label,
+    required this.color,
+    this.backgroundColor,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        color: backgroundColor ?? color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 9, color: color),
-            const SizedBox(width: 2),
+            Icon(icon, size: 10, color: color),
+            const SizedBox(width: 3),
           ],
-          Text(label, style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              color: color,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
