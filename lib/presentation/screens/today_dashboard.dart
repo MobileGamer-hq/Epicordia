@@ -7,6 +7,7 @@ import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
+import '../../data/providers.dart';
 
 import '../../core/theme.dart';
 import 'search_screen.dart';
@@ -223,6 +224,119 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                             final newStatus = isCompleted ? 'todo' : 'done';
                             ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: newStatus));
                           },
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 28),
+
+              // Today's Recurring Schedule Section
+              _SectionHeader(
+                title: "Today's Schedule",
+                actionLabel: 'View Schedule',
+                onAction: () => context.push('/calendar'),
+              ),
+              const SizedBox(height: 12),
+              ref.watch(allTimetableSlotsProvider).when(
+                loading: () => const SizedBox(height: 60, child: Center(child: CircularProgressIndicator())),
+                error: (err, stack) => const SizedBox(),
+                data: (slots) {
+                  final todayWeekday = DateTime.now().weekday; // 1 = Mon ... 7 = Sun
+                  final todaySlots = slots.where((s) => s.dayOfWeek == todayWeekday).toList()
+                    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+                  if (todaySlots.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderClr),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today_outlined, size: 20, color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'No recurring schedule slots for today.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    children: todaySlots.map((slot) {
+                      Color accentColor = EpicordiaColors.blue600;
+                      if (slot.colorTag != null && slot.colorTag!.isNotEmpty) {
+                        try {
+                          accentColor = Color(int.parse(slot.colorTag!.replaceFirst('#', '0xff')));
+                        } catch (_) {}
+                      }
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: borderClr),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: accentColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${slot.startTime} - ${slot.endTime}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    slot.title,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight,
+                                    ),
+                                  ),
+                                  if (slot.location != null && slot.location!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      slot.location!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }).toList(),

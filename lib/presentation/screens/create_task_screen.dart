@@ -74,6 +74,11 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     return Scaffold(
       backgroundColor: bgApp,
@@ -98,10 +103,10 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text(
+            child: Text(
               'Save',
               style: TextStyle(
-                color: EpicordiaColors.blue600,
+                color: activeBlue,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -116,12 +121,12 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             // Title field
             TextField(
               controller: _titleController,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'List title...',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -130,12 +135,12 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 hintStyle: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: EpicordiaColors.textTertiaryLight,
+                  color: textTertiary,
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            const Divider(color: EpicordiaColors.borderSubtleLight),
+            Divider(color: borderClr),
             const SizedBox(height: 12),
             // Task items
             ..._items.asMap().entries.map((entry) {
@@ -150,7 +155,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: EpicordiaColors.borderStrongLight,
+                          color: borderStrong,
                           width: 1.5,
                         ),
                       ),
@@ -161,14 +166,15 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                         autofocus: i == 0,
                         onChanged: (v) => _items[i] = v,
                         onSubmitted: (_) => setState(() => _items.add('')),
-                        decoration: const InputDecoration(
+                        style: TextStyle(color: textPrimary),
+                        decoration: InputDecoration(
                           hintText: 'Add a task...',
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                           filled: false,
                           hintStyle: TextStyle(
-                            color: EpicordiaColors.textTertiaryLight,
+                            color: textTertiary,
                           ),
                         ),
                       ),
@@ -180,15 +186,15 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             const SizedBox(height: 8),
             GestureDetector(
               onTap: () => setState(() => _items.add('')),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.add, size: 18, color: EpicordiaColors.blue600),
-                  SizedBox(width: 8),
+                  Icon(Icons.add, size: 18, color: activeBlue),
+                  const SizedBox(width: 8),
                   Text(
                     'Add item',
                     style: TextStyle(
                       fontSize: 14,
-                      color: EpicordiaColors.blue600,
+                      color: activeBlue,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -259,8 +265,14 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   }
 
   void _showBoardSelectionBottomSheet(BuildContext context, List<BoardEntity> boards) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
     showModalBottomSheet(
       context: context,
+      backgroundColor: bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -271,18 +283,18 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: Text(
                   'Select Board',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textPrimary),
                 ),
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.inbox_outlined),
-                title: const Text('None (Inbox)'),
-                trailing: _selectedBoardId == null ? const Icon(Icons.check, color: EpicordiaColors.blue600) : null,
+                leading: Icon(Icons.inbox_outlined, color: textPrimary),
+                title: Text('None (Inbox)', style: TextStyle(color: textPrimary)),
+                trailing: _selectedBoardId == null ? Icon(Icons.check, color: activeBlue) : null,
                 onTap: () {
                   setState(() => _selectedBoardId = null);
                   Navigator.of(context).pop();
@@ -291,9 +303,9 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               ...boards.map((board) {
                 final isSelected = _selectedBoardId == board.id;
                 return ListTile(
-                  leading: const Icon(Icons.dashboard_outlined, color: EpicordiaColors.blue600),
-                  title: Text(board.title),
-                  trailing: isSelected ? const Icon(Icons.check, color: EpicordiaColors.blue600) : null,
+                  leading: Icon(Icons.dashboard_outlined, color: activeBlue),
+                  title: Text(board.title, style: TextStyle(color: textPrimary)),
+                  trailing: isSelected ? Icon(Icons.check, color: activeBlue) : null,
                   onTap: () {
                     setState(() => _selectedBoardId = board.id);
                     Navigator.of(context).pop();
@@ -320,6 +332,9 @@ class _OptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -327,13 +342,13 @@ class _OptionRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: EpicordiaColors.textSecondaryLight),
+            Icon(icon, size: 18, color: textSecondary),
             const SizedBox(width: 12),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
               ),
             ),
           ],

@@ -4,6 +4,7 @@ import '../dao/board_dao.dart';
 import '../dao/pin_dao.dart';
 import '../dao/task_dao.dart';
 import '../dao/connector_dao.dart';
+import '../dao/timetable_dao.dart';
 
 import 'connection/connection_stub.dart'
     if (dart.library.io) 'connection/connection_native.dart'
@@ -12,14 +13,14 @@ import 'connection/connection_stub.dart'
 part 'database.g.dart';
 
 @DriftDatabase(
-  tables: [Boards, Pins, Tasks, TaskDependencies, Connectors, Attachments],
-  daos: [BoardDao, PinDao, TaskDao, ConnectorDao],
+  tables: [Boards, Pins, Tasks, TaskDependencies, Connectors, Attachments, TimetableSlots],
+  daos: [BoardDao, PinDao, TaskDao, ConnectorDao, TimetableDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -30,6 +31,9 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
           await m.addColumn(this.tasks, this.tasks.osReminderId as GeneratedColumn<Object>);
+        }
+        if (from < 3) {
+          await m.createTable(this.timetableSlots);
         }
       },
       beforeOpen: (details) async {

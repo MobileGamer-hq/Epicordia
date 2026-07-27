@@ -7,7 +7,10 @@ import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/theme.dart';
 import '../../domain/services/device_calendar_service.dart';
+import '../../domain/services/data_export_service.dart';
+import '../../data/providers.dart';
 import '../widgets/permission_explanation_dialog.dart';
+import '../widgets/timetable_kanban_view.dart';
 import 'today_dashboard.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -19,6 +22,44 @@ class CalendarScreen extends ConsumerStatefulWidget {
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _selectedDate = DateTime.now();
+  int _activeViewIndex = 0; // 0 = Calendar, 1 = Timetable (Kanban)
+
+  Future<void> _handleExport(String type) async {
+    final db = ref.read(databaseProvider);
+    final tasks = ref.read(allTasksProvider).value ?? [];
+    final boards = ref.read(allBoardsProvider).value ?? [];
+    final timetableSlots = ref.read(allTimetableSlotsProvider).value ?? [];
+
+    final boardsMap = {for (final b in boards) b.id: b};
+
+    String fileContent = '';
+    String fileName = '';
+
+    if (type == 'json') {
+      fileContent = await DataExportService.generateWorkspaceJson(db);
+      fileName = 'epicordia_workspace_export.json';
+    } else if (type == 'csv_tasks') {
+      fileContent = DataExportService.exportTasksToCsv(tasks, boardsMap);
+      fileName = 'epicordia_tasks_export.csv';
+    } else if (type == 'csv_timetable') {
+      fileContent = DataExportService.exportTimetableToCsv(timetableSlots);
+      fileName = 'epicordia_timetable_export.csv';
+    }
+
+    final path = await DataExportService.saveExportToFile(
+      fileName: fileName,
+      content: fileContent,
+    );
+
+    if (mounted && path != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export saved: $fileName'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   String _formatDateHeader(DateTime date) {
     const months = [
@@ -159,15 +200,83 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               }
             },
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Export Data',
+            onSelected: _handleExport,
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'json',
+                child: Row(
+                  children: [
+                    Icon(Icons.code, size: 18),
+                    SizedBox(width: 8),
+                    Text('Export Schedule (JSON)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'csv_timetable',
+                child: Row(
+                  children: [
+                    Icon(Icons.table_chart, size: 18),
+                    SizedBox(width: 8),
+                    Text('Export Weekly Schedule (CSV)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'csv_tasks',
+                child: Row(
+                  children: [
+                    Icon(Icons.list_alt, size: 18),
+                    SizedBox(width: 8),
+                    Text('Export Tasks (CSV)'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12),
+            // View Mode Switcher: Calendar vs Weekly Schedule (Kanban)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(
+                    value: 0,
+                    label: Text('Calendar'),
+                    icon: Icon(Icons.calendar_month_outlined, size: 16),
+                  ),
+                  ButtonSegment(
+                    value: 1,
+                    label: Text('Weekly Schedule'),
+                    icon: Icon(Icons.view_week_outlined, size: 16),
+                  ),
+                ],
+                selected: {_activeViewIndex},
+                onSelectionChanged: (set) {
+                  setState(() {
+                    _activeViewIndex = set.first;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _activeViewIndex == 1
+                  ? const TimetableKanbanView()
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
               // Heatmap inside Hero
               Hero(
                 tag: 'heatmap-hero',
@@ -299,7 +408,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         ),
       ),
-    );
+    ],
+  ),
+),
+);
   }
 }
 

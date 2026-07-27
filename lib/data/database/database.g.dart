@@ -3453,6 +3453,729 @@ class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
   }
 }
 
+class $TimetableSlotsTable extends TimetableSlots
+    with TableInfo<$TimetableSlotsTable, TimetableSlotEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TimetableSlotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 255,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dayOfWeekMeta = const VerificationMeta(
+    'dayOfWeek',
+  );
+  @override
+  late final GeneratedColumn<int> dayOfWeek = GeneratedColumn<int>(
+    'day_of_week',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startTimeMeta = const VerificationMeta(
+    'startTime',
+  );
+  @override
+  late final GeneratedColumn<String> startTime = GeneratedColumn<String>(
+    'start_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endTimeMeta = const VerificationMeta(
+    'endTime',
+  );
+  @override
+  late final GeneratedColumn<String> endTime = GeneratedColumn<String>(
+    'end_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _colorTagMeta = const VerificationMeta(
+    'colorTag',
+  );
+  @override
+  late final GeneratedColumn<String> colorTag = GeneratedColumn<String>(
+    'color_tag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _boardIdMeta = const VerificationMeta(
+    'boardId',
+  );
+  @override
+  late final GeneratedColumn<String> boardId = GeneratedColumn<String>(
+    'board_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES boards (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reminderMinutesBeforeMeta =
+      const VerificationMeta('reminderMinutesBefore');
+  @override
+  late final GeneratedColumn<int> reminderMinutesBefore = GeneratedColumn<int>(
+    'reminder_minutes_before',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _modifiedAtMeta = const VerificationMeta(
+    'modifiedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> modifiedAt = GeneratedColumn<DateTime>(
+    'modified_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    location,
+    dayOfWeek,
+    startTime,
+    endTime,
+    colorTag,
+    boardId,
+    notes,
+    reminderMinutesBefore,
+    createdAt,
+    modifiedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'timetable_slots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TimetableSlotEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('day_of_week')) {
+      context.handle(
+        _dayOfWeekMeta,
+        dayOfWeek.isAcceptableOrUnknown(data['day_of_week']!, _dayOfWeekMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayOfWeekMeta);
+    }
+    if (data.containsKey('start_time')) {
+      context.handle(
+        _startTimeMeta,
+        startTime.isAcceptableOrUnknown(data['start_time']!, _startTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startTimeMeta);
+    }
+    if (data.containsKey('end_time')) {
+      context.handle(
+        _endTimeMeta,
+        endTime.isAcceptableOrUnknown(data['end_time']!, _endTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endTimeMeta);
+    }
+    if (data.containsKey('color_tag')) {
+      context.handle(
+        _colorTagMeta,
+        colorTag.isAcceptableOrUnknown(data['color_tag']!, _colorTagMeta),
+      );
+    }
+    if (data.containsKey('board_id')) {
+      context.handle(
+        _boardIdMeta,
+        boardId.isAcceptableOrUnknown(data['board_id']!, _boardIdMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('reminder_minutes_before')) {
+      context.handle(
+        _reminderMinutesBeforeMeta,
+        reminderMinutesBefore.isAcceptableOrUnknown(
+          data['reminder_minutes_before']!,
+          _reminderMinutesBeforeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('modified_at')) {
+      context.handle(
+        _modifiedAtMeta,
+        modifiedAt.isAcceptableOrUnknown(data['modified_at']!, _modifiedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TimetableSlotEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TimetableSlotEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      ),
+      dayOfWeek: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}day_of_week'],
+      )!,
+      startTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_time'],
+      )!,
+      endTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}end_time'],
+      )!,
+      colorTag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_tag'],
+      ),
+      boardId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}board_id'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      reminderMinutesBefore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_minutes_before'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      modifiedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}modified_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TimetableSlotsTable createAlias(String alias) {
+    return $TimetableSlotsTable(attachedDatabase, alias);
+  }
+}
+
+class TimetableSlotEntity extends DataClass
+    implements Insertable<TimetableSlotEntity> {
+  final String id;
+  final String title;
+  final String? location;
+  final int dayOfWeek;
+  final String startTime;
+  final String endTime;
+  final String? colorTag;
+  final String? boardId;
+  final String? notes;
+  final int? reminderMinutesBefore;
+  final DateTime createdAt;
+  final DateTime modifiedAt;
+  const TimetableSlotEntity({
+    required this.id,
+    required this.title,
+    this.location,
+    required this.dayOfWeek,
+    required this.startTime,
+    required this.endTime,
+    this.colorTag,
+    this.boardId,
+    this.notes,
+    this.reminderMinutesBefore,
+    required this.createdAt,
+    required this.modifiedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || location != null) {
+      map['location'] = Variable<String>(location);
+    }
+    map['day_of_week'] = Variable<int>(dayOfWeek);
+    map['start_time'] = Variable<String>(startTime);
+    map['end_time'] = Variable<String>(endTime);
+    if (!nullToAbsent || colorTag != null) {
+      map['color_tag'] = Variable<String>(colorTag);
+    }
+    if (!nullToAbsent || boardId != null) {
+      map['board_id'] = Variable<String>(boardId);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || reminderMinutesBefore != null) {
+      map['reminder_minutes_before'] = Variable<int>(reminderMinutesBefore);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['modified_at'] = Variable<DateTime>(modifiedAt);
+    return map;
+  }
+
+  TimetableSlotsCompanion toCompanion(bool nullToAbsent) {
+    return TimetableSlotsCompanion(
+      id: Value(id),
+      title: Value(title),
+      location: location == null && nullToAbsent
+          ? const Value.absent()
+          : Value(location),
+      dayOfWeek: Value(dayOfWeek),
+      startTime: Value(startTime),
+      endTime: Value(endTime),
+      colorTag: colorTag == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorTag),
+      boardId: boardId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boardId),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      reminderMinutesBefore: reminderMinutesBefore == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderMinutesBefore),
+      createdAt: Value(createdAt),
+      modifiedAt: Value(modifiedAt),
+    );
+  }
+
+  factory TimetableSlotEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TimetableSlotEntity(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      location: serializer.fromJson<String?>(json['location']),
+      dayOfWeek: serializer.fromJson<int>(json['dayOfWeek']),
+      startTime: serializer.fromJson<String>(json['startTime']),
+      endTime: serializer.fromJson<String>(json['endTime']),
+      colorTag: serializer.fromJson<String?>(json['colorTag']),
+      boardId: serializer.fromJson<String?>(json['boardId']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      reminderMinutesBefore: serializer.fromJson<int?>(
+        json['reminderMinutesBefore'],
+      ),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'location': serializer.toJson<String?>(location),
+      'dayOfWeek': serializer.toJson<int>(dayOfWeek),
+      'startTime': serializer.toJson<String>(startTime),
+      'endTime': serializer.toJson<String>(endTime),
+      'colorTag': serializer.toJson<String?>(colorTag),
+      'boardId': serializer.toJson<String?>(boardId),
+      'notes': serializer.toJson<String?>(notes),
+      'reminderMinutesBefore': serializer.toJson<int?>(reminderMinutesBefore),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
+    };
+  }
+
+  TimetableSlotEntity copyWith({
+    String? id,
+    String? title,
+    Value<String?> location = const Value.absent(),
+    int? dayOfWeek,
+    String? startTime,
+    String? endTime,
+    Value<String?> colorTag = const Value.absent(),
+    Value<String?> boardId = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    Value<int?> reminderMinutesBefore = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? modifiedAt,
+  }) => TimetableSlotEntity(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    location: location.present ? location.value : this.location,
+    dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    colorTag: colorTag.present ? colorTag.value : this.colorTag,
+    boardId: boardId.present ? boardId.value : this.boardId,
+    notes: notes.present ? notes.value : this.notes,
+    reminderMinutesBefore: reminderMinutesBefore.present
+        ? reminderMinutesBefore.value
+        : this.reminderMinutesBefore,
+    createdAt: createdAt ?? this.createdAt,
+    modifiedAt: modifiedAt ?? this.modifiedAt,
+  );
+  TimetableSlotEntity copyWithCompanion(TimetableSlotsCompanion data) {
+    return TimetableSlotEntity(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      location: data.location.present ? data.location.value : this.location,
+      dayOfWeek: data.dayOfWeek.present ? data.dayOfWeek.value : this.dayOfWeek,
+      startTime: data.startTime.present ? data.startTime.value : this.startTime,
+      endTime: data.endTime.present ? data.endTime.value : this.endTime,
+      colorTag: data.colorTag.present ? data.colorTag.value : this.colorTag,
+      boardId: data.boardId.present ? data.boardId.value : this.boardId,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      reminderMinutesBefore: data.reminderMinutesBefore.present
+          ? data.reminderMinutesBefore.value
+          : this.reminderMinutesBefore,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      modifiedAt: data.modifiedAt.present
+          ? data.modifiedAt.value
+          : this.modifiedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimetableSlotEntity(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('location: $location, ')
+          ..write('dayOfWeek: $dayOfWeek, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('colorTag: $colorTag, ')
+          ..write('boardId: $boardId, ')
+          ..write('notes: $notes, ')
+          ..write('reminderMinutesBefore: $reminderMinutesBefore, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    location,
+    dayOfWeek,
+    startTime,
+    endTime,
+    colorTag,
+    boardId,
+    notes,
+    reminderMinutesBefore,
+    createdAt,
+    modifiedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TimetableSlotEntity &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.location == this.location &&
+          other.dayOfWeek == this.dayOfWeek &&
+          other.startTime == this.startTime &&
+          other.endTime == this.endTime &&
+          other.colorTag == this.colorTag &&
+          other.boardId == this.boardId &&
+          other.notes == this.notes &&
+          other.reminderMinutesBefore == this.reminderMinutesBefore &&
+          other.createdAt == this.createdAt &&
+          other.modifiedAt == this.modifiedAt);
+}
+
+class TimetableSlotsCompanion extends UpdateCompanion<TimetableSlotEntity> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> location;
+  final Value<int> dayOfWeek;
+  final Value<String> startTime;
+  final Value<String> endTime;
+  final Value<String?> colorTag;
+  final Value<String?> boardId;
+  final Value<String?> notes;
+  final Value<int?> reminderMinutesBefore;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> modifiedAt;
+  final Value<int> rowid;
+  const TimetableSlotsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.location = const Value.absent(),
+    this.dayOfWeek = const Value.absent(),
+    this.startTime = const Value.absent(),
+    this.endTime = const Value.absent(),
+    this.colorTag = const Value.absent(),
+    this.boardId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.reminderMinutesBefore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.modifiedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TimetableSlotsCompanion.insert({
+    required String id,
+    required String title,
+    this.location = const Value.absent(),
+    required int dayOfWeek,
+    required String startTime,
+    required String endTime,
+    this.colorTag = const Value.absent(),
+    this.boardId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.reminderMinutesBefore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.modifiedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       dayOfWeek = Value(dayOfWeek),
+       startTime = Value(startTime),
+       endTime = Value(endTime);
+  static Insertable<TimetableSlotEntity> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? location,
+    Expression<int>? dayOfWeek,
+    Expression<String>? startTime,
+    Expression<String>? endTime,
+    Expression<String>? colorTag,
+    Expression<String>? boardId,
+    Expression<String>? notes,
+    Expression<int>? reminderMinutesBefore,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? modifiedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (location != null) 'location': location,
+      if (dayOfWeek != null) 'day_of_week': dayOfWeek,
+      if (startTime != null) 'start_time': startTime,
+      if (endTime != null) 'end_time': endTime,
+      if (colorTag != null) 'color_tag': colorTag,
+      if (boardId != null) 'board_id': boardId,
+      if (notes != null) 'notes': notes,
+      if (reminderMinutesBefore != null)
+        'reminder_minutes_before': reminderMinutesBefore,
+      if (createdAt != null) 'created_at': createdAt,
+      if (modifiedAt != null) 'modified_at': modifiedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TimetableSlotsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? location,
+    Value<int>? dayOfWeek,
+    Value<String>? startTime,
+    Value<String>? endTime,
+    Value<String?>? colorTag,
+    Value<String?>? boardId,
+    Value<String?>? notes,
+    Value<int?>? reminderMinutesBefore,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? modifiedAt,
+    Value<int>? rowid,
+  }) {
+    return TimetableSlotsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      location: location ?? this.location,
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      colorTag: colorTag ?? this.colorTag,
+      boardId: boardId ?? this.boardId,
+      notes: notes ?? this.notes,
+      reminderMinutesBefore:
+          reminderMinutesBefore ?? this.reminderMinutesBefore,
+      createdAt: createdAt ?? this.createdAt,
+      modifiedAt: modifiedAt ?? this.modifiedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
+    if (dayOfWeek.present) {
+      map['day_of_week'] = Variable<int>(dayOfWeek.value);
+    }
+    if (startTime.present) {
+      map['start_time'] = Variable<String>(startTime.value);
+    }
+    if (endTime.present) {
+      map['end_time'] = Variable<String>(endTime.value);
+    }
+    if (colorTag.present) {
+      map['color_tag'] = Variable<String>(colorTag.value);
+    }
+    if (boardId.present) {
+      map['board_id'] = Variable<String>(boardId.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (reminderMinutesBefore.present) {
+      map['reminder_minutes_before'] = Variable<int>(
+        reminderMinutesBefore.value,
+      );
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (modifiedAt.present) {
+      map['modified_at'] = Variable<DateTime>(modifiedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimetableSlotsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('location: $location, ')
+          ..write('dayOfWeek: $dayOfWeek, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('colorTag: $colorTag, ')
+          ..write('boardId: $boardId, ')
+          ..write('notes: $notes, ')
+          ..write('reminderMinutesBefore: $reminderMinutesBefore, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('modifiedAt: $modifiedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3464,10 +4187,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ConnectorsTable connectors = $ConnectorsTable(this);
   late final $AttachmentsTable attachments = $AttachmentsTable(this);
+  late final $TimetableSlotsTable timetableSlots = $TimetableSlotsTable(this);
   late final BoardDao boardDao = BoardDao(this as AppDatabase);
   late final PinDao pinDao = PinDao(this as AppDatabase);
   late final TaskDao taskDao = TaskDao(this as AppDatabase);
   late final ConnectorDao connectorDao = ConnectorDao(this as AppDatabase);
+  late final TimetableDao timetableDao = TimetableDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3479,6 +4204,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     taskDependencies,
     connectors,
     attachments,
+    timetableSlots,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3580,6 +4306,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [TableUpdate('attachments', kind: UpdateKind.delete)],
     ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'boards',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('timetable_slots', kind: UpdateKind.delete)],
+    ),
   ]);
 }
 
@@ -3661,6 +4394,24 @@ final class $$BoardsTableReferences
     ).filter((f) => f.boardId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_connectorsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TimetableSlotsTable, List<TimetableSlotEntity>>
+  _timetableSlotsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.timetableSlots,
+    aliasName: 'boards__id__timetable_slots__board_id',
+  );
+
+  $$TimetableSlotsTableProcessedTableManager get timetableSlotsRefs {
+    final manager = $$TimetableSlotsTableTableManager(
+      $_db,
+      $_db.timetableSlots,
+    ).filter((f) => f.boardId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_timetableSlotsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3775,6 +4526,31 @@ class $$BoardsTableFilterComposer
           }) => $$ConnectorsTableFilterComposer(
             $db: $db,
             $table: $db.connectors,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> timetableSlotsRefs(
+    Expression<bool> Function($$TimetableSlotsTableFilterComposer f) f,
+  ) {
+    final $$TimetableSlotsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.timetableSlots,
+      getReferencedColumn: (t) => t.boardId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TimetableSlotsTableFilterComposer(
+            $db: $db,
+            $table: $db.timetableSlots,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3963,6 +4739,31 @@ class $$BoardsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> timetableSlotsRefs<T extends Object>(
+    Expression<T> Function($$TimetableSlotsTableAnnotationComposer a) f,
+  ) {
+    final $$TimetableSlotsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.timetableSlots,
+      getReferencedColumn: (t) => t.boardId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TimetableSlotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.timetableSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BoardsTableTableManager
@@ -3982,6 +4783,7 @@ class $$BoardsTableTableManager
             bool parentBoardId,
             bool tasksRefs,
             bool connectorsRefs,
+            bool timetableSlotsRefs,
           })
         > {
   $$BoardsTableTableManager(_$AppDatabase db, $BoardsTable table)
@@ -4050,12 +4852,14 @@ class $$BoardsTableTableManager
                 parentBoardId = false,
                 tasksRefs = false,
                 connectorsRefs = false,
+                timetableSlotsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (tasksRefs) db.tasks,
                     if (connectorsRefs) db.connectors,
+                    if (timetableSlotsRefs) db.timetableSlots,
                   ],
                   addJoins:
                       <
@@ -4129,6 +4933,27 @@ class $$BoardsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (timetableSlotsRefs)
+                        await $_getPrefetchedData<
+                          BoardEntity,
+                          $BoardsTable,
+                          TimetableSlotEntity
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BoardsTableReferences
+                              ._timetableSlotsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BoardsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).timetableSlotsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.boardId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4153,6 +4978,7 @@ typedef $$BoardsTableProcessedTableManager =
         bool parentBoardId,
         bool tasksRefs,
         bool connectorsRefs,
+        bool timetableSlotsRefs,
       })
     >;
 typedef $$PinsTableCreateCompanionBuilder =
@@ -6978,6 +7804,472 @@ typedef $$AttachmentsTableProcessedTableManager =
       AttachmentEntity,
       PrefetchHooks Function({bool pinId})
     >;
+typedef $$TimetableSlotsTableCreateCompanionBuilder =
+    TimetableSlotsCompanion Function({
+      required String id,
+      required String title,
+      Value<String?> location,
+      required int dayOfWeek,
+      required String startTime,
+      required String endTime,
+      Value<String?> colorTag,
+      Value<String?> boardId,
+      Value<String?> notes,
+      Value<int?> reminderMinutesBefore,
+      Value<DateTime> createdAt,
+      Value<DateTime> modifiedAt,
+      Value<int> rowid,
+    });
+typedef $$TimetableSlotsTableUpdateCompanionBuilder =
+    TimetableSlotsCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String?> location,
+      Value<int> dayOfWeek,
+      Value<String> startTime,
+      Value<String> endTime,
+      Value<String?> colorTag,
+      Value<String?> boardId,
+      Value<String?> notes,
+      Value<int?> reminderMinutesBefore,
+      Value<DateTime> createdAt,
+      Value<DateTime> modifiedAt,
+      Value<int> rowid,
+    });
+
+final class $$TimetableSlotsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TimetableSlotsTable,
+          TimetableSlotEntity
+        > {
+  $$TimetableSlotsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BoardsTable _boardIdTable(_$AppDatabase db) =>
+      db.boards.createAlias('timetable_slots__board_id__boards__id');
+
+  $$BoardsTableProcessedTableManager? get boardId {
+    final $_column = $_itemColumn<String>('board_id');
+    if ($_column == null) return null;
+    final manager = $$BoardsTableTableManager(
+      $_db,
+      $_db.boards,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_boardIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TimetableSlotsTableFilterComposer
+    extends Composer<_$AppDatabase, $TimetableSlotsTable> {
+  $$TimetableSlotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dayOfWeek => $composableBuilder(
+    column: $table.dayOfWeek,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorTag => $composableBuilder(
+    column: $table.colorTag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderMinutesBefore => $composableBuilder(
+    column: $table.reminderMinutesBefore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get modifiedAt => $composableBuilder(
+    column: $table.modifiedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BoardsTableFilterComposer get boardId {
+    final $$BoardsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.boardId,
+      referencedTable: $db.boards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BoardsTableFilterComposer(
+            $db: $db,
+            $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TimetableSlotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TimetableSlotsTable> {
+  $$TimetableSlotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get dayOfWeek => $composableBuilder(
+    column: $table.dayOfWeek,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorTag => $composableBuilder(
+    column: $table.colorTag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderMinutesBefore => $composableBuilder(
+    column: $table.reminderMinutesBefore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get modifiedAt => $composableBuilder(
+    column: $table.modifiedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BoardsTableOrderingComposer get boardId {
+    final $$BoardsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.boardId,
+      referencedTable: $db.boards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BoardsTableOrderingComposer(
+            $db: $db,
+            $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TimetableSlotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TimetableSlotsTable> {
+  $$TimetableSlotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<int> get dayOfWeek =>
+      $composableBuilder(column: $table.dayOfWeek, builder: (column) => column);
+
+  GeneratedColumn<String> get startTime =>
+      $composableBuilder(column: $table.startTime, builder: (column) => column);
+
+  GeneratedColumn<String> get endTime =>
+      $composableBuilder(column: $table.endTime, builder: (column) => column);
+
+  GeneratedColumn<String> get colorTag =>
+      $composableBuilder(column: $table.colorTag, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<int> get reminderMinutesBefore => $composableBuilder(
+    column: $table.reminderMinutesBefore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get modifiedAt => $composableBuilder(
+    column: $table.modifiedAt,
+    builder: (column) => column,
+  );
+
+  $$BoardsTableAnnotationComposer get boardId {
+    final $$BoardsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.boardId,
+      referencedTable: $db.boards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BoardsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.boards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TimetableSlotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TimetableSlotsTable,
+          TimetableSlotEntity,
+          $$TimetableSlotsTableFilterComposer,
+          $$TimetableSlotsTableOrderingComposer,
+          $$TimetableSlotsTableAnnotationComposer,
+          $$TimetableSlotsTableCreateCompanionBuilder,
+          $$TimetableSlotsTableUpdateCompanionBuilder,
+          (TimetableSlotEntity, $$TimetableSlotsTableReferences),
+          TimetableSlotEntity,
+          PrefetchHooks Function({bool boardId})
+        > {
+  $$TimetableSlotsTableTableManager(
+    _$AppDatabase db,
+    $TimetableSlotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TimetableSlotsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TimetableSlotsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TimetableSlotsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<int> dayOfWeek = const Value.absent(),
+                Value<String> startTime = const Value.absent(),
+                Value<String> endTime = const Value.absent(),
+                Value<String?> colorTag = const Value.absent(),
+                Value<String?> boardId = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<int?> reminderMinutesBefore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> modifiedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TimetableSlotsCompanion(
+                id: id,
+                title: title,
+                location: location,
+                dayOfWeek: dayOfWeek,
+                startTime: startTime,
+                endTime: endTime,
+                colorTag: colorTag,
+                boardId: boardId,
+                notes: notes,
+                reminderMinutesBefore: reminderMinutesBefore,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String?> location = const Value.absent(),
+                required int dayOfWeek,
+                required String startTime,
+                required String endTime,
+                Value<String?> colorTag = const Value.absent(),
+                Value<String?> boardId = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<int?> reminderMinutesBefore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> modifiedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TimetableSlotsCompanion.insert(
+                id: id,
+                title: title,
+                location: location,
+                dayOfWeek: dayOfWeek,
+                startTime: startTime,
+                endTime: endTime,
+                colorTag: colorTag,
+                boardId: boardId,
+                notes: notes,
+                reminderMinutesBefore: reminderMinutesBefore,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TimetableSlotsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({boardId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (boardId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.boardId,
+                                referencedTable: $$TimetableSlotsTableReferences
+                                    ._boardIdTable(db),
+                                referencedColumn:
+                                    $$TimetableSlotsTableReferences
+                                        ._boardIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TimetableSlotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TimetableSlotsTable,
+      TimetableSlotEntity,
+      $$TimetableSlotsTableFilterComposer,
+      $$TimetableSlotsTableOrderingComposer,
+      $$TimetableSlotsTableAnnotationComposer,
+      $$TimetableSlotsTableCreateCompanionBuilder,
+      $$TimetableSlotsTableUpdateCompanionBuilder,
+      (TimetableSlotEntity, $$TimetableSlotsTableReferences),
+      TimetableSlotEntity,
+      PrefetchHooks Function({bool boardId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6993,4 +8285,6 @@ class $AppDatabaseManager {
       $$ConnectorsTableTableManager(_db, _db.connectors);
   $$AttachmentsTableTableManager get attachments =>
       $$AttachmentsTableTableManager(_db, _db.attachments);
+  $$TimetableSlotsTableTableManager get timetableSlots =>
+      $$TimetableSlotsTableTableManager(_db, _db.timetableSlots);
 }

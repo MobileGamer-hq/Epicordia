@@ -431,12 +431,12 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.noteId != null;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgApp = isDark
-        ? EpicordiaColors.surfaceAppDark
-        : EpicordiaColors.surfaceAppLight;
-    final textPrimary = isDark
-        ? EpicordiaColors.textPrimaryDark
-        : EpicordiaColors.textPrimaryLight;
+    final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     return Scaffold(
       backgroundColor: bgApp,
@@ -458,18 +458,18 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         actions: [
           if (isEditing)
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.delete_outline,
-                color: EpicordiaColors.errorLight,
+                color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight,
               ),
               onPressed: _delete,
             ),
           TextButton(
             onPressed: _save,
-            child: const Text(
+            child: Text(
               'Save',
               style: TextStyle(
-                color: EpicordiaColors.blue600,
+                color: activeBlue,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -485,12 +485,12 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
               // Title
               TextField(
                 controller: _titleController,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: EpicordiaColors.textPrimaryLight,
+                  color: textPrimary,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Note title...',
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -499,11 +499,11 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                   hintStyle: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: EpicordiaColors.textTertiaryLight,
+                    color: textTertiary,
                   ),
                 ),
               ),
-              const Divider(color: EpicordiaColors.borderSubtleLight),
+              Divider(color: borderClr),
               const SizedBox(height: 8),
               // Body
               Expanded(
@@ -514,26 +514,26 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                   maxLines: null,
                   expands: true,
                   textAlignVertical: TextAlignVertical.top,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
-                    color: EpicordiaColors.textPrimaryLight,
+                    color: textPrimary,
                     height: 1.6,
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Start writing...',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     filled: false,
-                    hintStyle: TextStyle(color: EpicordiaColors.textTertiaryLight),
+                    hintStyle: TextStyle(color: textTertiary),
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(color: EpicordiaColors.borderSubtleLight),
+                    top: BorderSide(color: borderClr),
                   ),
                 ),
                 child: Row(
@@ -577,17 +577,16 @@ class _FmtButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return InkWell(
       onTap: onTap,
-      // Critical: prevents the button from stealing focus away from the
-      // body TextField. Without this, tapping the button collapses the
-      // TextField's selection to (-1,-1) *before* onTap runs, so
-      // _applyFormat() would silently no-op.
       canRequestFocus: false,
       borderRadius: BorderRadius.circular(6),
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Icon(icon, size: 20, color: EpicordiaColors.textSecondaryLight),
+        child: Icon(icon, size: 20, color: iconColor),
       ),
     );
   }

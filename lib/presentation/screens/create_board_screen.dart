@@ -38,7 +38,12 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     return Scaffold(
       backgroundColor: bgApp,
@@ -63,10 +68,10 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text(
+            child: Text(
               'Create',
               style: TextStyle(
-                color: EpicordiaColors.blue600,
+                color: activeBlue,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -82,12 +87,12 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
             TextField(
               controller: _titleController,
               autofocus: true,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Board name...',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -96,20 +101,20 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
                 hintStyle: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: EpicordiaColors.textTertiaryLight,
+                  color: textTertiary,
                 ),
               ),
             ),
-            const Divider(color: EpicordiaColors.borderSubtleLight),
+            Divider(color: borderClr),
             const SizedBox(height: 24),
 
             // Default view mode
-            const Text(
+            Text(
               'Default view',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 letterSpacing: 0.4,
               ),
             ),
@@ -129,13 +134,13 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: active
-                            ? EpicordiaColors.blue600
-                            : EpicordiaColors.surfaceCardLight,
+                            ? activeBlue
+                            : cardBg,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: active
-                              ? EpicordiaColors.blue600
-                              : EpicordiaColors.borderSubtleLight,
+                              ? activeBlue
+                              : borderClr,
                         ),
                       ),
                       child: Text(
@@ -144,8 +149,8 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: active
-                              ? Colors.white
-                              : EpicordiaColors.textSecondaryLight,
+                              ? (isDark ? Colors.black : Colors.white)
+                              : textSecondary,
                         ),
                       ),
                     ),
@@ -156,40 +161,40 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
             const SizedBox(height: 24),
 
             // Kanban toggle
-            const Text(
+            Text(
               'Options',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 letterSpacing: 0.4,
               ),
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: EpicordiaColors.surfaceCardLight,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                border: Border.all(color: borderClr),
               ),
               child: SwitchListTile(
-                title: const Text(
+                title: Text(
                   'Enable Kanban stages',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: EpicordiaColors.textPrimaryLight,
+                    color: textPrimary,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Add To-do / In-progress / Done columns',
                   style: TextStyle(
                     fontSize: 12,
-                    color: EpicordiaColors.textTertiaryLight,
+                    color: textTertiary,
                   ),
                 ),
                 value: _kanban,
-                activeThumbColor: EpicordiaColors.blue600,
+                activeThumbColor: activeBlue,
                 onChanged: (v) => setState(() => _kanban = v),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -200,12 +205,12 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
             const SizedBox(height: 32),
 
             // Color preview
-            const Text(
+            Text(
               'Cover color',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 letterSpacing: 0.4,
               ),
             ),

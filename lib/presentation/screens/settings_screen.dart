@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/core/epicordia_brand.dart';
 import '../../core/board_settings_provider.dart';
 import '../../core/theme.dart';
 import '../../core/theme_provider.dart';
+import '../../domain/services/data_export_service.dart';
+import '../../data/providers.dart';
+import '../../data/repository/task_repository.dart';
+import '../../data/repository/board_repository.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -16,6 +21,97 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _defaultView = 'Canvas';
   bool _appLock = true;
   bool _backup = true;
+
+  void _showExportOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Export Data',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.code, color: EpicordiaColors.blue600),
+              title: const Text('Export Workspace as JSON'),
+              subtitle: const Text('Full snapshot of boards, pins, tasks, and timetable'),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                final db = ref.read(databaseProvider);
+                final jsonStr = await DataExportService.generateWorkspaceJson(db);
+                final path = await DataExportService.saveExportToFile(
+                  fileName: 'epicordia_workspace_export.json',
+                  content: jsonStr,
+                );
+                if (context.mounted && path != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Workspace exported to $path'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart, color: EpicordiaColors.blue600),
+              title: const Text('Export Weekly Schedule as CSV'),
+              subtitle: const Text('Weekly recurring schedule in spreadsheet format'),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                final slots = ref.read(allTimetableSlotsProvider).value ?? [];
+                final csvStr = DataExportService.exportTimetableToCsv(slots);
+                final path = await DataExportService.saveExportToFile(
+                  fileName: 'epicordia_schedule_export.csv',
+                  content: csvStr,
+                );
+                if (context.mounted && path != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Weekly Schedule exported to $path'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.list_alt, color: EpicordiaColors.blue600),
+              title: const Text('Export Tasks as CSV'),
+              subtitle: const Text('Tasks list with status, dates, and boards'),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                final tasks = ref.read(allTasksProvider).value ?? [];
+                final boards = ref.read(allBoardsProvider).value ?? [];
+                final boardsMap = {for (final b in boards) b.id: b};
+                final csvStr = DataExportService.exportTasksToCsv(tasks, boardsMap);
+                final path = await DataExportService.saveExportToFile(
+                  fileName: 'epicordia_tasks_export.csv',
+                  content: csvStr,
+                );
+                if (context.mounted && path != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Tasks exported to $path'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +129,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: bgApp,
         elevation: 0,
-        titleSpacing: 20,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 16),
-          child: EpicordiaLogo(size: 18),
+        // titleSpacing: 20,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: textPrimary,
+          ),
+          onPressed: () => context.pop(),
         ),
-        leadingWidth: 160,
+
+        // leadingWidth: 160,
         title: Text(
           'Settings',
           style: TextStyle(
@@ -47,13 +147,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             color: textPrimary,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: textPrimary),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: Icon(Icons.search, color: textPrimary),
+        //     onPressed: () {},
+        //   ),
+        //   const SizedBox(width: 8),
+        // ],
       ),
       body: SelectionArea(
         child: ListView(
@@ -192,7 +292,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () => _showExportOptions(context),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(
                               color: isDark

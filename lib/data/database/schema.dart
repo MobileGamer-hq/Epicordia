@@ -96,3 +96,22 @@ class Attachments extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('TimetableSlotEntity')
+class TimetableSlots extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text().withLength(min: 1, max: 255)();
+  TextColumn get location => text().nullable()();
+  IntColumn get dayOfWeek => integer()(); // 1 = Monday ... 7 = Sunday
+  TextColumn get startTime => text()(); // "09:00"
+  TextColumn get endTime => text()();   // "10:30"
+  TextColumn get colorTag => text().nullable()();
+  TextColumn get boardId => text().nullable().references(Boards, #id, onDelete: KeyAction.cascade)();
+  TextColumn get notes => text().nullable()();
+  IntColumn get reminderMinutesBefore => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get modifiedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+

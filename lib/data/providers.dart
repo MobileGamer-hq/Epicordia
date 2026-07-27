@@ -4,6 +4,7 @@ import 'dao/board_dao.dart';
 import 'dao/pin_dao.dart';
 import 'dao/task_dao.dart';
 import 'dao/connector_dao.dart';
+import 'dao/timetable_dao.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -25,6 +26,14 @@ final taskDaoProvider = Provider<TaskDao>((ref) {
 
 final connectorDaoProvider = Provider<ConnectorDao>((ref) {
   return ref.watch(databaseProvider).connectorDao;
+});
+
+final timetableDaoProvider = Provider<TimetableDao>((ref) {
+  return ref.watch(databaseProvider).timetableDao;
+});
+
+final allTimetableSlotsProvider = StreamProvider<List<TimetableSlotEntity>>((ref) {
+  return ref.watch(timetableDaoProvider).watchAllSlots();
 });
 
 /// Watches the single Task row linked to a canvas pin (via Tasks.pinId).
