@@ -174,7 +174,7 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
         title: Text(
           'Edit Task',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: textPrimary,
           ),

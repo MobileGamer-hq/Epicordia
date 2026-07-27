@@ -95,7 +95,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         title: Text(
           'New To-do List',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: textPrimary,
           ),

@@ -450,7 +450,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         title: Text(
           isEditing ? 'Edit Note' : 'New Note',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: textPrimary,
           ),
