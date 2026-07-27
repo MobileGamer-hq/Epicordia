@@ -16,7 +16,7 @@ class EpicordiaColors {
 
 
   // Dark mode primary
-  static const Color darkPrimary = Color(0xFF00B4D8);
+  static const Color Primary = blue500;
 
   // Semantic
   static const Color successLight = Color(0xFF1A9A5B);
@@ -40,7 +40,7 @@ class EpicordiaColors {
   static const Color surfaceAppDark    = Color(0xFF101216);
   static const Color surfaceCardDark   = Color(0xFF1A1D22);
   static const Color surfaceSunkenDark = Color(0xFF0B0D10);
-  static const Color borderSubtleDark  = Color(0xFF2B2E34);
+  static const Color borderSubtleDark  = Color(0xFF16191C);
   static const Color borderStrongDark  = Color(0xFF3B3F47);
   static const Color textPrimaryDark   = Color(0xFFF3F4F6);
   static const Color textSecondaryDark = Color(0xFFA6ABB4);
@@ -51,12 +51,12 @@ class EpicordiaTheme {
   static ThemeData get lightTheme {
     final base = ThemeData.light();
     return base.copyWith(
-      primaryColor: EpicordiaColors.blue600,
+      primaryColor: EpicordiaColors.blue500,
       scaffoldBackgroundColor: EpicordiaColors.surfaceAppLight,
       cardColor: EpicordiaColors.surfaceCardLight,
       canvasColor: EpicordiaColors.surfaceAppLight,
       colorScheme: base.colorScheme.copyWith(
-        primary: EpicordiaColors.blue600,
+        primary: EpicordiaColors.blue500,
         secondary: EpicordiaColors.blue700,
         surface: EpicordiaColors.surfaceCardLight,
         error: EpicordiaColors.errorLight,
@@ -81,14 +81,14 @@ class EpicordiaTheme {
         scrolledUnderElevation: 0,
       ),
       textSelectionTheme: const TextSelectionThemeData(
-        cursorColor: EpicordiaColors.blue600,
+        cursorColor: EpicordiaColors.blue500,
         selectionColor: EpicordiaColors.blue100,
-        selectionHandleColor: EpicordiaColors.blue600,
+        selectionHandleColor: EpicordiaColors.blue500,
       ),
       checkboxTheme: CheckboxThemeData(
         shape: const CircleBorder(),
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return EpicordiaColors.blue600;
+          if (states.contains(WidgetState.selected)) return EpicordiaColors.blue500;
           return Colors.transparent;
         }),
         side: const BorderSide(color: EpicordiaColors.borderStrongLight, width: 1.5),
@@ -107,7 +107,7 @@ class EpicordiaTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: EpicordiaColors.blue600, width: 1.5),
+          borderSide: const BorderSide(color: EpicordiaColors.blue500, width: 1.5),
         ),
         hintStyle: GoogleFonts.inter(fontSize: 14, color: EpicordiaColors.textTertiaryLight),
       ),
@@ -117,12 +117,12 @@ class EpicordiaTheme {
   static ThemeData get darkTheme {
     final base = ThemeData.dark();
     return base.copyWith(
-      primaryColor: EpicordiaColors.darkPrimary,
+      primaryColor: EpicordiaColors.Primary,
       scaffoldBackgroundColor: EpicordiaColors.surfaceAppDark,
       cardColor: EpicordiaColors.surfaceCardDark,
       canvasColor: EpicordiaColors.surfaceAppDark,
       colorScheme: base.colorScheme.copyWith(
-        primary: EpicordiaColors.darkPrimary,
+        primary: EpicordiaColors.Primary,
         secondary: EpicordiaColors.blue300,
         surface: EpicordiaColors.surfaceCardDark,
         error: EpicordiaColors.errorDark,
@@ -160,7 +160,7 @@ class EpicordiaTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: EpicordiaColors.darkPrimary, width: 1.5),
+          borderSide: const BorderSide(color: EpicordiaColors.Primary, width: 1.5),
         ),
         hintStyle: GoogleFonts.inter(fontSize: 14, color: EpicordiaColors.textTertiaryDark),
       ),

@@ -60,7 +60,7 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
         title: Text(
           'New Board',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: textPrimary,
           ),

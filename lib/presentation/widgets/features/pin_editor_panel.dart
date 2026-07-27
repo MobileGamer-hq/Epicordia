@@ -180,7 +180,7 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
         title: const Text(
           'Delete pin?',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: EpicordiaColors.textPrimaryLight,
           ),

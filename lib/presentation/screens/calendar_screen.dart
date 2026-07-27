@@ -139,7 +139,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         title: Text(
           'Interactive Calendar',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: textPrimary,
           ),
@@ -245,27 +245,32 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           children: [
             const SizedBox(height: 12),
             // View Mode Switcher: Calendar vs Weekly Schedule (Kanban)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(
-                    value: 0,
-                    label: Text('Calendar'),
-                    icon: Icon(Icons.calendar_month_outlined, size: 16),
+            Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight,
                   ),
-                  ButtonSegment(
-                    value: 1,
-                    label: Text('Weekly Schedule'),
-                    icon: Icon(Icons.view_week_outlined, size: 16),
-                  ),
-                ],
-                selected: {_activeViewIndex},
-                onSelectionChanged: (set) {
-                  setState(() {
-                    _activeViewIndex = set.first;
-                  });
-                },
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTabItem(
+                      index: 0,
+                      label: 'Calendar',
+                      icon: Icons.calendar_month_outlined,
+                      isDark: isDark,
+                    ),
+                    _buildTabItem(
+                      index: 1,
+                      label: 'Weekly Schedule',
+                      icon: Icons.view_week_outlined,
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -408,10 +413,50 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         ),
       ),
-    ],
-  ),
-),
-);
+    ]),),
+      );
+  }
+
+  Widget _buildTabItem({
+    required int index,
+    required String label,
+    required IconData icon,
+    required bool isDark,
+  }) {
+    final isActive = _activeViewIndex == index;
+    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue700;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
+    return GestureDetector(
+      onTap: () => setState(() => _activeViewIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? activeBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isActive ? Colors.white : textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isActive ? Colors.white : textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

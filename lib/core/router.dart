@@ -15,10 +15,21 @@ import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/edit_task_screen.dart';
 import '../presentation/screens/calendar_screen.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
-    redirect: (context, state) => null,
+    redirect: (context, state) async {
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+      final isOnboarding = state.matchedLocation == '/onboarding';
+
+      if (!onboardingComplete && !isOnboarding) {
+        return '/onboarding';
+      }
+      return null;
+    },
     routes: [
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/',       builder: (context, state) => const TodayDashboard()),

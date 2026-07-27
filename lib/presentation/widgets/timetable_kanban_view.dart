@@ -110,7 +110,7 @@ class TimetableKanbanView extends ConsumerWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer,
+                                  color: colorScheme.primary,
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(

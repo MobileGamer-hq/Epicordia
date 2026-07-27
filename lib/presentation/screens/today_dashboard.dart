@@ -522,15 +522,15 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
     if (isDark) {
       switch (level) {
         case 1:
-          return const Color(0xFF1B3A60);
+          return  EpicordiaColors.blue300;
         case 2:
-          return const Color(0xFF1D5A94);
+          return EpicordiaColors.blue400;
         case 3:
-          return const Color(0xFF0096C7);
+          return EpicordiaColors.blue500;
         case 4:
-          return EpicordiaColors.darkPrimary;
+          return EpicordiaColors.blue600;
         default:
-          return EpicordiaColors.surfaceSunkenDark;
+          return EpicordiaColors.borderSubtleDark;
       }
     } else {
       switch (level) {
@@ -661,7 +661,7 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-    final activeBorderColor = isDark ? EpicordiaColors.darkPrimary : EpicordiaColors.blue700;
+    final activeBorderColor = isDark ? EpicordiaColors.Primary : EpicordiaColors.blue700;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -846,7 +846,7 @@ class _HeatmapLegend extends StatelessWidget {
             const Color(0xFF1B3A60),
             const Color(0xFF1D5A94),
             const Color(0xFF0096C7),
-            EpicordiaColors.darkPrimary,
+            EpicordiaColors.Primary,
           ]
         : [
             EpicordiaColors.borderSubtleLight,

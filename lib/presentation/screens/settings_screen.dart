@@ -9,6 +9,7 @@ import '../../domain/services/data_export_service.dart';
 import '../../data/providers.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -111,6 +112,89 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmResetAppData(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight,
+              size: 28,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Reset App Data?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'This will permanently delete all your boards, tasks, notes, schedule, and saved settings. You will be returned to the onboarding screen to enter your name and purpose for using the app.\n\nThis action cannot be undone.',
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.45,
+            color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Reset Everything'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _resetAppData(context);
+    }
+  }
+
+  Future<void> _resetAppData(BuildContext context) async {
+    final db = ref.read(databaseProvider);
+    await db.transaction(() async {
+      for (final table in db.allTables) {
+        await db.delete(table).go();
+      }
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('App data reset successfully. Welcome back to Onboarding!'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.go('/onboarding');
+    }
   }
 
   @override
@@ -311,7 +395,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () => _confirmResetAppData(context),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(
                               color: isDark
@@ -325,7 +409,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text('Clear Cache',
+                          child: const Text('Reset App Data',
                               style: TextStyle(fontSize: 13)),
                         ),
                       ),

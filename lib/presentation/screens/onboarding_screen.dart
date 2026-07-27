@@ -123,7 +123,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         _currentStep == 2 ? 'Get Started' : 'Continue',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: _isNextEnabled() ? Colors.white : EpicordiaColors.textTertiaryLight,
                         ),
@@ -170,6 +170,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildCurrentStepView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final surfaceCard = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
     switch (_currentStep) {
       case 0:
         return Column(
@@ -178,22 +186,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             const EpicordiaLogo(size: 20),
             const SizedBox(height: 32),
-            const Text(
+            Text(
               'Welcome to\nEpicordia',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
                 height: 1.2,
                 letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'What should we call you? Your name will be used to personalize your dashboard greeting.',
               style: TextStyle(
                 fontSize: 14,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 height: 1.5,
               ),
             ),
@@ -201,17 +209,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             TextField(
               controller: _nameController,
               autofocus: true,
-              style: const TextStyle(fontSize: 16, color: EpicordiaColors.textPrimaryLight, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 16, color: textPrimary, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 hintText: 'Enter your name...',
-                hintStyle: const TextStyle(color: EpicordiaColors.textTertiaryLight, fontWeight: FontWeight.normal),
+                hintStyle: TextStyle(color: textTertiary, fontWeight: FontWeight.normal),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: EpicordiaColors.borderStrongLight),
+                  borderSide: BorderSide(color: borderStrong),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: EpicordiaColors.borderStrongLight),
+                  borderSide: BorderSide(color: borderStrong),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -233,22 +241,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             const EpicordiaLogo(size: 20),
             const SizedBox(height: 32),
-            const Text(
+            Text(
               'What will you\nuse it for?',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
                 height: 1.2,
                 letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Select the purposes that match your workflow. This helps customize your productivity experience.',
               style: TextStyle(
                 fontSize: 14,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 height: 1.5,
               ),
             ),
@@ -261,18 +269,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 return FilterChip(
                   label: Text(useCase),
                   selected: isSelected,
-                  selectedColor: EpicordiaColors.blue100,
-                  checkmarkColor: EpicordiaColors.blue700,
+                  selectedColor: isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100,
+                  checkmarkColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
                   labelStyle: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? EpicordiaColors.blue700 : EpicordiaColors.textPrimaryLight,
+                    color: isSelected
+                        ? (isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700)
+                        : textPrimary,
                   ),
-                  backgroundColor: EpicordiaColors.surfaceCardLight,
+                  backgroundColor: surfaceCard,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                     side: BorderSide(
-                      color: isSelected ? EpicordiaColors.blue600 : EpicordiaColors.borderSubtleLight,
+                      color: isSelected ? EpicordiaColors.blue600 : borderSubtle,
                     ),
                   ),
                   onSelected: (selected) {
@@ -298,22 +308,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             const EpicordiaLogo(size: 20),
             const SizedBox(height: 32),
-            const Text(
+            Text(
               'How would you\nlike to start?',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
                 height: 1.2,
                 letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Choose a workflow that fits your thinking style. You can change this later at any time.',
               style: TextStyle(
                 fontSize: 14,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 height: 1.5,
               ),
             ),
@@ -325,8 +335,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               selected: _selectedWorkflow == 'boards',
               onTap: () => setState(() => _selectedWorkflow = 'boards'),
               icon: Icons.space_dashboard_outlined,
-              iconBg: EpicordiaColors.blue100,
-              iconColor: EpicordiaColors.blue700,
+              iconBg: isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100,
+              iconColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
               title: 'Boards',
               description:
                   'A visual, infinite canvas for spatial organization. Best for moodboarding, complex projects, and brainstorming.',
@@ -341,8 +351,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               selected: _selectedWorkflow == 'lists',
               onTap: () => setState(() => _selectedWorkflow = 'lists'),
               icon: Icons.description_outlined,
-              iconBg: const Color(0xFFFFF3CD),
-              iconColor: const Color(0xFF785A00),
+              iconBg: isDark ? const Color(0xFF3D3200) : const Color(0xFFFFF3CD),
+              iconColor: isDark ? const Color(0xFFFFD54F) : const Color(0xFF785A00),
               title: 'Lists',
               description:
                   'Structured notes and sequential tasks. Best for rapid capturing, journaling, and daily to-do management.',
@@ -380,17 +390,24 @@ class _WorkflowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final surfaceCard = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: EpicordiaColors.surfaceCardLight,
+          color: surfaceCard,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
                 ? EpicordiaColors.blue600
-                : EpicordiaColors.borderSubtleLight,
+                : borderSubtle,
             width: selected ? 2 : 1,
           ),
           boxShadow: [
@@ -429,7 +446,7 @@ class _WorkflowCard extends StatelessWidget {
                     border: Border.all(
                       color: selected
                           ? EpicordiaColors.blue600
-                          : EpicordiaColors.borderStrongLight,
+                          : borderStrong,
                       width: 1.5,
                     ),
                   ),
@@ -439,18 +456,18 @@ class _WorkflowCard extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: EpicordiaColors.textPrimaryLight,
+                color: textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
                 height: 1.45,
               ),
             ),
