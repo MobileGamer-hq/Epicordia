@@ -4,6 +4,8 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.widget.RemoteViews
+import com.epicordia.live.R
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 import org.json.JSONObject
 
@@ -28,9 +30,16 @@ class CalendarHeatmapAppWidget : HomeWidgetProvider() {
                 }
             }
 
-            val views = RemoteViews(context.packageName, android.R.layout.simple_list_item_2).apply {
-                setTextViewText(android.R.id.text1, "$focusRate% Focus Rate")
-                setTextViewText(android.R.id.text2, "Visual Workflow • $windowLabel")
+            val views = RemoteViews(context.packageName, R.layout.widget_calendar_heatmap).apply {
+                setTextViewText(R.id.widget_title, "$focusRate% Focus Rate")
+                setTextViewText(R.id.widget_subtitle, "Visual Workflow • $windowLabel")
+
+                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
+                    context,
+                    com.epicordia.live.MainActivity::class.java,
+                    android.net.Uri.parse("epicordia://calendar")
+                )
+                setOnClickPendingIntent(R.id.widget_heatmap_container, pendingIntent)
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }

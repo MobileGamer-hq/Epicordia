@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.widget.RemoteViews
 import com.epicordia.live.R
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 import org.json.JSONObject
 
@@ -34,11 +35,17 @@ class TodayAppWidget : HomeWidgetProvider() {
                 }
             }
 
-            // Simple RemoteViews representation or custom Glance view
-            // Here we render layout for standard HomeWidgetReceiver
-            val views = RemoteViews(context.packageName, android.R.layout.simple_list_item_2).apply {
-                setTextViewText(android.R.id.text1, "$dueCount due today")
-                setTextViewText(android.R.id.text2, "◯ $topTaskTitle")
+            val views = RemoteViews(context.packageName, R.layout.widget_today).apply {
+                setTextViewText(R.id.widget_title, "$dueCount due today")
+                setTextViewText(R.id.widget_subtitle, "◯ $topTaskTitle")
+
+                // PendingIntent to launch app on tap
+                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
+                    context,
+                    com.epicordia.live.MainActivity::class.java,
+                    android.net.Uri.parse("epicordia://today")
+                )
+                setOnClickPendingIntent(R.id.widget_today_container, pendingIntent)
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }

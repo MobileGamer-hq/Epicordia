@@ -260,6 +260,7 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
   }
 
   void _syncPins(List<PinEntity> pins) {
+    final previousPins = {for (final p in _latestPins) p.id: p};
     _latestPins = pins;
     if (_controller.mouseDown) return;
 
@@ -287,6 +288,16 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
         if (existing.currentlyResizing) continue;
         existing.offset = Offset(pin.x, pin.y);
         existing.size = Size(pin.width, pin.height);
+
+        final prev = previousPins[pin.id];
+        final contentChanged = prev == null ||
+            prev.content != pin.content ||
+            prev.colorTag != pin.colorTag ||
+            prev.type != pin.type;
+        if (contentChanged) {
+          _controller.remove(key);
+          _controller.add(_pinToNode(pin));
+        }
       } else {
         _controller.add(_pinToNode(pin));
       }
@@ -349,6 +360,26 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
     );
   }
 
+  void _zoomAtPoint(Offset focalPoint, double factor) {
+    final matrix = _controller.transform.value.clone();
+    final translation = matrix.getTranslation();
+    final scale = matrix.getMaxScaleOnAxis();
+    final newScale = (scale * factor).clamp(0.15, 5.0);
+    if (newScale == scale) return;
+    final actualFactor = newScale / scale;
+
+    final dx = focalPoint.dx - (focalPoint.dx - translation.x) * actualFactor;
+    final dy = focalPoint.dy - (focalPoint.dy - translation.y) * actualFactor;
+
+    matrix.setIdentity();
+    matrix.storage[0] = newScale;
+    matrix.storage[5] = newScale;
+    matrix.storage[12] = dx;
+    matrix.storage[13] = dy;
+
+    _controller.transform.value = matrix;
+  }
+
   Future<void> deleteSelection() async {
     final repo = ref.read(pinRepositoryProvider);
     final selected = _controller.selection.toList();
@@ -361,6 +392,7 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
 
   @override
   Widget build(BuildContext context) {
+    final activeToolMode = ref.watch(canvasToolModeProvider);
     final pinsStream = ref.watch(pinRepositoryProvider).watchPinsForBoard(widget.boardId);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF101216) : EpicordiaColors.surfaceSunkenLight;
@@ -405,48 +437,133 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
 
             // ── Dot grid overlay ──────────────────────────────────────────
             Positioned.fill(
+              child: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _controller.transform,
+                  builder: (context, _) {
+                    final m = _controller.transform.value;
+                    final s = m.getMaxScaleOnAxis();
+                    final dx = m.getTranslation().x;
+                    final dy = m.getTranslation().y;
+                    return CustomPaint(
+                      painter: _DotGridPainter(
+                        dotSpacing: 24,
+                        dotRadius: 1.0,
+                        dotColor: dotColor,
+                        offset: Offset(dx, dy),
+                        scale: s,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // ── Connector layer ───────────────────────────────────────────
+            RepaintBoundary(
               child: AnimatedBuilder(
                 animation: _controller.transform,
                 builder: (context, _) {
-                  final m = _controller.transform.value;
-                  final s = m.getMaxScaleOnAxis();
-                  final dx = m.getTranslation().x;
-                  final dy = m.getTranslation().y;
-                  return CustomPaint(
-                    painter: _DotGridPainter(
-                      dotSpacing: 24,
-                      dotRadius: 1.0,
-                      dotColor: dotColor,
-                      offset: Offset(dx, dy),
-                      scale: s,
+                  return Transform(
+                    transform: _controller.transform.value,
+                    child: CustomPaint(
+                      size: Size.infinite,
+                      painter: ConnectorLayerPainter(connectorsData, Theme.of(context).colorScheme),
                     ),
                   );
                 },
               ),
             ),
 
-            // ── Connector layer ───────────────────────────────────────────
-            AnimatedBuilder(
-              animation: _controller.transform,
-              builder: (context, _) {
-                return Transform(
-                  transform: _controller.transform.value,
-                  child: CustomPaint(
-                    size: Size.infinite,
-                    painter: ConnectorLayerPainter(connectorsData, Theme.of(context).colorScheme),
-                  ),
-                );
-              },
+            // ── Main canvas ───────────────────────────────────────────────
+            RepaintBoundary(
+              child: InfiniteCanvas(
+                controller: _controller,
+                menuVisible: false,
+                drawVisibleOnly: true,
+                gridSize: const Size.square(24),
+                backgroundBuilder: (context, viewport) => const SizedBox.shrink(),
+              ),
             ),
 
-            // ── Main canvas ───────────────────────────────────────────────
-            InfiniteCanvas(
-              controller: _controller,
-              menuVisible: false,
-              drawVisibleOnly: true,
-              gridSize: const Size.square(24),
-              backgroundBuilder: (context, viewport) => const SizedBox.shrink(),
-            ),
+            // ── Mode Gesture Overlays (Pan / Zoom Tools) ─────────────────
+            if (activeToolMode == CanvasToolMode.pan)
+              Positioned.fill(
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanUpdate: (details) {
+                      final matrix = _controller.transform.value.clone();
+                      matrix.storage[12] += details.delta.dx;
+                      matrix.storage[13] += details.delta.dy;
+                      _controller.transform.value = matrix;
+                    },
+                  ),
+                ),
+              )
+            else if (activeToolMode == CanvasToolMode.zoom)
+              Positioned.fill(
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.zoomIn,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapUp: (details) {
+                      _zoomAtPoint(details.localPosition, 1.3);
+                    },
+                    onSecondaryTapUp: (details) {
+                      _zoomAtPoint(details.localPosition, 0.7);
+                    },
+                    onLongPressStart: (details) {
+                      _zoomAtPoint(details.globalPosition, 0.7);
+                    },
+                  ),
+                ),
+              ),
+
+            // ── Mode Indicator Pill ────────────────────────────────────────
+            if (activeToolMode != CanvasToolMode.select && _editingPinId == null)
+              Positioned(
+                top: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? EpicordiaColors.surfaceCardDark.withValues(alpha: 0.9)
+                          : EpicordiaColors.surfaceCardLight.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: EpicordiaColors.blue600.withValues(alpha: 0.5)),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          activeToolMode == CanvasToolMode.pan ? Icons.pan_tool_outlined : Icons.search_rounded,
+                          size: 14,
+                          color: EpicordiaColors.blue600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          activeToolMode == CanvasToolMode.pan
+                              ? 'Hand Mode: Drag anywhere with 1 finger to pan'
+                              : 'Zoom Mode: Tap to zoom in, long press to zoom out',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
 
             // ── Empty hint ────────────────────────────────────────────────
             if (showEmptyHint)

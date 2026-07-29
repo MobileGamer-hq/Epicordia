@@ -4,6 +4,8 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.widget.RemoteViews
+import com.epicordia.live.R
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 
 class QuickCaptureAppWidget : HomeWidgetProvider() {
@@ -14,8 +16,13 @@ class QuickCaptureAppWidget : HomeWidgetProvider() {
         widgetData: SharedPreferences
     ) {
         appWidgetIds.forEach { widgetId ->
-            val views = RemoteViews(context.packageName, android.R.layout.simple_list_item_1).apply {
-                setTextViewText(android.R.id.text1, "+ Capture")
+            val views = RemoteViews(context.packageName, R.layout.widget_quick_capture).apply {
+                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
+                    context,
+                    com.epicordia.live.MainActivity::class.java,
+                    android.net.Uri.parse("epicordia://capture")
+                )
+                setOnClickPendingIntent(R.id.widget_quick_capture_container, pendingIntent)
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }

@@ -4,6 +4,8 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.widget.RemoteViews
+import com.epicordia.live.R
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 import org.json.JSONObject
 
@@ -25,9 +27,17 @@ class UnsortedTrayAppWidget : HomeWidgetProvider() {
                     e.printStackTrace()
                 }
             }
-            val views = RemoteViews(context.packageName, android.R.layout.simple_list_item_2).apply {
-                setTextViewText(android.R.id.text1, "$count unsorted")
-                setTextViewText(android.R.id.text2, "Unsorted Tray")
+
+            val views = RemoteViews(context.packageName, R.layout.widget_unsorted_tray).apply {
+                setTextViewText(R.id.widget_title, "$count unsorted")
+                setTextViewText(R.id.widget_subtitle, "Unsorted Tray")
+
+                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
+                    context,
+                    com.epicordia.live.MainActivity::class.java,
+                    android.net.Uri.parse("epicordia://unsorted")
+                )
+                setOnClickPendingIntent(R.id.widget_unsorted_container, pendingIntent)
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }
