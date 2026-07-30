@@ -423,12 +423,16 @@ class _ExpandableSidebar extends StatelessWidget {
                                   color: textSecondary,
                                 ),
                                 const SizedBox(width: 12),
-                                Text(
-                                  'Settings',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: textSecondary,
+                                Expanded(
+                                  child: Text(
+                                    'Settings',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: textSecondary,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -477,6 +481,8 @@ class _ExpandableSidebar extends StatelessWidget {
                                   children: [
                                     Text(
                                       'Alex Rivera',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -485,11 +491,12 @@ class _ExpandableSidebar extends StatelessWidget {
                                     ),
                                     Text(
                                       'alex@epicordia.io',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: textTertiary,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),

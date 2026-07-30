@@ -1594,111 +1594,204 @@ class _ColorSwatchEditor extends ConsumerStatefulWidget {
 
 class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
   late String _hex;
+  late String _label;
   late final TextEditingController _hexCtrl;
+  late final TextEditingController _labelCtrl;
+  Timer? _debounce;
 
   static const List<String> _swatchPalette = [
-    '#3D68EE',
-    '#F4C453',
-    '#F0806B',
-    '#5FC7A3',
-    '#9C8CF0',
-    '#5FA8F5',
-    '#16181C',
-    '#8E8E93',
-    '#E5A030',
-    '#D9534F',
-    '#2E7D32',
-    '#FFFFFF',
+    '#3D68EE', '#F4C453', '#F0806B', '#5FC7A3', '#9C8CF0', '#5FA8F5',
+    '#16181C', '#8E8E93', '#E5A030', '#D9534F', '#2E7D32', '#9C27B0',
+    '#E91E63', '#00BCD4', '#009688', '#FF9800', '#795548', '#FFFFFF',
   ];
 
   @override
   void initState() {
     super.initState();
-    _hex = _parseHex(widget.pin.content);
+    final data = _parseData(widget.pin.content);
+    _hex = data['hex'] ?? '#3D68EE';
+    _label = data['label'] ?? '';
     _hexCtrl = TextEditingController(text: _hex);
+    _labelCtrl = TextEditingController(text: _label);
+
+    _hexCtrl.addListener(_onHexChanged);
+    _labelCtrl.addListener(_onLabelChanged);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _hexCtrl.removeListener(_onHexChanged);
+    _labelCtrl.removeListener(_onLabelChanged);
     _hexCtrl.dispose();
+    _labelCtrl.dispose();
     super.dispose();
   }
 
-  String _parseHex(String? content) {
-    if (content == null || content.isEmpty) return '#3D68EE';
+  Map<String, String> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {'hex': '#3D68EE', 'label': ''};
     try {
       final map = jsonDecode(content) as Map<String, dynamic>;
-      return map['hex'] as String? ?? '#3D68EE';
+      final hex = map['hex'] as String? ?? map['color'] as String? ?? '#3D68EE';
+      final label = map['label'] as String? ?? '';
+      return {'hex': hex, 'label': label};
     } catch (_) {
-      return content.startsWith('#') ? content : '#3D68EE';
+      return {'hex': content.startsWith('#') ? content : '#3D68EE', 'label': ''};
     }
   }
 
-  Future<void> _save(String hex) async {
-    setState(() {
-      _hex = hex;
-      _hexCtrl.text = hex;
+  void _onHexChanged() {
+    final text = _hexCtrl.text.trim();
+    if (text.isNotEmpty && (text.length == 7 || text.length == 6)) {
+      final formatted = text.startsWith('#') ? text : '#$text';
+      if (_isValidHex(formatted)) {
+        setState(() => _hex = formatted);
+        _scheduleSave();
+      }
+    }
+  }
+
+  void _onLabelChanged() {
+    setState(() => _label = _labelCtrl.text);
+    _scheduleSave();
+  }
+
+  bool _isValidHex(String hex) {
+    final clean = hex.replaceFirst('#', '');
+    return clean.length == 6 && int.tryParse(clean, radix: 16) != null;
+  }
+
+  void _scheduleSave() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _save);
+  }
+
+  Future<void> _save() async {
+    final json = jsonEncode({
+      'hex': _hex,
+      'label': _label,
     });
-    final json = jsonEncode({'hex': hex});
     final updated = widget.pin.copyWith(
       content: Value(json),
-      colorTag: Value(hex),
+      colorTag: Value(_hex),
       modifiedAt: DateTime.now(),
     );
     await ref.read(pinRepositoryProvider).updatePin(updated);
     widget.onSaved();
   }
 
+  void _selectPaletteColor(String hex) {
+    setState(() {
+      _hex = hex;
+      _hexCtrl.text = hex;
+    });
+    _save();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final color = _hexToColor(_hex);
+    final isLightColor = color.computeLuminance() > 0.5;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionLabel('SWATCH PREVIEW'),
+          const _SectionLabel('COLOR PREVIEW'),
           const SizedBox(height: 8),
           Container(
-            height: 100,
+            height: 110,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: _hexToColor(_hex),
-              borderRadius: BorderRadius.circular(12),
+              color: color,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: EpicordiaColors.borderSubtleLight),
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
+              ],
             ),
             alignment: Alignment.center,
-            child: Text(
-              _hex.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _hex.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: isLightColor ? Colors.black87 : Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                if (_label.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: (isLightColor ? Colors.black54 : Colors.white70),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 20),
-          const _SectionLabel('COLOR PALETTE'),
+          const _SectionLabel('HEX COLOR CODE'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _hexCtrl,
+            decoration: _inputDeco('e.g. #3D68EE').copyWith(
+              prefixIcon: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                  ),
+                ),
+              ),
+            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+          ),
+          const SizedBox(height: 16),
+          const _SectionLabel('COLOR NAME / LABEL'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _labelCtrl,
+            decoration: _inputDeco('e.g. Primary Accent Blue'),
+            style: TextStyle(fontSize: 14, color: textPrimary),
+          ),
+          const SizedBox(height: 20),
+          const _SectionLabel('QUICK PALETTE'),
           const SizedBox(height: 10),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: _swatchPalette.map((h) {
               final isSelected = _hex.toUpperCase() == h.toUpperCase();
+              final c = _hexToColor(h);
               return GestureDetector(
-                onTap: () => _save(h),
+                onTap: () => _selectPaletteColor(h),
                 child: Container(
-                  width: 44,
-                  height: 44,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: _hexToColor(h),
+                    color: c,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight,
                       width: isSelected ? 3 : 1,
                     ),
                   ),
-                  child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+                  child: isSelected ? Icon(Icons.check, color: c.computeLuminance() > 0.5 ? Colors.black87 : Colors.white, size: 20) : null,
                 ),
               );
             }).toList(),

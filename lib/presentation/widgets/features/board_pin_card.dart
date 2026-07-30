@@ -49,40 +49,10 @@ class BoardPinCard extends ConsumerWidget {
   }
 
   void _handlePrimaryTap(BuildContext context, WidgetRef ref) {
-    switch (type) {
-      case 'note':
-      case 'drawing':
-      case 'handwriting':
-      case 'task':
-      case 'tasklist':
-      case 'checklist':
-      case 'table':
-        onEdit?.call(pinId);
-        break;
-      case 'heading':
-        _showHeadingEditDialog(context, ref);
-        break;
-      case 'image':
-        _showImageLightbox(context, ref);
-        break;
-      case 'link':
-        _showLinkEditPopover(context, ref);
-        break;
-      case 'file':
-        _showFileEditPopover(context, ref);
-        break;
-      case 'audio':
-        _showAudioPlayOrRenamePopover(context, ref);
-        break;
-      case 'colorSwatch':
-        _showColorPickerPopover(context, ref);
-        break;
-      case 'board':
-        _handleBoardTap(context, ref);
-        break;
-      default:
-        onEdit?.call(pinId);
-        break;
+    if (type == 'board') {
+      _handleBoardTap(context, ref);
+    } else {
+      onEdit?.call(pinId);
     }
   }
 
@@ -227,284 +197,6 @@ class BoardPinCard extends ConsumerWidget {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  void _showImageLightbox(BuildContext context, WidgetRef ref) {
-    Map<String, dynamic> data = {};
-    try {
-      if (content != null && content!.isNotEmpty) {
-        data = jsonDecode(content!) as Map<String, dynamic>;
-      }
-    } catch (_) {}
-
-    String filePath = data['filePath'] as String? ?? '';
-    final captionController = TextEditingController(text: data['caption'] as String? ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final hasImage = filePath.isNotEmpty && File(filePath).existsSync();
-
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.all(16),
-              child: Material(
-                borderRadius: BorderRadius.circular(16),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 360),
-                      width: double.infinity,
-                      color: Colors.black,
-                      child: hasImage
-                          ? Image.file(File(filePath), fit: BoxFit.contain)
-                          : Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.image_outlined, size: 56, color: Colors.white54),
-                                  const SizedBox(height: 12),
-                                  ElevatedButton.icon(
-                                    onPressed: () async {
-                                      final res = await FilePicker.platform.pickFiles(type: FileType.image);
-                                      if (res != null && res.files.single.path != null) {
-                                        final newPath = res.files.single.path!;
-                                        setStateDialog(() {
-                                          filePath = newPath;
-                                        });
-                                        final updatedData = {...data, 'filePath': newPath};
-                                        await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                                      }
-                                    },
-                                    icon: const Icon(Icons.upload_file_rounded),
-                                    label: const Text('Choose Image File'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: EpicordiaColors.blue600,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Row(
-                        children: [
-                          if (hasImage)
-                            IconButton(
-                              tooltip: 'Change Image',
-                              icon: const Icon(Icons.photo_library_outlined),
-                              onPressed: () async {
-                                final res = await FilePicker.platform.pickFiles(type: FileType.image);
-                                if (res != null && res.files.single.path != null) {
-                                  final newPath = res.files.single.path!;
-                                  setStateDialog(() {
-                                    filePath = newPath;
-                                  });
-                                  final updatedData = {...data, 'filePath': newPath};
-                                  await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                                }
-                              },
-                            ),
-                          Expanded(
-                            child: TextField(
-                              controller: captionController,
-                              decoration: const InputDecoration(
-                                hintText: 'Add or edit caption...',
-                                isDense: true,
-                              ),
-                              onSubmitted: (val) async {
-                                final updatedData = {...data, 'filePath': filePath, 'caption': val};
-                                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                                if (context.mounted) Navigator.pop(context);
-                              },
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.check),
-                            onPressed: () async {
-                              final updatedData = {...data, 'filePath': filePath, 'caption': captionController.text};
-                              await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                              if (context.mounted) Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showLinkEditPopover(BuildContext context, WidgetRef ref) {
-    Map<String, dynamic> data = {};
-    try {
-      if (content != null && content!.isNotEmpty) {
-        data = jsonDecode(content!) as Map<String, dynamic>;
-      }
-    } catch (_) {}
-
-    final urlController = TextEditingController(text: data['url'] as String? ?? content ?? '');
-    final titleController = TextEditingController(text: data['cachedTitle'] as String? ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Link'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: urlController,
-                decoration: const InputDecoration(labelText: 'URL', hintText: 'https://example.com'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title / Label'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () async {
-                final updatedData = {
-                  ...data,
-                  'url': urlController.text,
-                  'cachedTitle': titleController.text,
-                };
-                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showFileEditPopover(BuildContext context, WidgetRef ref) {
-    Map<String, dynamic> data = {};
-    try {
-      if (content != null && content!.isNotEmpty) {
-        data = jsonDecode(content!) as Map<String, dynamic>;
-      }
-    } catch (_) {}
-
-    final nameController = TextEditingController(text: data['displayName'] as String? ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Rename File'),
-          content: TextField(
-            controller: nameController,
-            decoration: const InputDecoration(labelText: 'Display Name'),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () async {
-                final updatedData = {...data, 'displayName': nameController.text};
-                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showAudioPlayOrRenamePopover(BuildContext context, WidgetRef ref) {
-    onEdit?.call(pinId);
-  }
-
-  void _showColorPickerPopover(BuildContext context, WidgetRef ref) {
-    const swatches = ['#F4C453', '#F0806B', '#5FC7A3', '#9C8CF0', '#5FA8F5', '#B9BCC2', '#E5A030', '#E53935', '#009688', '#3F51B5'];
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Color Swatch'),
-          content: Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: swatches.map((hex) {
-              final color = Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
-              return GestureDetector(
-                onTap: () async {
-                  await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode({'hex': hex}));
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: EpicordiaColors.borderSubtleLight),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showHeadingEditDialog(BuildContext context, WidgetRef ref) {
-    Map<String, dynamic> data = {};
-    try {
-      if (content != null && content!.isNotEmpty) {
-        data = jsonDecode(content!) as Map<String, dynamic>;
-      }
-    } catch (_) {
-      data = {'text': content ?? ''};
-    }
-
-    final textController = TextEditingController(text: data['text'] as String? ?? content ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Heading'),
-          content: TextField(
-            controller: textController,
-            autofocus: true,
-            decoration: const InputDecoration(hintText: 'Heading text...'),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () async {
-                final updated = {...data, 'text': textController.text, 'style': 'heading'};
-                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updated));
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
         );
       },
     );
@@ -1158,8 +850,8 @@ class _LinkCardBody extends StatelessWidget {
 
     final data = _parseLinkData(content);
     final url = data['url'] as String? ?? content;
-    final title = data['cachedTitle'] as String? ?? 'Milanote | The tool for creative projects';
-    final description = data['cachedDescription'] as String? ?? 'Organize your ideas and projects into visual boards. Add notes, images, links...';
+    final title = data['cachedTitle'] as String? ?? (url.isNotEmpty ? url : 'Web Bookmark');
+    final description = data['cachedDescription'] as String? ?? 'Tap to edit URL or view link details.';
     final domain = _extractDomain(url);
 
     return Column(
@@ -1167,7 +859,7 @@ class _LinkCardBody extends StatelessWidget {
       children: [
         // Upper Web Preview Header Container
         Expanded(
-          flex: 4,
+          flex: 3,
           child: Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -1175,7 +867,7 @@ class _LinkCardBody extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
             ),
             child: Center(
-              child: Icon(Icons.language_rounded, size: 40, color: EpicordiaColors.blue600.withValues(alpha: 0.6)),
+              child: Icon(Icons.language_rounded, size: 36, color: EpicordiaColors.blue600.withValues(alpha: 0.6)),
             ),
           ),
         ),
@@ -1183,39 +875,44 @@ class _LinkCardBody extends StatelessWidget {
         Expanded(
           flex: 5,
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
                     Icon(Icons.public, size: 12, color: textTertiary),
                     const SizedBox(width: 4),
-                    Text(
-                      domain.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: textTertiary,
-                        letterSpacing: 0.6,
+                    Expanded(
+                      child: Text(
+                        domain.isEmpty ? 'LINK' : domain.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: textTertiary,
+                          letterSpacing: 0.6,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   title,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary, height: 1.2),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Expanded(
                   child: Text(
                     description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: textSecondary, height: 1.3),
+                    style: TextStyle(fontSize: 10, color: textSecondary, height: 1.2),
                   ),
                 ),
               ],

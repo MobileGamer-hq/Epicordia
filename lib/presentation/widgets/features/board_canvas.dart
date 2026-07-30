@@ -657,8 +657,8 @@ class _PinEditorOverlay extends ConsumerWidget {
                   maxWidth: math.min(580, screenSize.width * 0.9),
                   maxHeight: math.min(760, screenSize.height * 0.85),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                child: AutofillGroup(
+                  onDisposeAction: AutofillContextAction.cancel,
                   child: PinEditorPanel(
                     pinId: pinId,
                     boardId: boardId,
