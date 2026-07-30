@@ -28,11 +28,46 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   bool _isEditingPin = false;
 
   Future<void> _addNote() async => _addPin('note', width: 220, height: 160, content: '');
-  Future<void> _addTask() async => _addPin('task', width: 240, height: 110);
+  Future<void> _addTask() async {
+    final repo = ref.read(pinRepositoryProvider);
+    final taskRepo = ref.read(taskRepositoryProvider);
+    final pins = await repo.watchPinsForBoard(widget.boardId).first;
+    final offset = 80.0 + (pins.length % 8) * 28.0;
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+
+    await repo.createPin(
+      PinsCompanion.insert(
+        id: id,
+        boardId: Value(widget.boardId),
+        type: 'task',
+        x: Value(offset),
+        y: Value(offset),
+        width: const Value(240),
+        height: const Value(110),
+        content: const Value('New Task'),
+      ),
+    );
+
+    final taskId = '${id}_task';
+    await taskRepo.createTask(
+      TasksCompanion.insert(
+        id: taskId,
+        pinId: Value(id),
+        boardId: Value(widget.boardId),
+        title: 'New Task',
+        status: const Value('todo'),
+        priority: const Value(0),
+      ),
+    );
+  }
+
   Future<void> _addChecklist() async => _addPin('checklist', width: 220, height: 180, content: '{"items":[]}');
   Future<void> _addDrawing() async => _addPin('drawing', width: 240, height: 200, content: '{"strokes":[]}');
   Future<void> _addLink() async => _addPin('link', width: 240, height: 100, content: '{"url":""}');
   Future<void> _addImage() async => _addPin('image', width: 240, height: 200);
+  Future<void> _addColorSwatch() async => _addPin('colorSwatch', width: 160, height: 160, content: '{"hex":"#3D68EE","label":"Royal Blue"}');
+  Future<void> _addAudio() async => _addPin('audio', width: 240, height: 110, content: '{"title":"Voice Memo","durationSeconds":42}');
+  Future<void> _addFile() async => _addPin('file', width: 240, height: 100, content: '{"displayName":"Document.pdf","fileSize":1258291}');
   Future<void> _addHeading() async => _addPin('heading', width: 260, height: 48, content: '{"text":"New Heading","style":"heading"}');
   Future<void> _addFrame() async => _addPin('frame', width: 320, height: 280, content: '{"label":"Group"}');
 
