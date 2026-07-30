@@ -16,8 +16,6 @@ import 'package:epicordia/data/repository/pin_repository.dart';
 import 'package:epicordia/data/repository/task_repository.dart';
 import 'drawing_canvas.dart';
 
-
-
 // ---------------------------------------------------------------------------
 // Color-tag palette (shared with BoardPinCard)
 // ---------------------------------------------------------------------------
@@ -172,39 +170,45 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
   }
 
   Future<bool> _showDeleteConfirm() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final errorClr = isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight;
+
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: EpicordiaColors.surfaceCardLight,
+        backgroundColor: cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Delete pin?',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: EpicordiaColors.textPrimaryLight,
+            color: textPrimary,
           ),
         ),
-        content: const Text(
+        content: Text(
           'This action cannot be undone. The pin will be permanently removed from the board.',
           style: TextStyle(
             fontSize: 14,
-            color: EpicordiaColors.textSecondaryLight,
+            color: textSecondary,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: EpicordiaColors.textSecondaryLight),
+              style: TextStyle(color: textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(
+            child: Text(
               'Delete',
-              style: TextStyle(color: EpicordiaColors.errorLight, fontWeight: FontWeight.w700),
+              style: TextStyle(color: errorClr, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -217,6 +221,8 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final handleClr = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
 
     return Container(
       decoration: BoxDecoration(
@@ -240,7 +246,7 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: EpicordiaColors.borderStrongLight,
+                color: handleClr,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -249,19 +255,19 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
           if (!_loading && _pin != null) _PanelHeader(pin: _pin!, onClose: widget.onClose),
           // Body
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
               child: CircularProgressIndicator(
-                color: EpicordiaColors.blue600,
+                color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
                 strokeWidth: 2,
               ),
             )
           else if (_pin == null)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
               child: Text(
                 'Pin not found.',
-                style: TextStyle(color: EpicordiaColors.textSecondaryLight),
+                style: TextStyle(color: textSecondary),
               ),
             )
           else
@@ -306,7 +312,6 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
       _ => _PlaceholderEditor(pinType: pin.type),
     };
   }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -335,6 +340,11 @@ class _PanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconClr = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+
     final icon = _typeIcons[pin.type] ?? Icons.push_pin_outlined;
     final indicatorColor = colorFromTag(pin.colorTag);
 
@@ -352,15 +362,15 @@ class _PanelHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-          Icon(icon, size: 16, color: EpicordiaColors.blue600),
+          Icon(icon, size: 16, color: iconClr),
           const SizedBox(width: 8),
           Text(
             pin.type.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
-              color: EpicordiaColors.textSecondaryLight,
+              color: textSecondary,
             ),
           ),
           const Spacer(),
@@ -370,13 +380,13 @@ class _PanelHeader extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: EpicordiaColors.surfaceSunkenLight,
+                color: sunkenBg,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.close,
                 size: 18,
-                color: EpicordiaColors.textSecondaryLight,
+                color: textSecondary,
               ),
             ),
           ),
@@ -549,6 +559,9 @@ class _FmtButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconClr = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return Tooltip(
       message: label,
       child: InkWell(
@@ -556,7 +569,7 @@ class _FmtButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Icon(icon, size: 20, color: EpicordiaColors.textSecondaryLight),
+          child: Icon(icon, size: 20, color: iconClr),
         ),
       ),
     );
@@ -704,18 +717,19 @@ class _TaskEditorState extends ConsumerState<_TaskEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     if (widget.task == null) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
+      return Padding(
+        padding: const EdgeInsets.all(24),
         child: Text(
           'No task linked to this pin.',
-          style: TextStyle(color: EpicordiaColors.textSecondaryLight),
+          style: TextStyle(color: textSecondary),
         ),
       );
     }
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -838,6 +852,9 @@ class _StatusRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: _segments.map((seg) {
@@ -886,7 +903,7 @@ class _StatusRing extends StatelessWidget {
                         isActive ? FontWeight.w700 : FontWeight.w400,
                     color: isActive
                         ? color
-                        : EpicordiaColors.textTertiaryLight,
+                        : textTertiary,
                   ),
                 ),
               ],
@@ -914,6 +931,11 @@ class _PriorityChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final unselectedBorder = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+
     return Wrap(
       spacing: 8,
       children: _chips.map((chip) {
@@ -928,12 +950,12 @@ class _PriorityChips extends StatelessWidget {
             decoration: BoxDecoration(
               color: active
                   ? color.withValues(alpha: 0.18)
-                  : EpicordiaColors.surfaceSunkenLight,
+                  : unselectedBg,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: active
                     ? color
-                    : EpicordiaColors.borderSubtleLight,
+                    : unselectedBorder,
                 width: active ? 1.5 : 1,
               ),
             ),
@@ -945,7 +967,7 @@ class _PriorityChips extends StatelessWidget {
                     active ? FontWeight.w700 : FontWeight.w400,
                 color: active
                     ? color
-                    : EpicordiaColors.textSecondaryLight,
+                    : textSecondary,
               ),
             ),
           ),
@@ -975,6 +997,14 @@ class _DateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeBg = isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue50;
+    final unselectedBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final activeBorder = isDark ? EpicordiaColors.blue700 : EpicordiaColors.blue200;
+    final unselectedBorder = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     return Row(
       children: [
         _SectionLabel(label),
@@ -986,13 +1016,13 @@ class _DateRow extends StatelessWidget {
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: date != null
-                  ? EpicordiaColors.blue50
-                  : EpicordiaColors.surfaceSunkenLight,
+                  ? activeBg
+                  : unselectedBg,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: date != null
-                    ? EpicordiaColors.blue200
-                    : EpicordiaColors.borderSubtleLight,
+                    ? activeBorder
+                    : unselectedBorder,
               ),
             ),
             child: Row(
@@ -1002,8 +1032,8 @@ class _DateRow extends StatelessWidget {
                   Icons.calendar_today_outlined,
                   size: 14,
                   color: date != null
-                      ? EpicordiaColors.blue600
-                      : EpicordiaColors.textTertiaryLight,
+                      ? activeBlue
+                      : textTertiary,
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -1011,8 +1041,8 @@ class _DateRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     color: date != null
-                        ? EpicordiaColors.blue600
-                        : EpicordiaColors.textTertiaryLight,
+                        ? activeBlue
+                        : textTertiary,
                     fontWeight: date != null
                         ? FontWeight.w600
                         : FontWeight.w400,
@@ -1026,10 +1056,10 @@ class _DateRow extends StatelessWidget {
           const SizedBox(width: 4),
           GestureDetector(
             onTap: onClear,
-            child: const Icon(
+            child: Icon(
               Icons.close,
               size: 16,
-              color: EpicordiaColors.textTertiaryLight,
+              color: textTertiary,
             ),
           ),
         ],
@@ -1129,6 +1159,9 @@ class _ChecklistEditorState extends ConsumerState<_ChecklistEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1161,18 +1194,18 @@ class _ChecklistEditorState extends ConsumerState<_ChecklistEditor> {
                   height: 24,
                   decoration: BoxDecoration(
                     border: Border.all(
-                        color: EpicordiaColors.blue300, width: 1.5),
+                        color: activeBlue, width: 1.5),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Icon(Icons.add,
-                      size: 16, color: EpicordiaColors.blue600),
+                  child: Icon(Icons.add,
+                      size: 16, color: activeBlue),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Add item',
                   style: TextStyle(
                     fontSize: 14,
-                    color: EpicordiaColors.blue600,
+                    color: activeBlue,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1220,6 +1253,12 @@ class _ChecklistRowState extends State<_ChecklistRow> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -1233,13 +1272,13 @@ class _ChecklistRowState extends State<_ChecklistRow> {
               height: 20,
               decoration: BoxDecoration(
                 color: widget.item.done
-                    ? EpicordiaColors.blue600
+                    ? activeBlue
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
                   color: widget.item.done
-                      ? EpicordiaColors.blue600
-                      : EpicordiaColors.borderStrongLight,
+                      ? activeBlue
+                      : borderStrong,
                   width: 1.5,
                 ),
               ),
@@ -1255,16 +1294,16 @@ class _ChecklistRowState extends State<_ChecklistRow> {
               style: TextStyle(
                 fontSize: 14,
                 color: widget.item.done
-                    ? EpicordiaColors.textTertiaryLight
-                    : EpicordiaColors.textPrimaryLight,
+                    ? textTertiary
+                    : textPrimary,
                 decoration: widget.item.done
                     ? TextDecoration.lineThrough
                     : TextDecoration.none,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Item text\u2026',
                 hintStyle: TextStyle(
-                    color: EpicordiaColors.textTertiaryLight,
+                    color: textTertiary,
                     fontSize: 14),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -1276,10 +1315,10 @@ class _ChecklistRowState extends State<_ChecklistRow> {
           ),
           GestureDetector(
             onTap: widget.onDelete,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 8),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8),
               child: Icon(Icons.remove_circle_outline,
-                  size: 18, color: EpicordiaColors.textTertiaryLight),
+                  size: 18, color: textTertiary),
             ),
           ),
         ],
@@ -1379,6 +1418,13 @@ class _ImageEditorState extends ConsumerState<_ImageEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
     final hasFile = _filePath != null && _filePath!.isNotEmpty && File(_filePath!).existsSync();
 
     return SingleChildScrollView(
@@ -1394,7 +1440,7 @@ class _ImageEditorState extends ConsumerState<_ImageEditor> {
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                border: Border.all(color: borderSubtle),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -1409,12 +1455,12 @@ class _ImageEditorState extends ConsumerState<_ImageEditor> {
               height: 120,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: EpicordiaColors.surfaceSunkenLight,
+                color: sunkenBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                border: Border.all(color: borderSubtle),
               ),
-              child: const Center(
-                child: Icon(Icons.image_outlined, size: 48, color: EpicordiaColors.textTertiaryLight),
+              child: Center(
+                child: Icon(Icons.image_outlined, size: 48, color: textTertiary),
               ),
             ),
           const SizedBox(height: 12),
@@ -1438,7 +1484,8 @@ class _ImageEditorState extends ConsumerState<_ImageEditor> {
                 icon: const Icon(Icons.camera_alt_outlined, size: 18),
                 label: const Text('Camera'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: EpicordiaColors.textPrimaryLight,
+                  foregroundColor: textPrimary,
+                  side: BorderSide(color: borderStrong),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
@@ -1449,8 +1496,8 @@ class _ImageEditorState extends ConsumerState<_ImageEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _captionCtrl,
-            decoration: _inputDeco('Optional image caption…'),
-            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+            decoration: _inputDeco('Optional image caption…', context),
+            style: TextStyle(fontSize: 14, color: textPrimary),
           ),
         ],
       ),
@@ -1525,7 +1572,6 @@ class _HeadingEditorState extends ConsumerState<_HeadingEditor> {
     } catch (_) {
       return {'text': content};
     }
-
   }
 
   void _onChanged() {
@@ -1545,6 +1591,9 @@ class _HeadingEditorState extends ConsumerState<_HeadingEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1569,8 +1618,8 @@ class _HeadingEditorState extends ConsumerState<_HeadingEditor> {
             const SizedBox(height: 6),
             TextField(
               controller: _ctrl,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
-              decoration: _inputDeco('Enter section heading…'),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+              decoration: _inputDeco('Enter section heading…', context),
             ),
           ],
         ],
@@ -1692,6 +1741,10 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
     final color = _hexToColor(_hex);
     final isLightColor = color.computeLuminance() > 0.5;
 
@@ -1708,7 +1761,7 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: EpicordiaColors.borderSubtleLight),
+              border: Border.all(color: borderSubtle),
               boxShadow: const [
                 BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
               ],
@@ -1745,7 +1798,7 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _hexCtrl,
-            decoration: _inputDeco('e.g. #3D68EE').copyWith(
+            decoration: _inputDeco('e.g. #3D68EE', context).copyWith(
               prefixIcon: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Container(
@@ -1754,7 +1807,7 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
                   decoration: BoxDecoration(
                     color: color,
                     shape: BoxShape.circle,
-                    border: Border.all(color: EpicordiaColors.borderSubtleLight),
+                    border: Border.all(color: borderSubtle),
                   ),
                 ),
               ),
@@ -1766,7 +1819,7 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _labelCtrl,
-            decoration: _inputDeco('e.g. Primary Accent Blue'),
+            decoration: _inputDeco('e.g. Primary Accent Blue', context),
             style: TextStyle(fontSize: 14, color: textPrimary),
           ),
           const SizedBox(height: 20),
@@ -1787,7 +1840,7 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
                     color: c,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight,
+                      color: isSelected ? activeBlue : borderStrong,
                       width: isSelected ? 3 : 1,
                     ),
                   ),
@@ -1882,6 +1935,11 @@ class _TaskListEditorState extends ConsumerState<_TaskListEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue600;
+
     final tasksStream = ref.watch(tasksForGroupPinProvider(widget.pin.id));
 
     return Padding(
@@ -1894,8 +1952,8 @@ class _TaskListEditorState extends ConsumerState<_TaskListEditor> {
           TextField(
             controller: _titleCtrl,
             onChanged: (_) => _saveTitle(),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
-            decoration: _inputDeco('e.g. Packing list, Sprint tasks…'),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+            decoration: _inputDeco('e.g. Packing list, Sprint tasks…', context),
           ),
           const SizedBox(height: 16),
           const _SectionLabel('SUB-TASKS'),
@@ -1926,13 +1984,13 @@ class _TaskListEditorState extends ConsumerState<_TaskListEditor> {
                               t.title,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: t.status == 'done' ? EpicordiaColors.textTertiaryLight : EpicordiaColors.textPrimaryLight,
+                                color: t.status == 'done' ? textTertiary : textPrimary,
                                 decoration: t.status == 'done' ? TextDecoration.lineThrough : null,
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close, size: 18, color: EpicordiaColors.textTertiaryLight),
+                            icon: Icon(Icons.close, size: 18, color: textTertiary),
                             onPressed: () {
                               ref.read(taskRepositoryProvider).deleteTask(t.id);
                             },
@@ -1951,14 +2009,15 @@ class _TaskListEditorState extends ConsumerState<_TaskListEditor> {
                 child: TextField(
                   controller: _newItemCtrl,
                   onSubmitted: (_) => _addSubTask(),
-                  decoration: _inputDeco('Add a new task…'),
+                  decoration: _inputDeco('Add a new task…', context),
+                  style: TextStyle(fontSize: 14, color: textPrimary),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton.filled(
                 onPressed: _addSubTask,
-                icon: const Icon(Icons.add),
-                style: IconButton.styleFrom(backgroundColor: EpicordiaColors.blue600),
+                icon: const Icon(Icons.add, color: Colors.white),
+                style: IconButton.styleFrom(backgroundColor: activeBlue),
               ),
             ],
           ),
@@ -2072,7 +2131,7 @@ class _FrameEditorState extends ConsumerState<_FrameEditor> {
                 ),
                 Switch.adaptive(
                   value: _isCollapsed,
-                  activeColor: primaryColor,
+                  activeTrackColor: primaryColor,
                   onChanged: (val) {
                     setState(() => _isCollapsed = val);
                     _save();
@@ -2181,6 +2240,9 @@ class _LinkEditorState extends ConsumerState<_LinkEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2190,16 +2252,16 @@ class _LinkEditorState extends ConsumerState<_LinkEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _urlCtrl,
-            decoration: _inputDeco('https://example.com'),
-            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+            decoration: _inputDeco('https://example.com', context),
+            style: TextStyle(fontSize: 14, color: textPrimary),
           ),
           const SizedBox(height: 16),
           const _SectionLabel('LINK TITLE'),
           const SizedBox(height: 6),
           TextField(
             controller: _titleCtrl,
-            decoration: _inputDeco('Page title…'),
-            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+            decoration: _inputDeco('Page title…', context),
+            style: TextStyle(fontSize: 14, color: textPrimary),
           ),
           const SizedBox(height: 16),
           const _SectionLabel('DESCRIPTION'),
@@ -2207,8 +2269,8 @@ class _LinkEditorState extends ConsumerState<_LinkEditor> {
           TextField(
             controller: _descCtrl,
             maxLines: 2,
-            decoration: _inputDeco('Brief summary or note…'),
-            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+            decoration: _inputDeco('Brief summary or note…', context),
+            style: TextStyle(fontSize: 14, color: textPrimary),
           ),
         ],
       ),
@@ -2305,6 +2367,13 @@ class _FileEditorState extends ConsumerState<_FileEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
     final hasFile = _filePath != null && _filePath!.isNotEmpty;
     final fileName = _filePath != null ? _filePath!.split(Platform.pathSeparator).last : 'No file selected';
 
@@ -2318,24 +2387,28 @@ class _FileEditorState extends ConsumerState<_FileEditor> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: EpicordiaColors.surfaceSunkenLight,
+              color: sunkenBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: EpicordiaColors.borderSubtleLight),
+              border: Border.all(color: borderSubtle),
             ),
             child: Row(
               children: [
-                const Icon(Icons.insert_drive_file_outlined, size: 28, color: EpicordiaColors.blue600),
+                Icon(Icons.insert_drive_file_outlined, size: 28, color: activeBlue),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     fileName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
                   ),
                 ),
                 OutlinedButton(
                   onPressed: _pickFile,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: textPrimary,
+                    side: BorderSide(color: borderStrong),
+                  ),
                   child: Text(hasFile ? 'Replace' : 'Choose'),
                 ),
               ],
@@ -2346,8 +2419,8 @@ class _FileEditorState extends ConsumerState<_FileEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _nameCtrl,
-            decoration: _inputDeco('File display label…'),
-            style: const TextStyle(fontSize: 14, color: EpicordiaColors.textPrimaryLight),
+            decoration: _inputDeco('File display label…', context),
+            style: TextStyle(fontSize: 14, color: textPrimary),
           ),
         ],
       ),
@@ -2424,6 +2497,10 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2435,13 +2512,13 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
               const Spacer(),
               TextButton.icon(
                 onPressed: _addColumn,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Column'),
+                icon: Icon(Icons.add, size: 16, color: activeBlue),
+                label: Text('Add Column', style: TextStyle(color: activeBlue)),
               ),
               TextButton.icon(
                 onPressed: _addRow,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Row'),
+                icon: Icon(Icons.add, size: 16, color: activeBlue),
+                label: Text('Add Row', style: TextStyle(color: activeBlue)),
               ),
             ],
           ),
@@ -2460,7 +2537,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
                               child: TextFormField(
                                 initialValue: entry.value,
                                 decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                                 onChanged: (val) {
                                   _columns[entry.key] = val;
                                   _save();
@@ -2482,7 +2559,7 @@ class _TableEditorState extends ConsumerState<_TableEditor> {
                                         child: TextFormField(
                                           initialValue: colEntry.value,
                                           decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                          style: const TextStyle(fontSize: 12),
+                                          style: TextStyle(fontSize: 12, color: textPrimary),
                                           onChanged: (val) {
                                             _rows[rowEntry.key][colEntry.key] = val;
                                             _save();
@@ -2546,6 +2623,9 @@ class _BoardTileEditorState extends ConsumerState<_BoardTileEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2555,8 +2635,8 @@ class _BoardTileEditorState extends ConsumerState<_BoardTileEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _ctrl,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EpicordiaColors.textPrimaryLight),
-            decoration: _inputDeco('Enter sub-board title…'),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+            decoration: _inputDeco('Enter sub-board title…', context),
           ),
         ],
       ),
@@ -2567,7 +2647,6 @@ class _BoardTileEditorState extends ConsumerState<_BoardTileEditor> {
 // ---------------------------------------------------------------------------
 // PLACEHOLDER for unsupported pin types
 // ---------------------------------------------------------------------------
-
 
 class _PlaceholderEditor extends StatelessWidget {
   const _PlaceholderEditor({required this.pinType});
@@ -2587,6 +2666,10 @@ class _PlaceholderEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     final icon = _icons[pinType] ?? Icons.push_pin_outlined;
     final displayType =
         '${pinType[0].toUpperCase()}${pinType.substring(1)}';
@@ -2596,21 +2679,21 @@ class _PlaceholderEditor extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 40, color: EpicordiaColors.textTertiaryLight),
+          Icon(icon, size: 40, color: textTertiary),
           const SizedBox(height: 12),
           Text(
             'Edit $displayType pin',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: EpicordiaColors.textSecondaryLight,
+              color: textSecondary,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Full editor coming soon.',
             style: TextStyle(
-                fontSize: 13, color: EpicordiaColors.textTertiaryLight),
+                fontSize: 13, color: textTertiary),
           ),
         ],
       ),
@@ -2635,12 +2718,17 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textPrimary = isDark ? Colors.white : EpicordiaColors.textPrimaryLight;
+    final errorClr = isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight;
+
     return Container(
       padding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-            top: BorderSide(color: EpicordiaColors.borderSubtleLight)),
+            top: BorderSide(color: borderSubtle)),
       ),
       child: Row(
         children: [
@@ -2660,7 +2748,7 @@ class _BottomActionBar extends StatelessWidget {
                   color: entry.value,
                   border: Border.all(
                     color: isActive
-                        ? EpicordiaColors.textPrimaryLight
+                        ? textPrimary
                         : Colors.transparent,
                     width: 2,
                   ),
@@ -2680,26 +2768,26 @@ class _BottomActionBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: EpicordiaColors.errorLight
-                    .withValues(alpha: 0.08),
+                color: errorClr
+                    .withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: EpicordiaColors.errorLight
-                      .withValues(alpha: 0.3),
+                  color: errorClr
+                      .withValues(alpha: 0.35),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.delete_outline,
-                      size: 17, color: EpicordiaColors.errorLight),
-                  SizedBox(width: 5),
+                      size: 17, color: errorClr),
+                  const SizedBox(width: 5),
                   Text(
                     'Delete',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: EpicordiaColors.errorLight,
+                      color: errorClr,
                     ),
                   ),
                 ],
@@ -2741,14 +2829,18 @@ class _MiniStatusRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final successClr = isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight;
+    final borderClr = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
     return Container(
       width: 18,
       height: 18,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isDone ? EpicordiaColors.successLight : Colors.transparent,
+        color: isDone ? successClr : Colors.transparent,
         border: Border.all(
-          color: isDone ? EpicordiaColors.successLight : EpicordiaColors.borderStrongLight,
+          color: isDone ? successClr : borderClr,
           width: 1.5,
         ),
       ),
@@ -2878,6 +2970,11 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final errorClr = isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -2889,10 +2986,10 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E222A) : const Color(0xFFF3F4F6),
+              color: sunkenBg,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _isRecording ? EpicordiaColors.errorLight : EpicordiaColors.borderSubtleLight,
+                color: _isRecording ? errorClr : borderSubtle,
                 width: _isRecording ? 2 : 1,
               ),
             ),
@@ -2905,7 +3002,7 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
                     height: 52,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _isRecording ? EpicordiaColors.errorLight : EpicordiaColors.blue600,
+                      color: _isRecording ? errorClr : EpicordiaColors.blue600,
                     ),
                     child: Icon(
                       _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
@@ -2924,13 +3021,13 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: _isRecording ? EpicordiaColors.errorLight : textPrimary,
+                          color: _isRecording ? errorClr : textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Duration: ${_formatDuration(_durationSeconds)}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: EpicordiaColors.blue600),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: activeBlue),
                       ),
                     ],
                   ),
@@ -2947,7 +3044,7 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
                   icon: Icon(_isRecording ? Icons.stop : Icons.fiber_manual_record, color: Colors.white, size: 18),
                   label: Text(_isRecording ? 'Stop Recording' : 'Record Voice Memo'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isRecording ? EpicordiaColors.errorLight : EpicordiaColors.blue600,
+                    backgroundColor: _isRecording ? errorClr : EpicordiaColors.blue600,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -2959,6 +3056,8 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
                 icon: const Icon(Icons.audio_file_outlined, size: 18),
                 label: const Text('Pick Audio File'),
                 style: OutlinedButton.styleFrom(
+                  foregroundColor: textPrimary,
+                  side: BorderSide(color: borderStrong),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
@@ -2969,7 +3068,7 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _titleCtrl,
-            decoration: _inputDeco('Voice memo title…'),
+            decoration: _inputDeco('Voice memo title…', context),
             style: TextStyle(fontSize: 14, color: textPrimary),
           ),
         ],
@@ -2977,4 +3076,3 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
     );
   }
 }
-
