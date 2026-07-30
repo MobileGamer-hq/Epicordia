@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/layout/responsive_scaffold.dart';
-import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../../data/repository/board_repository.dart';
 import '../../core/theme.dart';
+
+import 'search_screen.dart';
 
 class BoardsTab extends ConsumerStatefulWidget {
   const BoardsTab({super.key});
@@ -16,6 +17,43 @@ class BoardsTab extends ConsumerStatefulWidget {
 
 class _BoardsTabState extends ConsumerState<BoardsTab> {
   bool _isGrid = true;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim().toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showSearchScreen(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const EpicordiaSearchScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final tween = Tween(begin: const Offset(0.0, -1.0), end: Offset.zero)
+              .chain(CurveTween(curve: Curves.fastOutSlowIn));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,14 +61,18 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 
     return ResponsiveScaffold(
-      appBar: const EpicordiaAppBar(),
+      // appBar: EpicordiaAppBar(
+      //   onSearch: () => _showSearchScreen(context),
+      // ),
       child: Column(
         children: [
           // Header with Title & View Mode Toggle
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
               children: [
                 Expanded(
@@ -57,6 +99,14 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
                     ],
                   ),
                 ),
+                // IconButton(
+                //   icon: Icon(
+                //     Icons.search,
+                //     color: textPrimary,
+                //   ),
+                //   onPressed: () => _showSearchScreen(context),
+                //   tooltip: 'Global Search',
+                // ),
                 IconButton(
                   icon: Icon(
                     _isGrid ? Icons.grid_view : Icons.list,
@@ -68,6 +118,39 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
               ],
             ),
           ),
+          // Inline Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(fontSize: 14, color: textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Search boards...',
+                prefixIcon: Icon(Icons.search, size: 20, color: textSecondary),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, size: 18, color: textSecondary),
+                        onPressed: () => _searchController.clear(),
+                      )
+                    : null,
+                filled: true,
+                fillColor: cardBg,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderClr),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderClr),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600),
+                ),
+              ),
+            ),
+          ),
           Expanded(
             child: StreamBuilder(
               stream: boardsAsync,
@@ -76,7 +159,10 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final boards = snapshot.data ?? [];
+                final allBoards = snapshot.data ?? [];
+                final boards = _searchQuery.isEmpty
+                    ? allBoards
+                    : allBoards.where((b) => b.title.toLowerCase().contains(_searchQuery)).toList();
 
                 if (boards.isEmpty) {
                   return _EmptyBoardsState();

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/core/epicordia_brand.dart';
 import '../../core/board_settings_provider.dart';
 import '../../core/theme.dart';
 import '../../core/theme_provider.dart';
@@ -525,7 +524,7 @@ class _SegmentedToggle extends StatelessWidget {
         ? EpicordiaColors.textSecondaryDark
         : EpicordiaColors.textSecondaryLight;
     final borderSubtle = isDark
-        ? EpicordiaColors.borderSubtleDark
+        ? EpicordiaColors.borderStrongDark
         : EpicordiaColors.borderSubtleLight;
 
     return Row(
@@ -536,25 +535,28 @@ class _SegmentedToggle extends StatelessWidget {
             : EpicordiaColors.blue600;
 
         return Expanded(
-          child: GestureDetector(
-            onTap: () => onSelect(opt),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: active ? activeColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: active ? activeColor : borderSubtle,
+          child: Padding(
+            padding: const EdgeInsets.all(5),
+            child: GestureDetector(
+              onTap: () => onSelect(opt),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: active ? activeColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: active ? activeColor : borderSubtle,
+                  ),
                 ),
-              ),
-              child: Text(
-                opt,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: active ? Colors.white : textSecondary,
+                child: Text(
+                  opt,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: active ? Colors.white : textSecondary,
+                  ),
                 ),
               ),
             ),

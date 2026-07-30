@@ -9,8 +9,8 @@ import '../../data/repository/board_repository.dart';
 import '../../data/providers.dart';
 import '../../core/theme.dart';
 import '../../domain/services/device_reminder_service.dart';
-import '../../domain/services/device_calendar_service.dart';
 import '../../domain/services/notification_service.dart';
+import '../../domain/services/device_timer_alarm_service.dart';
 import '../widgets/timer_picker_popover.dart';
 import '../widgets/permission_explanation_dialog.dart';
 
@@ -36,6 +36,7 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
 
   final _reminderService = DeviceReminderService();
   final _notificationService = NotificationService();
+  final _alarmService = DeviceTimerAlarmService();
 
   @override
   void initState() {
@@ -135,13 +136,20 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
           );
 
       if (_dueDate != null) {
-        await _notificationService.scheduleTaskNotification(
-          id: _task!.id.hashCode,
+        await _notificationService.scheduleTaskRemindersAndAlarm(
+          baseId: _task!.id.hashCode,
           title: title,
           body: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
           scheduledDate: _dueDate!,
           osReminderId: reminderId,
         );
+        await _alarmService.createAlarm(
+          hour: _dueDate!.hour,
+          minute: _dueDate!.minute,
+          title: title,
+        );
+      } else {
+        await _notificationService.cancelTaskRemindersAndAlarm(_task!.id.hashCode);
       }
     }
     if (mounted) context.go('/tasks');
@@ -254,48 +262,132 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                     'Status',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textSecondary),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: ['todo', 'in_progress', 'done'].map((status) {
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ('todo', 'Todo', Icons.radio_button_unchecked, isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue600),
+                      ('in_progress', 'In Progress', Icons.pending_outlined, const Color(0xFFF59E0B)),
+                      ('done', 'Done', Icons.check_circle_outline, const Color(0xFF10B981)),
+                    ].map((item) {
+                      final (status, label, icon, activeColor) = item;
                       final isSelected = _selectedStatus == status;
-                      final label = status == 'todo' ? 'Todo' : status == 'in_progress' ? 'In Progress' : 'Done';
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(label),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) setState(() => _selectedStatus = status);
-                          },
+                      final unselectedBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+                      final chipBorder = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedStatus = status),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? activeColor : unselectedBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? activeColor : chipBorder,
+                              width: 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: activeColor.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                icon,
+                                size: 15,
+                                color: isSelected ? Colors.white : textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSelected ? Colors.white : textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // Priority Selector
                   Text(
                     'Priority',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textSecondary),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [0, 1, 2].map((priority) {
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      (0, 'Low', Icons.arrow_downward, const Color(0xFF10B981)),
+                      (1, 'Medium', Icons.remove, const Color(0xFFF59E0B)),
+                      (2, 'High', Icons.arrow_upward, const Color(0xFFEF4444)),
+                    ].map((item) {
+                      final (priority, label, icon, activeColor) = item;
                       final isSelected = _selectedPriority == priority;
-                      final label = priority == 0 ? 'Low' : priority == 1 ? 'Medium' : 'High';
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(label),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) setState(() => _selectedPriority = priority);
-                          },
+                      final unselectedBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+                      final chipBorder = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedPriority = priority),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? activeColor : unselectedBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? activeColor : chipBorder,
+                              width: 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: activeColor.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                icon,
+                                size: 14,
+                                color: isSelected ? Colors.white : activeColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSelected ? Colors.white : textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // Board Selection
                   Text(

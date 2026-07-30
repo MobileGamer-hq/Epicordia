@@ -16,7 +16,8 @@ class EpicordiaColors {
 
 
   // Dark mode primary
-  static const Color Primary = blue500;
+  static const Color primary = blue500;
+  static const Color Primary = blue500; // Legacy alias
 
   // Semantic
   static const Color successLight = Color(0xFF1A9A5B);
@@ -57,11 +58,38 @@ class EpicordiaTheme {
       canvasColor: EpicordiaColors.surfaceAppLight,
       colorScheme: base.colorScheme.copyWith(
         primary: EpicordiaColors.blue500,
+        onPrimary: Colors.white,
         secondary: EpicordiaColors.blue700,
+        onSecondary: Colors.white,
         surface: EpicordiaColors.surfaceCardLight,
+        onSurface: EpicordiaColors.textPrimaryLight,
         error: EpicordiaColors.errorLight,
+        onError: Colors.white,
       ),
       dividerColor: EpicordiaColors.borderSubtleLight,
+      dialogTheme: const DialogThemeData(
+        backgroundColor: EpicordiaColors.surfaceCardLight,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+      ),
+      datePickerTheme: const DatePickerThemeData(
+        backgroundColor: EpicordiaColors.surfaceCardLight,
+        headerBackgroundColor: EpicordiaColors.blue500,
+        headerForegroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+      ),
+      timePickerTheme: const TimePickerThemeData(
+        backgroundColor: EpicordiaColors.surfaceCardLight,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: EpicordiaColors.blue500,
+          foregroundColor: Colors.white,
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+        ),
+      ),
       textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
         displayLarge:  GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.2),
         displayMedium: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.2),
@@ -117,17 +145,44 @@ class EpicordiaTheme {
   static ThemeData get darkTheme {
     final base = ThemeData.dark();
     return base.copyWith(
-      primaryColor: EpicordiaColors.Primary,
+      primaryColor: EpicordiaColors.primary,
       scaffoldBackgroundColor: EpicordiaColors.surfaceAppDark,
       cardColor: EpicordiaColors.surfaceCardDark,
       canvasColor: EpicordiaColors.surfaceAppDark,
       colorScheme: base.colorScheme.copyWith(
-        primary: EpicordiaColors.Primary,
+        primary: EpicordiaColors.primary,
+        onPrimary: Colors.white,
         secondary: EpicordiaColors.blue300,
+        onSecondary: Colors.white,
         surface: EpicordiaColors.surfaceCardDark,
+        onSurface: EpicordiaColors.textPrimaryDark,
         error: EpicordiaColors.errorDark,
+        onError: Colors.white,
       ),
       dividerColor: EpicordiaColors.borderSubtleDark,
+      dialogTheme: const DialogThemeData(
+        backgroundColor: EpicordiaColors.surfaceCardDark,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+      ),
+      datePickerTheme: const DatePickerThemeData(
+        backgroundColor: EpicordiaColors.surfaceCardDark,
+        headerBackgroundColor: EpicordiaColors.blue500,
+        headerForegroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+      ),
+      timePickerTheme: const TimePickerThemeData(
+        backgroundColor: EpicordiaColors.surfaceCardDark,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: EpicordiaColors.blue500,
+          foregroundColor: Colors.white,
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+        ),
+      ),
       textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
         displayLarge:  GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryDark, height: 1.2),
         displayMedium: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryDark, height: 1.2),
@@ -160,7 +215,7 @@ class EpicordiaTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: EpicordiaColors.Primary, width: 1.5),
+          borderSide: const BorderSide(color: EpicordiaColors.primary, width: 1.5),
         ),
         hintStyle: GoogleFonts.inter(fontSize: 14, color: EpicordiaColors.textTertiaryDark),
       ),

@@ -148,91 +148,6 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
 
               const SizedBox(height: 28),
 
-              // Unsorted Tray
-              _SectionHeader(title: 'Recent Notes', actionLabel: 'View All', onAction: () => context.push('/notes')),
-              const SizedBox(height: 12),
-              unsortedNotesAsync.when(
-                loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-                error: (err, stack) => Text('Error: $err'),
-                data: (notes) {
-                  if (notes.isEmpty) {
-                    return _SectionEmptyState(
-                      icon: Icons.sticky_note_2_outlined,
-                      title: 'No unsorted items to put there',
-                      subtitle: 'You can get started creating with the button below.',
-                      createLabel: 'Capture Note',
-                      onCreate: () => context.push('/create/note'),
-                    );
-                  }
-                  return SizedBox(
-                    height: 160,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: notes.length,
-                      itemBuilder: (context, index) {
-                        final note = notes[index];
-                        final lines = (note.content ?? '').split('\n');
-                        final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-                        final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : null;
-
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: _QuickCaptureCard(
-                            category: 'QUICK CAPTURE',
-                            title: title,
-                            preview: preview,
-                            time: _formatModified(note.modifiedAt),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 28),
-
-              // Today Tasks
-              _SectionHeader(title: 'Today', actionLabel: 'View All', onAction: () => context.push('/tasks')),
-              const SizedBox(height: 12),
-              todayTasksAsync.when(
-                loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-                error: (err, stack) => Text('Error: $err'),
-                data: (tasks) {
-                  if (tasks.isEmpty) {
-                    return _SectionEmptyState(
-                      icon: Icons.check_box_outlined,
-                      title: 'No tasks for today',
-                      subtitle: 'There are no tasks to put there. You can get started creating with the button below.',
-                      createLabel: 'Add Task',
-                      onCreate: () => context.push('/create/task'),
-                    );
-                  }
-                  return Column(
-                    children: tasks.map((task) {
-                      final isCompleted = task.status == 'done';
-                      final meta = task.dueDate != null ? 'Due ${_formatTime(task.dueDate!)}' : 'No due date';
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _TodayTaskItem(
-                          title: task.title,
-                          meta: isCompleted ? 'Completed' : meta,
-                          isCompleted: isCompleted,
-                          isInProgress: task.status == 'in_progress',
-                          onToggle: () {
-                            final newStatus = isCompleted ? 'todo' : 'done';
-                            ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: newStatus));
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 28),
-
               // Today's Recurring Schedule Section
               _SectionHeader(
                 title: "Today's Schedule",
@@ -344,6 +259,98 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                 },
               ),
 
+
+              const SizedBox(height: 28),
+
+              // Today Tasks
+              _SectionHeader(title: 'Today', actionLabel: 'View All', onAction: () => context.push('/tasks')),
+              const SizedBox(height: 12),
+              todayTasksAsync.when(
+                loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+                error: (err, stack) => Text('Error: $err'),
+                data: (tasks) {
+                  if (tasks.isEmpty) {
+                    return _SectionEmptyState(
+                      icon: Icons.check_box_outlined,
+                      title: 'No tasks for today',
+                      subtitle: 'There are no tasks to put there. You can get started creating with the button below.',
+                      createLabel: 'Add Task',
+                      onCreate: () => context.push('/create/task'),
+                    );
+                  }
+                  return Column(
+                    children: tasks.map((task) {
+                      final isCompleted = task.status == 'done';
+                      final meta = task.dueDate != null ? 'Due ${_formatTime(task.dueDate!)}' : 'No due date';
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _TodayTaskItem(
+                          title: task.title,
+                          meta: isCompleted ? 'Completed' : meta,
+                          isCompleted: isCompleted,
+                          isInProgress: task.status == 'in_progress',
+                          onToggle: () {
+                            final newStatus = isCompleted ? 'todo' : 'done';
+                            ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: newStatus));
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 28),
+
+              // Unsorted Tray
+              _SectionHeader(title: 'Recent Notes', actionLabel: 'View All', onAction: () => context.push('/notes')),
+              const SizedBox(height: 12),
+              unsortedNotesAsync.when(
+                loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+                error: (err, stack) => Text('Error: $err'),
+                data: (notes) {
+                  if (notes.isEmpty) {
+                    return _SectionEmptyState(
+                      icon: Icons.sticky_note_2_outlined,
+                      title: 'No unsorted items to put there',
+                      subtitle: 'You can get started creating with the button below.',
+                      createLabel: 'Capture Note',
+                      onCreate: () => context.push('/create/note'),
+                    );
+                  }
+                  return SizedBox(
+                    height: 160,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: notes.length,
+                      itemBuilder: (context, index) {
+                        final note = notes[index];
+                        final lines = (note.content ?? '').split('\n');
+                        final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
+                        final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : null;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: _QuickCaptureCard(
+                            category: 'QUICK CAPTURE',
+                            title: title,
+                            preview: preview,
+                            time: _formatModified(note.modifiedAt),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 28),
+
+              
+
+              
+
               // const SizedBox(height: 28),
               //
               // // ── Recent Boards ────────────────────────────────────
@@ -432,7 +439,7 @@ class _SectionEmptyState extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: isDark ?   EpicordiaColors.surfaceSunkenDark  :EpicordiaColors.surfaceSunkenLight,
+              color: isDark ?   EpicordiaColors.surfaceAppDark  :EpicordiaColors.surfaceSunkenLight,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, size: 24, color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight),
@@ -649,9 +656,7 @@ class _ActivityHeatmapState extends ConsumerState<ActivityHeatmap> {
       if (t.scheduledDate != null) {
         taskDates.add(DateTime(t.scheduledDate!.year, t.scheduledDate!.month, t.scheduledDate!.day));
       }
-      if (t.createdAt != null) {
-        taskDates.add(DateTime(t.createdAt!.year, t.createdAt!.month, t.createdAt!.day));
-      }
+      taskDates.add(DateTime(t.createdAt.year, t.createdAt.month, t.createdAt.day));
       for (final d in taskDates) {
         counts[d] = (counts[d] ?? 0) + 1;
       }

@@ -5,6 +5,7 @@ import '../../../core/theme.dart';
 class EpicordiaCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
   final Color? indicatorColor;
   final EdgeInsetsGeometry padding;
   final Color? backgroundColor;
@@ -15,6 +16,7 @@ class EpicordiaCard extends StatelessWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.onDoubleTap,
     this.indicatorColor,
     this.padding = const EdgeInsets.all(16),
     this.backgroundColor,
@@ -66,13 +68,18 @@ class EpicordiaCard extends StatelessWidget {
       ),
     );
 
-    if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: effectiveRadius as BorderRadius?,
-          child: cardBody,
+    if (onTap != null || onDoubleTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        onDoubleTap: onDoubleTap ?? onTap,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            onDoubleTap: onDoubleTap ?? onTap,
+            borderRadius: effectiveRadius as BorderRadius?,
+            child: cardBody,
+          ),
         ),
       );
     }

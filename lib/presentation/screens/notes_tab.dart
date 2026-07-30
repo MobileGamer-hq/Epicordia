@@ -74,13 +74,48 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     return ResponsiveScaffold(
       child: Column(
         children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Notes',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Capture thoughts, lists, and quick ideas',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
           // Search + filters
           Container(
             color: bgApp,
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
             child: Column(
               children: [
                 TextField(
+
                   controller: _searchController,
                   style: TextStyle(color: textPrimary),
                   decoration: InputDecoration(
@@ -92,49 +127,49 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _filters.map((f) {
-                      final selected = _selectedFilter == f;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selectedFilter = f),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? activeBlue
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: selected
-                                    ? activeBlue
-                                    : borderStrong,
-                              ),
-                            ),
-                            child: Text(
-                              f,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: selected
-                                      ? Colors.white
-                                      : textSecondary),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
+                // SingleChildScrollView(
+                //   scrollDirection: Axis.horizontal,
+                //   child: Row(
+                //     children: _filters.map((f) {
+                //       final selected = _selectedFilter == f;
+                //       return Padding(
+                //         padding: const EdgeInsets.only(right: 8),
+                //         child: GestureDetector(
+                //           onTap: () => setState(() => _selectedFilter = f),
+                //           child: AnimatedContainer(
+                //             duration: const Duration(milliseconds: 150),
+                //             padding: const EdgeInsets.symmetric(
+                //               horizontal: 16,
+                //               vertical: 8,
+                //             ),
+                //             decoration: BoxDecoration(
+                //               color: selected
+                //                   ? activeBlue
+                //                   : Colors.transparent,
+                //               borderRadius: BorderRadius.circular(20),
+                //               border: Border.all(
+                //                 color: selected
+                //                     ? activeBlue
+                //                     : borderStrong,
+                //               ),
+                //             ),
+                //             child: Text(
+                //               f,
+                //               style: TextStyle(
+                //                   fontSize: 13,
+                //                   fontWeight: FontWeight.w500,
+                //                   color: selected
+                //                       ? Colors.white
+                //                       : textSecondary),
+                //             ),
+                //           ),
+                //         ),
+                //       );
+                //     }).toList(),
+                //   ),
+                // ),
+                // const SizedBox(height: 12),
               ],
             ),
           ),
@@ -319,36 +354,39 @@ class _CreateNoteButton extends StatelessWidget {
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: borderStrong,
-            style: BorderStyle.solid,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add,
-              size: 18,
-              color: textSecondary,
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderStrong,
+              style: BorderStyle.solid,
+              width: 1.5,
             ),
-            const SizedBox(width: 6),
-            Text(
-              'Create New Note',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add,
+                size: 18,
                 color: textSecondary,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                'Create New Note',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:epicordia/core/theme.dart';
 import 'package:flutter/material.dart';
 
 class PermissionExplanationDialog extends StatelessWidget {
@@ -37,6 +38,12 @@ class PermissionExplanationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final frontBlue = isDark ? EpicordiaColors.blue200 : EpicordiaColors.blue500;
+    final backBlue = isDark ? EpicordiaColors.blue600  : EpicordiaColors.blue200;
+    final text = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
+
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -52,13 +59,13 @@ class PermissionExplanationDialog extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: backBlue,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 28,
-                color: colorScheme.onPrimaryContainer,
+                color: frontBlue,
               ),
             ),
             const SizedBox(height: 16),
@@ -89,7 +96,9 @@ class PermissionExplanationDialog extends StatelessWidget {
                       minimumSize: const Size.fromHeight(44),
                     ),
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Not Now'),
+                    child: Text('Not Now', style: TextStyle(
+                      color: text
+                    ),),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -102,7 +111,9 @@ class PermissionExplanationDialog extends StatelessWidget {
                       minimumSize: const Size.fromHeight(44),
                     ),
                     onPressed: onContinue,
-                    child: const Text('Continue'),
+                    child:  Text('Continue', style: TextStyle(
+                        color:Colors.white
+                    ),),
                   ),
                 ),
               ],

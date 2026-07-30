@@ -59,7 +59,6 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
     final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
     final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
-    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
@@ -80,7 +79,7 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
                       decoration: BoxDecoration(
                         color: cardBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: borderStrong, width: 1.5),
+                        // border: Border.all(color: borderStrong, width: 1.5),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
@@ -94,6 +93,7 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
                         autofocus: true,
                         style: TextStyle(fontSize: 15, color: textPrimary),
                         decoration: InputDecoration(
+                          disabledBorder: InputBorder.none,
                           hintText: 'Search notes, tasks, boards...',
                           hintStyle: TextStyle(color: textTertiary),
                           prefixIcon: Icon(Icons.search, color: textSecondary),

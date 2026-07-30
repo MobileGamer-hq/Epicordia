@@ -6,6 +6,8 @@ import '../../data/database/database.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../core/theme.dart';
+import '../../domain/services/notification_service.dart';
+import '../../domain/services/device_timer_alarm_service.dart';
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
   const CreateTaskScreen({super.key});
@@ -32,10 +34,14 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     if (title.isEmpty && tasks.isEmpty) return;
 
     final repo = ref.read(taskRepositoryProvider);
+    final notificationService = NotificationService();
+    final timerAlarmService = DeviceTimerAlarmService();
+
     if (tasks.isEmpty && title.isNotEmpty) {
+      final taskId = '${DateTime.now().millisecondsSinceEpoch}_0';
       await repo.createTask(
         TasksCompanion.insert(
-          id: '${DateTime.now().millisecondsSinceEpoch}_0',
+          id: taskId,
           title: title,
           boardId: _selectedBoardId != null
               ? drift.Value(_selectedBoardId)
@@ -45,12 +51,26 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               : const drift.Value.absent(),
         ),
       );
+      if (_dueDate != null) {
+        await notificationService.scheduleTaskRemindersAndAlarm(
+          baseId: taskId.hashCode,
+          title: title,
+          scheduledDate: _dueDate!,
+        );
+        timerAlarmService.createAlarm(
+          hour: _dueDate!.hour,
+          minute: _dueDate!.minute,
+          title: title,
+        );
+      }
     } else {
       for (final item in tasks) {
+        final taskId = '${DateTime.now().millisecondsSinceEpoch}_${tasks.indexOf(item)}';
+        final itemTitle = item.trim();
         await repo.createTask(
           TasksCompanion.insert(
-            id: '${DateTime.now().millisecondsSinceEpoch}_${tasks.indexOf(item)}',
-            title: item.trim(),
+            id: taskId,
+            title: itemTitle,
             boardId: _selectedBoardId != null
                 ? drift.Value(_selectedBoardId)
                 : const drift.Value.absent(),
@@ -60,6 +80,18 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             notes: title.isNotEmpty ? drift.Value(title) : const drift.Value.absent(),
           ),
         );
+        if (_dueDate != null) {
+          await notificationService.scheduleTaskRemindersAndAlarm(
+            baseId: taskId.hashCode,
+            title: itemTitle,
+            scheduledDate: _dueDate!,
+          );
+          timerAlarmService.createAlarm(
+            hour: _dueDate!.hour,
+            minute: _dueDate!.minute,
+            title: itemTitle,
+          );
+        }
       }
     }
     if (mounted) context.go('/tasks');

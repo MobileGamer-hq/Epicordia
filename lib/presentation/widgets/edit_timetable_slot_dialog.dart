@@ -151,14 +151,18 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderClr = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderSubtleLight;
     final isEditing = widget.slot != null;
 
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20), // radius-l
+        borderRadius: BorderRadius.circular(20),
       ),
-      backgroundColor: colorScheme.surface,
+      backgroundColor: cardBg,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -170,13 +174,15 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
               children: [
                 Text(
                   isEditing ? 'Edit Schedule Event' : 'Add Schedule Event',
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  style: TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: textPrimary,
                   ),
                 ),
                 if (isEditing)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: EpicordiaColors.errorLight),
+                    icon: Icon(Icons.delete_outline, color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight),
                     onPressed: _delete,
                   ),
               ],
@@ -186,11 +192,10 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
             // Title Input
             TextField(
               controller: _titleController,
+              style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 labelText: 'Event Title (e.g. Math 101, Gym)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10), // radius-s
-                ),
+                labelStyle: TextStyle(color: textSecondary),
               ),
             ),
             const SizedBox(height: 16),
@@ -198,16 +203,16 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
             // Day of Week Selector
             DropdownButtonFormField<int>(
               value: _selectedDay,
+              dropdownColor: cardBg,
+              style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 labelText: 'Day of Week',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                labelStyle: TextStyle(color: textSecondary),
               ),
               items: List.generate(7, (index) {
                 return DropdownMenuItem<int>(
                   value: index + 1,
-                  child: Text(_days[index]),
+                  child: Text(_days[index], style: TextStyle(color: textPrimary)),
                 );
               }),
               onChanged: (val) {
@@ -223,12 +228,14 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
+                      foregroundColor: textPrimary,
+                      side: BorderSide(color: borderClr),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    icon: const Icon(Icons.access_time),
-                    label: Text('Start: ${_startTime.format(context)}'),
+                    icon: Icon(Icons.access_time, color: textSecondary),
+                    label: Text('Start: ${_startTime.format(context)}', style: TextStyle(color: textPrimary, fontSize: 12)),
                     onPressed: () async {
                       final time = await showTimePicker(
                         context: context,
@@ -243,12 +250,14 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
+                      foregroundColor: textPrimary,
+                      side: BorderSide(color: borderClr),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    icon: const Icon(Icons.access_time_filled),
-                    label: Text('End: ${_endTime.format(context)}'),
+                    icon: Icon(Icons.access_time_filled, color: textSecondary),
+                    label: Text('End: ${_endTime.format(context)}', style: TextStyle(color: textPrimary, fontSize: 12)),
                     onPressed: () async {
                       final time = await showTimePicker(
                         context: context,
@@ -265,17 +274,16 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
             // Location Input
             TextField(
               controller: _locationController,
+              style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 labelText: 'Location / Room (Optional)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                labelStyle: TextStyle(color: textSecondary),
               ),
             ),
             const SizedBox(height: 16),
 
             // Color Tag Selector
-            Text('Color Accent', style: theme.textTheme.labelLarge),
+            Text('Color Accent', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textSecondary)),
             const SizedBox(height: 8),
             Row(
               children: _colorTags.map((colorHex) {
@@ -291,7 +299,7 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
                       color: color,
                       shape: BoxShape.circle,
                       border: isSelected
-                          ? Border.all(color: colorScheme.onSurface, width: 2.5)
+                          ? Border.all(color: textPrimary, width: 2.5)
                           : null,
                     ),
                     child: isSelected
@@ -307,11 +315,10 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
             TextField(
               controller: _notesController,
               maxLines: 2,
+              style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 labelText: 'Notes (Optional)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                labelStyle: TextStyle(color: textSecondary),
               ),
             ),
             const SizedBox(height: 24),
@@ -322,26 +329,33 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: textPrimary,
+                      side: BorderSide(color: borderClr),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
                       minimumSize: const Size.fromHeight(44),
                     ),
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: Text('Cancel', style: TextStyle(color: textPrimary)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
                     style: FilledButton.styleFrom(
+                      backgroundColor: EpicordiaColors.blue600,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
                       minimumSize: const Size.fromHeight(44),
                     ),
                     onPressed: _save,
-                    child: Text(isEditing ? 'Save' : 'Create'),
+                    child: Text(
+                      isEditing ? 'Save' : 'Create',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],

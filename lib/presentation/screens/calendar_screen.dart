@@ -134,7 +134,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             Icons.arrow_back,
             color: textPrimary,
           ),
-          onPressed: () => context.go('/'),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Interactive Calendar',
@@ -265,7 +265,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                     _buildTabItem(
                       index: 1,
-                      label: 'Weekly Schedule',
+                      label: 'Schedule',
                       icon: Icons.view_week_outlined,
                       isDark: isDark,
                     ),
@@ -277,74 +277,69 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             Expanded(
               child: _activeViewIndex == 1
                   ? const TimetableKanbanView()
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  : SelectionArea(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                         children: [
-              // Heatmap inside Hero
-              Hero(
-                tag: 'heatmap-hero',
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: borderClr),
-                    ),
-                    child: ActivityHeatmap(
-                      selectedDate: _selectedDate,
-                      selectedMonth: _selectedDate,
-                      onTapDate: (date) {
-                        setState(() {
-                          _selectedDate = date;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Date header
-              Text(
-                _formatDateHeader(_selectedDate),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Items list
-              Expanded(
-                child: SelectionArea(
-                  child: dayTasks.isEmpty && dayNotes.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.calendar_today_outlined,
-                                size: 48,
-                                color: textTertiary.withValues(alpha: 0.5),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'No tasks or notes for this date',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: textSecondary,
+                          // Heatmap inside Hero (scrolls with list)
+                          Hero(
+                            tag: 'heatmap-hero',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: borderClr),
+                                ),
+                                child: ActivityHeatmap(
+                                  selectedDate: _selectedDate,
+                                  selectedMonth: _selectedDate,
+                                  onTapDate: (date) {
+                                    setState(() {
+                                      _selectedDate = date;
+                                    });
+                                  },
                                 ),
                               ),
-                            ],
+                            ),
                           ),
-                        )
-                      : ListView(
-                          padding: const EdgeInsets.only(bottom: 40),
-                          children: [
+                          const SizedBox(height: 24),
+                          // Date header
+                          Text(
+                            _formatDateHeader(_selectedDate),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          if (dayTasks.isEmpty && dayNotes.isEmpty) ...[
+                            const SizedBox(height: 32),
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 48,
+                                    color: textTertiary.withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No tasks or notes for this date',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
                             if (dayTasks.isNotEmpty) ...[
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -406,15 +401,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               }),
                             ],
                           ],
-                        ),
-                ),
-              ),
-            ],
-          ),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
         ),
       ),
-    ]),),
-      );
+    );
   }
 
   Widget _buildTabItem({
@@ -424,7 +419,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required bool isDark,
   }) {
     final isActive = _activeViewIndex == index;
-    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue700;
+    final activeBlue = EpicordiaColors.blue500;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
 
     return GestureDetector(

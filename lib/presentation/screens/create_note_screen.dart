@@ -433,7 +433,6 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
     final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;

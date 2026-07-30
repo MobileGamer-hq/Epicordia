@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -562,14 +563,64 @@ class _BoardListView extends ConsumerWidget {
   }
 
   String _getPreviewText(PinEntity pin) {
-    if (pin.content == null || pin.content!.isEmpty) {
-      return pin.type.toUpperCase();
+    if (pin.content == null || pin.content!.trim().isEmpty) {
+      return _fallbackTypeTitle(pin.type);
     }
-    final firstLine = pin.content!.split('\n').first;
-    if (firstLine.startsWith('{')) {
-      return pin.type.toUpperCase();
+    final raw = pin.content!.trim();
+    if (raw.startsWith('{')) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(raw);
+        switch (pin.type) {
+          case 'file':
+            final path = data['filePath'] as String? ?? data['path'] as String? ?? '';
+            final name = data['fileName'] as String? ?? (path.isNotEmpty ? path.split(RegExp(r'[/\\]')).last : '');
+            return name.isNotEmpty ? name : 'Document File';
+          case 'link':
+            final title = data['title'] as String? ?? '';
+            final url = data['url'] as String? ?? '';
+            return title.isNotEmpty ? title : (url.isNotEmpty ? url : 'Web Link');
+          case 'image':
+            final caption = data['caption'] as String? ?? '';
+            final path = data['filePath'] as String? ?? '';
+            final name = path.isNotEmpty ? path.split(RegExp(r'[/\\]')).last : 'Image';
+            return caption.isNotEmpty ? caption : name;
+          case 'colorSwatch':
+            final label = data['label'] as String? ?? '';
+            final hex = data['hex'] as String? ?? '';
+            return label.isNotEmpty ? 'Color: $label' : (hex.isNotEmpty ? 'Swatch: ${hex.toUpperCase()}' : 'Color Swatch');
+          case 'task':
+          case 'tasklist':
+          case 'checklist':
+            final title = data['title'] as String? ?? data['text'] as String? ?? '';
+            return title.isNotEmpty ? title : _fallbackTypeTitle(pin.type);
+          default:
+            final title = data['title'] as String? ?? data['name'] as String? ?? '';
+            return title.isNotEmpty ? title : _fallbackTypeTitle(pin.type);
+        }
+      } catch (_) {
+        return _fallbackTypeTitle(pin.type);
+      }
     }
-    return firstLine;
+
+    final firstLine = raw.split('\n').first.replaceAll(RegExp(r'^#+\s*'), '').trim();
+    return firstLine.isNotEmpty ? firstLine : _fallbackTypeTitle(pin.type);
+  }
+
+  String _fallbackTypeTitle(String type) {
+    switch (type) {
+      case 'note': return 'Note';
+      case 'task': return 'Task';
+      case 'file': return 'Document File';
+      case 'link': return 'Link';
+      case 'image': return 'Image';
+      case 'colorSwatch': return 'Color Swatch';
+      case 'drawing': return 'Drawing';
+      case 'heading': return 'Heading';
+      case 'checklist': return 'Checklist';
+      case 'tasklist': return 'Task List';
+      case 'frame': return 'Frame';
+      default: return type.toUpperCase();
+    }
   }
 }
 

@@ -95,12 +95,12 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20), // radius-l
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, 8),
             )
@@ -200,6 +200,8 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
               height: 48,
               child: FilledButton(
                 style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999), // pill
                   ),
@@ -207,7 +209,7 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
                 onPressed: _handleStartTimer,
                 child: const Text(
                   'Start Timer',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ),

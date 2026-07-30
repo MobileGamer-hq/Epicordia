@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show Value;
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,6 +38,7 @@ class BoardPinCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => _handlePrimaryTap(context, ref),
+      onDoubleTap: () => _handlePrimaryTap(context, ref),
       onLongPress: () => _showCardContextMenu(context, ref),
       child: EpicordiaCard(
         indicatorColor: _colorFromTag(colorTag),
@@ -1172,72 +1172,96 @@ class _ColorSwatchBody extends StatelessWidget {
 
     final (hex, label) = _parseSwatch(content);
     final color = _hexToColor(hex);
+    final isLightColor = color.computeLuminance() > 0.5;
 
-    return Column(
-      children: [
-        // Upper Large Rectangular Solid Color Fill Block
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              hex.toUpperCase(),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: (color.computeLuminance() > 0.5 ? Colors.black87 : Colors.white).withValues(alpha: 0.85),
-                letterSpacing: 1.2,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          // Upper Large Rectangular Solid Color Fill Block
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: color,
+                border: isLightColor
+                    ? Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)))
+                    : null,
               ),
-            ),
-          ),
-        ),
-        // Lower Metadata Footer
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: isDarkTheme ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight,
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'COLOR SWATCH',
-                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: textTertiary, letterSpacing: 0.8),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      label.isNotEmpty ? label : hex.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              alignment: Alignment.center,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDarkTheme ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(4),
+                  color: (isLightColor ? Colors.black : Colors.white).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   hex.toUpperCase(),
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: textPrimary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: isLightColor ? Colors.black87 : Colors.white,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ],
+          // Lower Metadata Footer
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDarkTheme ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                    border: Border.all(
+                      color: isDarkTheme ? Colors.white24 : Colors.black12,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'COLOR SWATCH',
+                        style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: textTertiary, letterSpacing: 0.8),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        label.isNotEmpty ? label : hex.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isDarkTheme ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    hex.toUpperCase(),
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: textPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1934,12 +1958,18 @@ class _FileCardBody extends StatelessWidget {
   }
 
   String _parseDisplayName(String? content) {
-    if (content == null) return '';
+    if (content == null || content.trim().isEmpty) return '';
     try {
       final map = jsonDecode(content) as Map<String, dynamic>;
-      return map['displayName'] as String? ?? '';
-    } catch (_) {
+      final displayName = map['displayName'] as String? ?? map['fileName'] as String? ?? map['title'] as String? ?? '';
+      if (displayName.isNotEmpty) return displayName;
+      final filePath = map['filePath'] as String? ?? map['path'] as String? ?? '';
+      if (filePath.isNotEmpty) {
+        return filePath.split(RegExp(r'[/\\]')).last;
+      }
       return '';
+    } catch (_) {
+      return content.trim().split('\n').first;
     }
   }
 }

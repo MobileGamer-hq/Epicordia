@@ -39,4 +39,14 @@ the create screen ui didnt change with the change in theme still on light theme
 -go through all screens and make sure they use the theme correctly so it works perfectly with dark and light theme
 
 
-
+Feedback from users
+-The tasks should remind the user when its the day of the tasks, 1 hour to the tasks and 5mins to the task then finaly an alram should ring for the tasks --- idk how this should happen but it should
+-The double tap feature should be available to all cards, plus the normal tap method that is there 
+-there shoudl be notifications in the app that shows the task and the 
+-The different sections in the today dahsboard for the users shoiuld be arranged based on the most important to the user. -- Ive already fixed it but confirm
+-the heat map on the calendar screen should scroll with the list and not just stay in one place when scrolling,
+-check all buttons and text fields to confirm they work for both light and dark mode, confirm all for all screenss adn dialog (some buttons that have a filled blue color should always have a white text no matter the theme)
+-the search on the board tab doesnt work
+- the color swatch card ui design isnt nice idk why but some color comes out and it deosnt look good, make it nice looking
+-the list version of the board screen doesnt show the content of the items it should,
+the dialog of the kandabn screen too the theme doesnt match for the set date buttonand the cale button also for the cards pop ups

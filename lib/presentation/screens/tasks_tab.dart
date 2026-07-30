@@ -19,7 +19,7 @@ class _TasksTabState extends ConsumerState<TasksTab> {
   String _selectedFilter = 'All';
   final _searchController = TextEditingController();
 
-  final List<String> _filters = ['All', 'Due Today', 'Overdue', 'Boards'];
+  final List<String> _filters = ['All', 'In Progress', 'Due Today', 'Overdue', 'Boards'];
 
   @override
   void initState() {
@@ -93,10 +93,44 @@ class _TasksTabState extends ConsumerState<TasksTab> {
     return ResponsiveScaffold(
       child: Column(
         children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tasks',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Track your action items, to-dos & deadlines',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
           // Search + filters
           Container(
             color: bgApp,
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
             child: Column(
               children: [
                 // Search bar
@@ -112,6 +146,7 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 12),
                 // Filter chips
                 SingleChildScrollView(
@@ -126,13 +161,13 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                              horizontal: 14,
+                              vertical: 6,
                             ),
                             decoration: BoxDecoration(
                               color: selected
                                   ? activeBlue
-                                  : Colors.transparent,
+                                  : (isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: selected
@@ -143,8 +178,8 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                             child: Text(
                               f,
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                                 color: selected
                                     ? Colors.white
                                     : textSecondary,
@@ -181,7 +216,9 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                   }).toList();
 
                   // 2. Chip Filter
-                  if (_selectedFilter == 'Due Today') {
+                  if (_selectedFilter == 'In Progress') {
+                    filtered = filtered.where((t) => t.status == 'in_progress').toList();
+                  } else if (_selectedFilter == 'Due Today') {
                     filtered = filtered.where((t) {
                       return t.dueDate != null &&
                           t.dueDate!.isAfter(startOfToday) &&
@@ -204,7 +241,7 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                   }
 
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
                     itemCount: filtered.length + 1,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
@@ -228,10 +265,17 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                         dueFormatted: _formatDue(task.dueDate),
                         onTap: () => context.push('/task/${task.id}'),
                         onToggle: () {
-                          final isCompleted = task.status == 'done';
-                          final newStatus = isCompleted ? 'todo' : 'done';
+                          // Cycle status: todo -> in_progress -> done -> todo
+                          String nextStatus;
+                          if (task.status == 'todo') {
+                            nextStatus = 'in_progress';
+                          } else if (task.status == 'in_progress') {
+                            nextStatus = 'done';
+                          } else {
+                            nextStatus = 'todo';
+                          }
                           ref.read(taskRepositoryProvider).updateTask(
-                                task.copyWith(status: newStatus),
+                                task.copyWith(status: nextStatus),
                               );
                         },
                       );
@@ -270,6 +314,7 @@ class _TaskListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = task.status == 'done';
+    final isInProgress = task.status == 'in_progress';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
@@ -277,6 +322,7 @@ class _TaskListItem extends StatelessWidget {
     final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
     final successClr = isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight;
     final errorClr = isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight;
+    final inProgressClr = const Color(0xFFF59E0B);
 
     return GestureDetector(
       onTap: onTap,
@@ -296,19 +342,23 @@ class _TaskListItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: isCompleted
                         ? successClr
-                        : Colors.transparent,
+                        : isInProgress
+                            ? inProgressClr.withValues(alpha: 0.15)
+                            : Colors.transparent,
                     border: Border.all(
-                      color: isOverdue
-                          ? errorClr.withValues(alpha: 0.6)
-                          : isCompleted
-                              ? successClr
-                              : borderStrong,
-                      width: 1.5,
+                      color: isCompleted
+                          ? successClr
+                          : isInProgress
+                              ? inProgressClr
+                              : (isOverdue ? errorClr.withValues(alpha: 0.6) : borderStrong),
+                      width: isInProgress ? 2 : 1.5,
                     ),
                   ),
                   child: isCompleted
                       ? const Icon(Icons.check, size: 13, color: Colors.white)
-                      : null,
+                      : isInProgress
+                          ? Icon(Icons.play_arrow_rounded, size: 12, color: inProgressClr)
+                          : null,
                 ),
               ),
             ),
@@ -317,15 +367,48 @@ class _TaskListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    task.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: textPrimary,
-                      decoration: isCompleted ? TextDecoration.lineThrough : null,
-                      decorationColor: textTertiary,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          task.title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
+                            decoration: isCompleted ? TextDecoration.lineThrough : null,
+                            decorationColor: textTertiary,
+                          ),
+                        ),
+                      ),
+                      if (isInProgress) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: inProgressClr.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: inProgressClr.withValues(alpha: 0.4), width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.pending_outlined, size: 11, color: inProgressClr),
+                              const SizedBox(width: 4),
+                              Text(
+                                'IN PROGRESS',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: inProgressClr,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -370,36 +453,39 @@ class _CreateTaskButton extends StatelessWidget {
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: borderStrong,
-            style: BorderStyle.solid,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add,
-              size: 18,
-              color: textSecondary,
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderStrong,
+              style: BorderStyle.solid,
+              width: 1.5,
             ),
-            const SizedBox(width: 6),
-            Text(
-              'Create New Task',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add,
+                size: 18,
                 color: textSecondary,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                'Create New Task',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
