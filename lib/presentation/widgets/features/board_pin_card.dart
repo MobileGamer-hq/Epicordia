@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show Value;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -239,66 +240,110 @@ class BoardPinCard extends ConsumerWidget {
       }
     } catch (_) {}
 
-    final filePath = data['filePath'] as String? ?? '';
+    String filePath = data['filePath'] as String? ?? '';
     final captionController = TextEditingController(text: data['caption'] as String? ?? '');
 
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(16),
-          child: Material(
-            borderRadius: BorderRadius.circular(16),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 400),
-                  width: double.infinity,
-                  color: Colors.black,
-                  child: filePath.isNotEmpty && File(filePath).existsSync()
-                      ? Image.file(File(filePath), fit: BoxFit.contain)
-                      : const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: Icon(Icons.image_outlined, size: 64, color: Colors.white54),
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final hasImage = filePath.isNotEmpty && File(filePath).existsSync();
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.all(16),
+              child: Material(
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 360),
+                      width: double.infinity,
+                      color: Colors.black,
+                      child: hasImage
+                          ? Image.file(File(filePath), fit: BoxFit.contain)
+                          : Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.image_outlined, size: 56, color: Colors.white54),
+                                  const SizedBox(height: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: () async {
+                                      final res = await FilePicker.platform.pickFiles(type: FileType.image);
+                                      if (res != null && res.files.single.path != null) {
+                                        final newPath = res.files.single.path!;
+                                        setStateDialog(() {
+                                          filePath = newPath;
+                                        });
+                                        final updatedData = {...data, 'filePath': newPath};
+                                        await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                                      }
+                                    },
+                                    icon: const Icon(Icons.upload_file_rounded),
+                                    label: const Text('Choose Image File'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: EpicordiaColors.blue600,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          if (hasImage)
+                            IconButton(
+                              tooltip: 'Change Image',
+                              icon: const Icon(Icons.photo_library_outlined),
+                              onPressed: () async {
+                                final res = await FilePicker.platform.pickFiles(type: FileType.image);
+                                if (res != null && res.files.single.path != null) {
+                                  final newPath = res.files.single.path!;
+                                  setStateDialog(() {
+                                    filePath = newPath;
+                                  });
+                                  final updatedData = {...data, 'filePath': newPath};
+                                  await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                                }
+                              },
+                            ),
+                          Expanded(
+                            child: TextField(
+                              controller: captionController,
+                              decoration: const InputDecoration(
+                                hintText: 'Add or edit caption...',
+                                isDense: true,
+                              ),
+                              onSubmitted: (val) async {
+                                final updatedData = {...data, 'filePath': filePath, 'caption': val};
+                                await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                                if (context.mounted) Navigator.pop(context);
+                              },
+                            ),
                           ),
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: captionController,
-                          decoration: const InputDecoration(
-                            hintText: 'Add or edit caption...',
-                            isDense: true,
+                          IconButton(
+                            icon: const Icon(Icons.check),
+                            onPressed: () async {
+                              final updatedData = {...data, 'filePath': filePath, 'caption': captionController.text};
+                              await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
+                              if (context.mounted) Navigator.pop(context);
+                            },
                           ),
-                          onSubmitted: (val) async {
-                            final updatedData = {...data, 'caption': val};
-                            await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                            if (context.mounted) Navigator.pop(context);
-                          },
-                        ),
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.check),
-                        onPressed: () async {
-                          final updatedData = {...data, 'caption': captionController.text};
-                          await ref.read(pinRepositoryProvider).updatePinContent(pinId, jsonEncode(updatedData));
-                          if (context.mounted) Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1428,7 +1473,7 @@ class _ColorSwatchBody extends StatelessWidget {
     final textPrimary = isDarkTheme ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textTertiary = isDarkTheme ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
 
-    final hex = _parseHex(content);
+    final (hex, label) = _parseSwatch(content);
     final color = _hexToColor(hex);
 
     return Column(
@@ -1445,9 +1490,9 @@ class _ColorSwatchBody extends StatelessWidget {
             child: Text(
               hex.toUpperCase(),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w800,
-                color: Colors.white.withValues(alpha: 0.75),
+                color: (color.computeLuminance() > 0.5 ? Colors.black87 : Colors.white).withValues(alpha: 0.85),
                 letterSpacing: 1.2,
               ),
             ),
@@ -1463,19 +1508,23 @@ class _ColorSwatchBody extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SWATCH',
-                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: textTertiary, letterSpacing: 0.8),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    'Epicordia Blue',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textPrimary),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'COLOR SWATCH',
+                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: textTertiary, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      label.isNotEmpty ? label : hex.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textPrimary),
+                    ),
+                  ],
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1495,19 +1544,24 @@ class _ColorSwatchBody extends StatelessWidget {
     );
   }
 
-  String _parseHex(String content) {
+  (String, String) _parseSwatch(String content) {
+    if (content.trim().startsWith('#')) {
+      return (content.trim(), '');
+    }
     try {
       final map = jsonDecode(content) as Map<String, dynamic>;
-      return map['hex'] as String? ?? '#0137C3';
+      final hex = map['hex'] as String? ?? map['color'] as String? ?? '#3D68EE';
+      final label = map['label'] as String? ?? '';
+      return (hex, label);
     } catch (_) {
-      return '#0137C3';
+      return (content.trim().isNotEmpty ? content.trim() : '#3D68EE', '');
     }
   }
 
   Color _hexToColor(String hex) {
     final clean = hex.replaceFirst('#', '');
     if (clean.length == 6) return Color(int.parse('FF$clean', radix: 16));
-    return const Color(0xFF0137C3);
+    return const Color(0xFF3D68EE);
   }
 }
 
@@ -1875,14 +1929,83 @@ class _FrameCardBody extends ConsumerWidget {
   }
 
   static String _childPreview(PinEntity pin) {
-    if (pin.content == null || pin.content!.isEmpty) return '${pin.type.toUpperCase()} Card';
+    final typeName = pin.type.toUpperCase();
+    if (pin.content == null || pin.content!.isEmpty) {
+      return '$typeName Card';
+    }
+
+    final raw = pin.content!.trim();
+
+    if (pin.type == 'colorSwatch') {
+      if (raw.startsWith('#')) return 'Color: $raw';
+      try {
+        final map = jsonDecode(raw) as Map<String, dynamic>;
+        final hex = map['hex'] as String? ?? map['color'] as String? ?? '#3D68EE';
+        final label = map['label'] as String? ?? '';
+        return label.isNotEmpty ? 'Color: $label ($hex)' : 'Color: $hex';
+      } catch (_) {
+        return 'Color: $raw';
+      }
+    }
+
     try {
-      final map = jsonDecode(pin.content!) as Map<String, dynamic>;
-      if (map.containsKey('title')) return map['title'] as String;
-      if (map.containsKey('text')) return map['text'] as String;
-      if (map.containsKey('label')) return map['label'] as String;
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+
+      if (pin.type == 'checklist' || map.containsKey('items')) {
+        final items = map['items'] as List<dynamic>? ?? [];
+        if (items.isNotEmpty) {
+          final first = items.first;
+          if (first is Map && first.containsKey('text')) {
+            return 'Checklist: ${first['text']} (${items.length} items)';
+          }
+        }
+        return 'Checklist (${items.length} items)';
+      }
+
+      if (pin.type == 'link' || map.containsKey('url')) {
+        final title = map['cachedTitle'] as String? ?? map['title'] as String? ?? map['url'] as String? ?? 'Web Link';
+        return 'Link: $title';
+      }
+
+      if (pin.type == 'drawing' || pin.type == 'handwriting' || map.containsKey('strokes')) {
+        final strokes = map['strokes'] as List<dynamic>? ?? [];
+        return 'Sketch (${strokes.length} strokes)';
+      }
+
+      if (pin.type == 'image' || map.containsKey('filePath')) {
+        final caption = map['caption'] as String? ?? '';
+        if (caption.isNotEmpty) return 'Image: $caption';
+        final path = map['filePath'] as String? ?? '';
+        if (path.isNotEmpty) {
+          final filename = path.split(RegExp(r'[/\\]')).last;
+          return 'Image: $filename';
+        }
+        return 'Image Card';
+      }
+
+      if (pin.type == 'file' || map.containsKey('displayName')) {
+        final name = map['displayName'] as String? ?? map['fileName'] as String? ?? 'Document';
+        return 'File: $name';
+      }
+
+      if (pin.type == 'audio' || map.containsKey('durationSeconds')) {
+        final title = map['title'] as String? ?? 'Voice Memo';
+        final secs = (map['durationSeconds'] as num?)?.toInt() ?? 42;
+        final m = secs ~/ 60;
+        final s = secs % 60;
+        return '$title ($m:${s.toString().padLeft(2, '0')})';
+      }
+
+      if (map.containsKey('title') && (map['title'] as String).isNotEmpty) return map['title'] as String;
+      if (map.containsKey('text') && (map['text'] as String).isNotEmpty) return map['text'] as String;
+      if (map.containsKey('label') && (map['label'] as String).isNotEmpty) return map['label'] as String;
     } catch (_) {}
-    return pin.content!.trim().split('\n').first;
+
+    final firstLine = raw.split('\n').first.replaceAll(RegExp(r'^#+\s*'), '').trim();
+    if (firstLine.isNotEmpty) {
+      return firstLine;
+    }
+    return '$typeName Card';
   }
 
   Future<void> _detachChild(WidgetRef ref, PinEntity childPin) async {

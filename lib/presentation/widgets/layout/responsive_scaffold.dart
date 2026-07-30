@@ -181,6 +181,7 @@ class _ExpandableSidebar extends StatelessWidget {
                             color: EpicordiaColors.blue700,
                             borderRadius: BorderRadius.circular(10),
                           ),
+                          //Put the app logo
                           child: const Icon(
                             Icons.space_dashboard,
                             color: Colors.white,
@@ -247,7 +248,7 @@ class _ExpandableSidebar extends StatelessWidget {
                                     const BorderRadius.all(Radius.circular(4)),
                               ),
                               child: Text(
-                                '⌘K',
+                                'K',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,

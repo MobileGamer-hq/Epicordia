@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'today_dashboard.dart';
 
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_brand.dart';
@@ -57,7 +58,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         children: [
                           // ── Activity Heatmap ─────────────────────────────────
-                          const _ActivityHeatmap(),
+                          const ActivityHeatmap(),
                           const SizedBox(height: 28),
 
                           // ── Unsorted Tray ───────────────────────────────────
@@ -246,111 +247,6 @@ class _EmptyDashboardState extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ────────────────────────────────────────────────────────────
-// Activity Heatmap
-// ────────────────────────────────────────────────────────────
-class _ActivityHeatmap extends StatelessWidget {
-  const _ActivityHeatmap();
-
-  // 7 weeks × 7 days = 49 cells. 0=none, 1–4 = activity levels
-  static final List<List<int>> _data = [
-    [0, 1, 0, 2, 0, 1, 0],
-    [1, 2, 3, 1, 0, 2, 1],
-    [0, 1, 4, 3, 2, 1, 0],
-    [2, 3, 2, 4, 3, 2, 1],
-    [1, 0, 3, 2, 4, 3, 2],
-    [0, 2, 1, 3, 2, 1, 0],
-    [1, 1, 2, 1, 0, 2, 1],
-  ];
-
-  static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-  Color _cellColor(int level) {
-    switch (level) {
-      case 1: return EpicordiaColors.blue200;
-      case 2: return EpicordiaColors.blue300;
-      case 3: return EpicordiaColors.blue400;
-      case 4: return EpicordiaColors.blue500;
-      default: return EpicordiaColors.borderSubtleLight;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text('Activity', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EpicordiaColors.textPrimaryLight)),
-            const Spacer(),
-            _HeatmapLegend(),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Column(
-              children: _dayLabels.map((d) => SizedBox(
-                height: 14,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(d, style: const TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
-                ),
-              )).toList(),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: _data.map((week) {
-                  return Column(
-                    children: week.asMap().entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 200 + entry.key * 30),
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: _cellColor(entry.value),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _HeatmapLegend extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Text('Less', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
-        const SizedBox(width: 4),
-        ...([EpicordiaColors.borderSubtleLight, EpicordiaColors.blue200, EpicordiaColors.blue300, EpicordiaColors.blue400, EpicordiaColors.blue500].map((c) =>
-          Padding(
-            padding: const EdgeInsets.only(left: 3),
-            child: Container(width: 10, height: 10, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
-          ),
-        )),
-        const SizedBox(width: 4),
-        const Text('More', style: TextStyle(fontSize: 9, color: EpicordiaColors.textTertiaryLight)),
-      ],
     );
   }
 }

@@ -152,6 +152,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                         onAddDrawing: _addDrawing,
                         onAddLink: _addLink,
                         onAddImage: _addImage,
+                        onAddColorSwatch: _addColorSwatch,
+                        onAddAudio: _addAudio,
+                        onAddFile: _addFile,
                         onAddHeading: _addHeading,
                         onAddFrame: _addFrame,
                         onAddConnector: () => _canvasKey.currentState?.toggleConnectorMode(),
@@ -923,6 +926,9 @@ class _CanvasToolbar extends ConsumerWidget {
   final VoidCallback onAddDrawing;
   final VoidCallback onAddLink;
   final VoidCallback onAddImage;
+  final VoidCallback onAddColorSwatch;
+  final VoidCallback onAddAudio;
+  final VoidCallback onAddFile;
   final VoidCallback onAddHeading;
   final VoidCallback onAddFrame;
   final VoidCallback onAddConnector;
@@ -935,6 +941,9 @@ class _CanvasToolbar extends ConsumerWidget {
     required this.onAddDrawing,
     required this.onAddLink,
     required this.onAddImage,
+    required this.onAddColorSwatch,
+    required this.onAddAudio,
+    required this.onAddFile,
     required this.onAddHeading,
     required this.onAddFrame,
     required this.onAddConnector,
@@ -964,6 +973,9 @@ class _CanvasToolbar extends ConsumerWidget {
       (Icons.draw_outlined, 'Drawing', onAddDrawing),
       (Icons.link_rounded, 'Link', onAddLink),
       (Icons.image_outlined, 'Image', onAddImage),
+      (Icons.palette_outlined, 'Color Swatch', onAddColorSwatch),
+      (Icons.mic_none_rounded, 'Audio Memo', onAddAudio),
+      (Icons.attach_file_rounded, 'Document / File', onAddFile),
       (Icons.title_rounded, 'Heading', onAddHeading),
       (Icons.crop_free_rounded, 'Frame', onAddFrame),
       (Icons.timeline_rounded, 'Connector Mode', onAddConnector),

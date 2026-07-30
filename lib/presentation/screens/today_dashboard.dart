@@ -469,7 +469,9 @@ class _SectionEmptyState extends StatelessWidget {
 // ────────────────────────────────────────────────────────────
 // Activity Heatmap
 // ────────────────────────────────────────────────────────────
-class ActivityHeatmap extends StatefulWidget {
+// Activity Heatmap
+// ────────────────────────────────────────────────────────────
+class ActivityHeatmap extends ConsumerStatefulWidget {
   final Function(DateTime)? onTapDate;
   final DateTime? selectedMonth;
   final DateTime? selectedDate;
@@ -481,10 +483,10 @@ class ActivityHeatmap extends StatefulWidget {
   });
 
   @override
-  State<ActivityHeatmap> createState() => _ActivityHeatmapState();
+  ConsumerState<ActivityHeatmap> createState() => _ActivityHeatmapState();
 }
 
-class _ActivityHeatmapState extends State<ActivityHeatmap> {
+class _ActivityHeatmapState extends ConsumerState<ActivityHeatmap> {
   late DateTime _selectedMonth;
 
   @override
@@ -501,28 +503,13 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
     }
   }
 
-  /// Example activity data.
-  ///
-  /// The key is the date and the value is the activity level.
-  /// Replace this with your actual activity data.
-  final Map<DateTime, int> _activityData = {
-    DateTime(2026, 7, 1): 1,
-    DateTime(2026, 7, 2): 2,
-    DateTime(2026, 7, 3): 3,
-    DateTime(2026, 7, 5): 4,
-    DateTime(2026, 7, 8): 2,
-    DateTime(2026, 7, 10): 3,
-    DateTime(2026, 7, 15): 4,
-    DateTime(2026, 7, 18): 2,
-  };
-
   static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   Color _cellColor(int level, bool isDark) {
     if (isDark) {
       switch (level) {
         case 1:
-          return  EpicordiaColors.blue300;
+          return EpicordiaColors.blue300;
         case 2:
           return EpicordiaColors.blue400;
         case 3:
@@ -567,17 +554,6 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
     return months[date.month - 1];
   }
 
-  /// Returns the activity level for a specific day.
-  int _getActivityLevel(DateTime date) {
-    final normalizedDate = DateTime(
-      date.year,
-      date.month,
-      date.day,
-    );
-
-    return _activityData[normalizedDate] ?? 0;
-  }
-
   /// Generates all the days required to display the selected month.
   ///
   /// Monday is the first day of the week.
@@ -594,15 +570,9 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
       0,
     );
 
-    // DateTime.weekday:
-    // Monday = 1
-    // Sunday = 7
     final firstDayOffset = firstDayOfMonth.weekday - 1;
-
     final totalDays = lastDayOfMonth.day;
-
     final totalCells = firstDayOffset + totalDays;
-
     final numberOfWeeks = (totalCells / 7).ceil();
 
     final calendar = <List<DateTime?>>[];
@@ -662,6 +632,53 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
     final activeBorderColor = isDark ? EpicordiaColors.Primary : EpicordiaColors.blue700;
+
+    // Retrieve real tasks and notes to build real activity count per day
+    final tasksAsync = ref.watch(allTasksProvider);
+    final notesAsync = ref.watch(allNotesProvider);
+    final tasks = tasksAsync.value ?? [];
+    final notes = notesAsync.value ?? [];
+
+    final Map<DateTime, int> counts = {};
+
+    for (final t in tasks) {
+      final taskDates = <DateTime>{};
+      if (t.dueDate != null) {
+        taskDates.add(DateTime(t.dueDate!.year, t.dueDate!.month, t.dueDate!.day));
+      }
+      if (t.scheduledDate != null) {
+        taskDates.add(DateTime(t.scheduledDate!.year, t.scheduledDate!.month, t.scheduledDate!.day));
+      }
+      if (t.createdAt != null) {
+        taskDates.add(DateTime(t.createdAt!.year, t.createdAt!.month, t.createdAt!.day));
+      }
+      for (final d in taskDates) {
+        counts[d] = (counts[d] ?? 0) + 1;
+      }
+    }
+
+    for (final n in notes) {
+      final noteDates = <DateTime>{};
+      noteDates.add(DateTime(n.createdAt.year, n.createdAt.month, n.createdAt.day));
+      noteDates.add(DateTime(n.modifiedAt.year, n.modifiedAt.month, n.modifiedAt.day));
+      for (final d in noteDates) {
+        counts[d] = (counts[d] ?? 0) + 1;
+      }
+    }
+
+    int getActivityCount(DateTime date) {
+      final key = DateTime(date.year, date.month, date.day);
+      return counts[key] ?? 0;
+    }
+
+    int getActivityLevel(DateTime date) {
+      final count = getActivityCount(date);
+      if (count == 0) return 0;
+      if (count == 1) return 1;
+      if (count <= 2) return 2;
+      if (count <= 4) return 3;
+      return 4;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -782,11 +799,8 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
                               );
                             }
 
-                            final now = DateTime.now();
-                            final today = DateTime(now.year, now.month, now.day);
-                            final currentDate = DateTime(date.year, date.month, date.day);
-                            final isFuture = currentDate.isAfter(today);
-                            final activityLevel = isFuture ? 0 : _getActivityLevel(date);
+                            final activityCount = getActivityCount(date);
+                            final activityLevel = getActivityLevel(date);
 
                             final isSelected = widget.selectedDate != null &&
                                 date.year == widget.selectedDate!.year &&
@@ -796,8 +810,8 @@ class _ActivityHeatmapState extends State<ActivityHeatmap> {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 2),
                               child: Tooltip(
-                                message: '${date.day} ${_monthName(date)}: '
-                                    '${activityLevel == 0 ? 'No activity' : 'Activity level $activityLevel'}',
+                                message: '${date.day} ${_monthName(date)} ${date.year}: '
+                                    '${activityCount == 0 ? 'No activity' : '$activityCount ${activityCount == 1 ? 'task/note' : 'tasks/notes'}'}',
                                 child: GestureDetector(
                                   onTap: widget.onTapDate != null ? () => widget.onTapDate!(date) : null,
                                   child: AnimatedContainer(

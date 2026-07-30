@@ -300,6 +300,7 @@ class _PinEditorPanelState extends ConsumerState<PinEditorPanel> {
       'colorSwatch' => _ColorSwatchEditor(pin: pin, onSaved: _refreshPin),
       'link' => _LinkEditor(pin: pin, onSaved: _refreshPin),
       'file' => _FileEditor(pin: pin, onSaved: _refreshPin),
+      'audio' => _AudioEditor(pin: pin, onSaved: _refreshPin),
       'table' => _TableEditor(pin: pin, onSaved: _refreshPin),
       'board' => _BoardTileEditor(pin: pin, onSaved: _refreshPin),
       _ => _PlaceholderEditor(pinType: pin.type),
@@ -625,22 +626,38 @@ class _TaskEditorState extends ConsumerState<_TaskEditor> {
   }
 
   Future<void> _save() async {
+    final titleText = _titleCtrl.text.isEmpty ? 'Untitled task' : _titleCtrl.text;
     final task = widget.task;
-    if (task == null) return;
 
-    final updatedTask = task.copyWith(
-      title: _titleCtrl.text.isEmpty ? 'Untitled task' : _titleCtrl.text,
-      notes: Value(_notesCtrl.text.isEmpty ? null : _notesCtrl.text),
-      status: _status,
-      priority: _priority,
-      dueDate: Value(_dueDate),
-      scheduledDate: Value(_scheduledDate),
-      modifiedAt: DateTime.now(),
-    );
-    await ref.read(taskRepositoryProvider).updateTask(updatedTask);
+    if (task == null) {
+      final taskId = '${widget.pin.id}_task';
+      final newTask = TasksCompanion.insert(
+        id: taskId,
+        pinId: Value(widget.pin.id),
+        boardId: Value(widget.pin.boardId),
+        title: titleText,
+        notes: Value(_notesCtrl.text.isEmpty ? null : _notesCtrl.text),
+        status: Value(_status),
+        priority: Value(_priority),
+        dueDate: Value(_dueDate),
+        scheduledDate: Value(_scheduledDate),
+      );
+      await ref.read(taskRepositoryProvider).createTask(newTask);
+    } else {
+      final updatedTask = task.copyWith(
+        title: titleText,
+        notes: Value(_notesCtrl.text.isEmpty ? null : _notesCtrl.text),
+        status: _status,
+        priority: _priority,
+        dueDate: Value(_dueDate),
+        scheduledDate: Value(_scheduledDate),
+        modifiedAt: DateTime.now(),
+      );
+      await ref.read(taskRepositoryProvider).updateTask(updatedTask);
+    }
 
     final updatedPin = widget.pin.copyWith(
-      content: Value(_titleCtrl.text),
+      content: Value(titleText),
       modifiedAt: DateTime.now(),
     );
     await ref.read(pinRepositoryProvider).updatePin(updatedPin);
@@ -1335,10 +1352,20 @@ class _ImageEditorState extends ConsumerState<_ImageEditor> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(source: source);
-      if (picked != null) {
-        setState(() => _filePath = picked.path);
+      String? path;
+      final res = await FilePicker.platform.pickFiles(type: FileType.image);
+      if (res != null && res.files.single.path != null) {
+        path = res.files.single.path;
+      } else if (res == null) {
+        final picker = ImagePicker();
+        final picked = await picker.pickImage(source: source);
+        if (picked != null) {
+          path = picked.path;
+        }
+      }
+
+      if (path != null && mounted) {
+        setState(() => _filePath = path);
         _save();
       }
     } catch (e) {
@@ -2633,6 +2660,227 @@ class _MiniStatusRing extends StatelessWidget {
         ),
       ),
       child: isDone ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AUDIO EDITOR
+// ---------------------------------------------------------------------------
+
+class _AudioEditor extends ConsumerStatefulWidget {
+  const _AudioEditor({required this.pin, required this.onSaved});
+  final PinEntity pin;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_AudioEditor> createState() => _AudioEditorState();
+}
+
+class _AudioEditorState extends ConsumerState<_AudioEditor> {
+  late final TextEditingController _titleCtrl;
+  String? _filePath;
+  int _durationSeconds = 42;
+  bool _isRecording = false;
+  Timer? _recordingTimer;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = _parseData(widget.pin.content);
+    _titleCtrl = TextEditingController(text: data['title'] as String? ?? 'Voice Memo');
+    _filePath = data['filePath'] as String?;
+    _durationSeconds = (data['durationSeconds'] as num?)?.toInt() ?? 42;
+    _titleCtrl.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _recordingTimer?.cancel();
+    _debounce?.cancel();
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _parseData(String? content) {
+    if (content == null || content.isEmpty) return {};
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), _save);
+  }
+
+  Future<void> _save() async {
+    final json = jsonEncode({
+      'title': _titleCtrl.text.isEmpty ? 'Voice Memo' : _titleCtrl.text,
+      'durationSeconds': _durationSeconds,
+      'filePath': _filePath ?? '',
+    });
+    final updated = widget.pin.copyWith(
+      content: Value(json),
+      modifiedAt: DateTime.now(),
+    );
+    await ref.read(pinRepositoryProvider).updatePin(updated);
+    widget.onSaved();
+  }
+
+  void _toggleRecording() {
+    if (_isRecording) {
+      _recordingTimer?.cancel();
+      setState(() {
+        _isRecording = false;
+      });
+      _save();
+    } else {
+      setState(() {
+        _isRecording = true;
+        _durationSeconds = 0;
+      });
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+        if (mounted) {
+          setState(() {
+            _durationSeconds++;
+          });
+        }
+      });
+    }
+  }
+
+  Future<void> _pickAudioFile() async {
+    try {
+      final res = await FilePicker.platform.pickFiles(type: FileType.audio);
+      if (res != null && res.files.single.path != null) {
+        final f = res.files.single;
+        setState(() {
+          _filePath = f.path;
+          if (_titleCtrl.text == 'Voice Memo' || _titleCtrl.text.isEmpty) {
+            _titleCtrl.text = f.name;
+          }
+        });
+        _save();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick audio file: $e')),
+        );
+      }
+    }
+  }
+
+  String _formatDuration(int secs) {
+    final m = secs ~/ 60;
+    final s = secs % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('AUDIO RECORDING / FILE'),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E222A) : const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isRecording ? EpicordiaColors.errorLight : EpicordiaColors.borderSubtleLight,
+                width: _isRecording ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: _toggleRecording,
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _isRecording ? EpicordiaColors.errorLight : EpicordiaColors.blue600,
+                    ),
+                    child: Icon(
+                      _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isRecording ? 'Recording in progress…' : 'Voice Memo',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: _isRecording ? EpicordiaColors.errorLight : textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Duration: ${_formatDuration(_durationSeconds)}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: EpicordiaColors.blue600),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _toggleRecording,
+                  icon: Icon(_isRecording ? Icons.stop : Icons.fiber_manual_record, color: Colors.white, size: 18),
+                  label: Text(_isRecording ? 'Stop Recording' : 'Record Voice Memo'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isRecording ? EpicordiaColors.errorLight : EpicordiaColors.blue600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _pickAudioFile,
+                icon: const Icon(Icons.audio_file_outlined, size: 18),
+                label: const Text('Pick Audio File'),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const _SectionLabel('MEMO TITLE'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _titleCtrl,
+            decoration: _inputDeco('Voice memo title…'),
+            style: TextStyle(fontSize: 14, color: textPrimary),
+          ),
+        ],
+      ),
     );
   }
 }

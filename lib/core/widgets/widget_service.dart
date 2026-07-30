@@ -75,11 +75,11 @@ class WidgetService {
       await HomeWidget.saveWidgetData('today_data', jsonEncode(payload));
       await HomeWidget.updateWidget(
         name: 'TodayAppWidget',
-        androidName: 'TodayAppWidget',
+        androidName: 'widgets.TodayAppWidget',
         iOSName: 'TodayWidget',
       );
-    } catch (e, stack) {
-      developer.log('Error updating Today Widget snapshot: $e', error: e, stackTrace: stack);
+    } catch (e) {
+      developer.log('Error updating Today Widget snapshot: $e');
     }
   }
 
@@ -94,11 +94,11 @@ class WidgetService {
       await HomeWidget.saveWidgetData('unsorted_data', jsonEncode(payload));
       await HomeWidget.updateWidget(
         name: 'UnsortedTrayAppWidget',
-        androidName: 'UnsortedTrayAppWidget',
+        androidName: 'widgets.UnsortedTrayAppWidget',
         iOSName: 'UnsortedTrayWidget',
       );
-    } catch (e, stack) {
-      developer.log('Error updating Unsorted Widget snapshot: $e', error: e, stackTrace: stack);
+    } catch (e) {
+      developer.log('Error updating Unsorted Widget snapshot: $e');
     }
   }
 
@@ -121,11 +121,11 @@ class WidgetService {
       await HomeWidget.saveWidgetData('heatmap_data', jsonEncode(payload));
       await HomeWidget.updateWidget(
         name: 'CalendarHeatmapAppWidget',
-        androidName: 'CalendarHeatmapAppWidget',
+        androidName: 'widgets.CalendarHeatmapAppWidget',
         iOSName: 'CalendarHeatmapWidget',
       );
-    } catch (e, stack) {
-      developer.log('Error updating Heatmap Widget snapshot: $e', error: e, stackTrace: stack);
+    } catch (e) {
+      developer.log('Error updating Heatmap Widget snapshot: $e');
     }
   }
 }
