@@ -21,6 +21,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _defaultView = 'Canvas';
   bool _appLock = true;
   bool _backup = true;
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentName = ref.read(userNameProvider);
+    _nameController = TextEditingController(text: currentName);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveUserName() async {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) return;
+    await ref.read(userNameProvider.notifier).updateName(newName);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Display name updated to "$newName"'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   void _showExportOptions(BuildContext context) {
     showModalBottomSheet(
@@ -242,6 +270,99 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 48),
           children: [
+            // ── Profile ──────────────────────────────────────────
+            const _SectionHeader(icon: Icons.person_outline, label: 'Profile & Display Name'),
+            const SizedBox(height: 10),
+            _Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your Name',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Used for greetings on Today\'s Dashboard and throughout your workspace.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _nameController,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _saveUserName(),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Enter your name',
+                            hintStyle: TextStyle(
+                              color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                              fontSize: 14,
+                            ),
+                            // prefixIcon: Icon(
+                            //   Icons.badge_outlined,
+                            //   color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
+                            //   size: 20,
+                            // ),
+                            filled: true,
+                            fillColor: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      FilledButton(
+                        onPressed: _saveUserName,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: EpicordiaColors.blue600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // ── Appearance ──────────────────────────────────────
             const _SectionHeader(icon: Icons.palette_outlined, label: 'Appearance'),
             const SizedBox(height: 10),
@@ -356,70 +477,70 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            // ── Data & Backup ─────────────────────────────────────
-            const _SectionHeader(
-                icon: Icons.cloud_outlined, label: 'Data & Backup'),
-            const SizedBox(height: 10),
-            _Card(
-              child: Column(
-                children: [
-                  _SwitchRow(
-                    icon: Icons.backup_outlined,
-                    label: 'Backup to Cloud',
-                    value: _backup,
-                    onChanged: (v) => setState(() => _backup = v),
-                    showDivider: true,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => _showExportOptions(context),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: isDark
-                                  ? EpicordiaColors.borderStrongDark
-                                  : EpicordiaColors.borderStrongLight,
-                            ),
-                            foregroundColor: textPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Export All Data',
-                              style: TextStyle(fontSize: 13)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => _confirmResetAppData(context),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: isDark
-                                  ? EpicordiaColors.errorDark
-                                  : EpicordiaColors.errorLight,
-                            ),
-                            foregroundColor: isDark
-                                ? EpicordiaColors.errorDark
-                                : EpicordiaColors.errorLight,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Reset App Data',
-                              style: TextStyle(fontSize: 13)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
+            // // ── Data & Backup ─────────────────────────────────────
+            // const _SectionHeader(
+            //     icon: Icons.cloud_outlined, label: 'Data & Backup'),
+            // const SizedBox(height: 10),
+            // _Card(
+            //   child: Column(
+            //     children: [
+            //       _SwitchRow(
+            //         icon: Icons.backup_outlined,
+            //         label: 'Backup to Cloud',
+            //         value: _backup,
+            //         onChanged: (v) => setState(() => _backup = v),
+            //         showDivider: true,
+            //       ),
+            //       const SizedBox(height: 12),
+            //       Row(
+            //         children: [
+            //           Expanded(
+            //             child: OutlinedButton(
+            //               onPressed: () => _showExportOptions(context),
+            //               style: OutlinedButton.styleFrom(
+            //                 side: BorderSide(
+            //                   color: isDark
+            //                       ? EpicordiaColors.borderStrongDark
+            //                       : EpicordiaColors.borderStrongLight,
+            //                 ),
+            //                 foregroundColor: textPrimary,
+            //                 shape: RoundedRectangleBorder(
+            //                   borderRadius: BorderRadius.circular(8),
+            //                 ),
+            //               ),
+            //               child: const Text('Export All Data',
+            //                   style: TextStyle(fontSize: 13)),
+            //             ),
+            //           ),
+            //           const SizedBox(width: 12),
+            //           Expanded(
+            //             child: OutlinedButton(
+            //               onPressed: () => _confirmResetAppData(context),
+            //               style: OutlinedButton.styleFrom(
+            //                 side: BorderSide(
+            //                   color: isDark
+            //                       ? EpicordiaColors.errorDark
+            //                       : EpicordiaColors.errorLight,
+            //                 ),
+            //                 foregroundColor: isDark
+            //                     ? EpicordiaColors.errorDark
+            //                     : EpicordiaColors.errorLight,
+            //                 shape: RoundedRectangleBorder(
+            //                   borderRadius: BorderRadius.circular(8),
+            //                 ),
+            //               ),
+            //               child: const Text('Reset App Data',
+            //                   style: TextStyle(fontSize: 13)),
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //       const SizedBox(height: 4),
+            //     ],
+            //   ),
+            // ),
+            //
+            // const SizedBox(height: 24),
 
             // ── About ─────────────────────────────────────────────
             const _SectionHeader(icon: Icons.info_outline, label: 'About'),

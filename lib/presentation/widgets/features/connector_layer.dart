@@ -99,7 +99,7 @@ class ConnectorLayerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
-      ..color = colorScheme.primary
+      ..color = colorScheme.onSurface
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
@@ -125,9 +125,6 @@ class ConnectorLayerPainter extends CustomPainter {
         ..color = linePaint.color
         ..style = PaintingStyle.fill;
       paintArrowhead(canvas, end, endAngle, fillPaint);
-
-      
-      // if (c.connector.label != null) _paintLabel(canvas, path, c.connector.label!);
     }
   }
 
@@ -154,13 +151,24 @@ class DraftConnectorPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final start = edgeIntersection(fromRect, currentPointer);
     
-    final paint = Paint()
-      ..color = colorScheme.outline
-      ..strokeWidth = 2
+    final strokePaint = Paint()
+      ..color = colorScheme.onSurface
+      ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
       
-    // A simple dashed line would be better, but plain stroke for now.
-    canvas.drawLine(start, currentPointer, paint);
+    final path = Path()
+      ..moveTo(start.dx, start.dy);
+
+    final control = curveControlPoint(start, currentPointer);
+    path.quadraticBezierTo(control.dx, control.dy, currentPointer.dx, currentPointer.dy);
+    final endAngle = (currentPointer - control).direction;
+
+    canvas.drawPath(path, strokePaint);
+
+    final fillPaint = Paint()
+      ..color = colorScheme.onSurface
+      ..style = PaintingStyle.fill;
+    paintArrowhead(canvas, currentPointer, endAngle, fillPaint);
   }
 
   @override

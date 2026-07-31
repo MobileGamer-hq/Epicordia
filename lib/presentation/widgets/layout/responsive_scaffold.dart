@@ -174,20 +174,20 @@ class _ExpandableSidebar extends StatelessWidget {
                     )
                   : Column(
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: EpicordiaColors.blue700,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          //Put the app logo
-                          child: const Icon(
-                            Icons.space_dashboard,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
+                        // Container(
+                        //   width: 40,
+                        //   height: 40,
+                        //   decoration: BoxDecoration(
+                        //     color: EpicordiaColors.blue700,
+                        //     borderRadius: BorderRadius.circular(10),
+                        //   ),
+                        //   //Put the app logo
+                        //   child: const Icon(
+                        //     Icons.space_dashboard,
+                        //     color: Colors.white,
+                        //     size: 22,
+                        //   ),
+                        // ),
                         const SizedBox(height: 8),
                         IconButton(
                           icon: Icon(
@@ -456,66 +456,66 @@ class _ExpandableSidebar extends StatelessWidget {
                         ),
                   const SizedBox(height: 6),
                   // User Profile info
-                  isExpanded
-                      ? Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: userCardBg,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 15,
-                                backgroundColor: userAvatarBg,
-                                child: Icon(
-                                  Icons.person,
-                                  size: 16,
-                                  color: userAvatarIcon,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Alex Rivera',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: textPrimary,
-                                      ),
-                                    ),
-                                    Text(
-                                      'alex@epicordia.io',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: textTertiary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : Tooltip(
-                          message: 'Alex Rivera (alex@epicordia.io)',
-                          child: CircleAvatar(
-                            radius: 16,
-                            backgroundColor: userAvatarBg,
-                            child: Icon(
-                              Icons.person,
-                              size: 18,
-                              color: userAvatarIcon,
-                            ),
-                          ),
-                        ),
+                  // isExpanded
+                  //     ? Container(
+                  //         padding: const EdgeInsets.all(8),
+                  //         decoration: BoxDecoration(
+                  //           color: userCardBg,
+                  //           borderRadius: BorderRadius.circular(10),
+                  //         ),
+                  //         child: Row(
+                  //           children: [
+                  //             CircleAvatar(
+                  //               radius: 15,
+                  //               backgroundColor: userAvatarBg,
+                  //               child: Icon(
+                  //                 Icons.person,
+                  //                 size: 16,
+                  //                 color: userAvatarIcon,
+                  //               ),
+                  //             ),
+                  //             const SizedBox(width: 10),
+                  //             // Expanded(
+                  //             //   child: Column(
+                  //             //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //             //     children: [
+                  //             //       Text(
+                  //             //         'Alex Rivera',
+                  //             //         maxLines: 1,
+                  //             //         overflow: TextOverflow.ellipsis,
+                  //             //         style: TextStyle(
+                  //             //           fontSize: 13,
+                  //             //           fontWeight: FontWeight.w600,
+                  //             //           color: textPrimary,
+                  //             //         ),
+                  //             //       ),
+                  //             //       Text(
+                  //             //         'alex@epicordia.io',
+                  //             //         maxLines: 1,
+                  //             //         overflow: TextOverflow.ellipsis,
+                  //             //         style: TextStyle(
+                  //             //           fontSize: 11,
+                  //             //           color: textTertiary,
+                  //             //         ),
+                  //             //       ),
+                  //             //     ],
+                  //             //   ),
+                  //             // ),
+                  //           ],
+                  //         ),
+                  //       )
+                  //     : Tooltip(
+                  //         message: 'Alex Rivera (alex@epicordia.io)',
+                  //         child: CircleAvatar(
+                  //           radius: 16,
+                  //           backgroundColor: userAvatarBg,
+                  //           child: Icon(
+                  //             Icons.person,
+                  //             size: 18,
+                  //             color: userAvatarIcon,
+                  //           ),
+                  //         ),
+                  //       ),
                 ],
               ),
             ),

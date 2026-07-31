@@ -82,9 +82,32 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
   bool _wasDragging = false;
   List<PinEntity> _latestPins = const [];
 
-  // Connector Creation Mode
+  // Connector Creation Mode & Drag Draft
   bool _isConnectingMode = false;
   String? _connectorSourcePinId;
+  ConnectorDraft? _draftConnector;
+  String? _hoveredTargetPinId;
+  String? _selectedPinId;
+
+  Offset _screenToWorld(Offset globalPos) {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return globalPos;
+    final localPos = renderBox.globalToLocal(globalPos);
+    final inverse = Matrix4.tryInvert(_controller.transform.value);
+    if (inverse == null) return localPos;
+    return MatrixUtils.transformPoint(inverse, localPos);
+  }
+
+  PinEntity? _findPinAtWorldPos(Offset worldPos, {String? excludePinId}) {
+    for (final pin in _latestPins.reversed) {
+      if (excludePinId != null && pin.id == excludePinId) continue;
+      final rect = Rect.fromLTWH(pin.x, pin.y, pin.width, pin.height);
+      if (rect.contains(worldPos)) {
+        return pin;
+      }
+    }
+    return null;
+  }
 
   bool get isConnectingMode => _isConnectingMode;
 
@@ -320,42 +343,163 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
   InfiniteCanvasNode _pinToNode(PinEntity pin) {
     final isHeading = pin.type == 'heading';
     final isSelectedSource = _connectorSourcePinId == pin.id;
+    final isHoveredTarget = _hoveredTargetPinId == pin.id;
+    final isSelectedNode = _selectedPinId == pin.id ||
+        _controller.selection.map((n) => (n.key as ValueKey<String>).value).contains(pin.id);
 
     return InfiniteCanvasNode(
       key: ValueKey<String>(pin.id),
       offset: Offset(pin.x, pin.y),
       size: Size(pin.width, pin.height),
       resizeMode: isHeading ? ResizeMode.disabled : ResizeMode.corners,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          if (_isConnectingMode) {
-            _handlePinTap(pin.id);
-          }
-        },
-        child: Container(
-          decoration: isSelectedSource
-              ? BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: EpicordiaColors.blue600, width: 3),
-                )
-              : null,
-          child: SizedBox.expand(
-            child: BoardPinCard(
-              pinId: pin.id,
-              type: pin.type,
-              content: pin.content,
-              colorTag: pin.colorTag,
-              onEdit: (id) {
-                if (_isConnectingMode) {
-                  _handlePinTap(id);
-                } else {
-                  _setEditingPinId(id);
-                }
-              },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              setState(() => _selectedPinId = pin.id);
+              if (_isConnectingMode) {
+                _handlePinTap(pin.id);
+              }
+            },
+            child: Container(
+              decoration: isSelectedSource
+                  ? BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: EpicordiaColors.blue600, width: 3),
+                    )
+                  : isHoveredTarget
+                      ? BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: EpicordiaColors.blue500, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: EpicordiaColors.blue500.withValues(alpha: 0.4),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        )
+                      : isSelectedNode
+                          ? BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                width: 2,
+                              ),
+                            )
+                          : null,
+              child: SizedBox.expand(
+                child: BoardPinCard(
+                  pinId: pin.id,
+                  type: pin.type,
+                  content: pin.content,
+                  colorTag: pin.colorTag,
+                  onEdit: (id) {
+                    setState(() => _selectedPinId = id);
+                    if (_isConnectingMode) {
+                      _handlePinTap(id);
+                    } else {
+                      _setEditingPinId(id);
+                    }
+                  },
+                ),
+              ),
             ),
           ),
-        ),
+          if (isSelectedNode || isHoveredTarget || _connectorSourcePinId == pin.id)
+            Positioned(
+              top: -14,
+              left: (pin.width / 2) - 14,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (details) {
+                  final worldPos = _screenToWorld(details.globalPosition);
+                  setState(() {
+                    _draftConnector = ConnectorDraft(fromPinId: pin.id, currentPointerWorldPos: worldPos);
+                  });
+                },
+                onPanUpdate: (details) {
+                  final worldPos = _screenToWorld(details.globalPosition);
+                  final targetPin = _findPinAtWorldPos(worldPos, excludePinId: pin.id);
+                  setState(() {
+                    _draftConnector = ConnectorDraft(fromPinId: pin.id, currentPointerWorldPos: worldPos);
+                    _hoveredTargetPinId = targetPin?.id;
+                  });
+                },
+                onPanEnd: (details) async {
+                  if (_draftConnector != null) {
+                    final dropPos = _draftConnector!.currentPointerWorldPos;
+                    final targetPin = _findPinAtWorldPos(dropPos, excludePinId: pin.id);
+                    setState(() {
+                      _draftConnector = null;
+                      _hoveredTargetPinId = null;
+                    });
+
+                    if (targetPin != null) {
+                      final id = DateTime.now().millisecondsSinceEpoch.toString();
+                      await ref.read(connectorRepositoryProvider).createConnector(
+                        ConnectorsCompanion.insert(
+                          id: id,
+                          boardId: widget.boardId,
+                          fromPinId: pin.id,
+                          toPinId: targetPin.id,
+                          style: const Value('curved'),
+                        ),
+                      );
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Cards connected successfully!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    }
+                  }
+                },
+                onPanCancel: () {
+                  setState(() {
+                    _draftConnector = null;
+                    _hoveredTargetPinId = null;
+                  });
+                },
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? EpicordiaColors.surfaceCardDark
+                          : EpicordiaColors.surfaceCardLight,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                        width: 2,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.add_link_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -464,11 +608,31 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
               child: AnimatedBuilder(
                 animation: _controller.transform,
                 builder: (context, _) {
+                  final draftPin = _draftConnector != null
+                      ? _latestPins.where((p) => p.id == _draftConnector!.fromPinId).firstOrNull
+                      : null;
+                  final draftFromRect = draftPin != null
+                      ? Rect.fromLTWH(draftPin.x, draftPin.y, draftPin.width, draftPin.height)
+                      : null;
+
                   return Transform(
                     transform: _controller.transform.value,
-                    child: CustomPaint(
-                      size: Size.infinite,
-                      painter: ConnectorLayerPainter(connectorsData, Theme.of(context).colorScheme),
+                    child: Stack(
+                      children: [
+                        CustomPaint(
+                          size: Size.infinite,
+                          painter: ConnectorLayerPainter(connectorsData, Theme.of(context).colorScheme),
+                        ),
+                        if (_draftConnector != null && draftFromRect != null)
+                          CustomPaint(
+                            size: Size.infinite,
+                            painter: DraftConnectorPainter(
+                              draftFromRect,
+                              _draftConnector!.currentPointerWorldPos,
+                              Theme.of(context).colorScheme,
+                            ),
+                          ),
+                      ],
                     ),
                   );
                 },

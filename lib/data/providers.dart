@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database/database.dart';
 import 'dao/board_dao.dart';
 import 'dao/pin_dao.dart';
@@ -45,4 +46,32 @@ final taskForPinProvider = StreamProvider.family<TaskEntity?, String>((ref, pinI
 final tasksForGroupPinProvider = StreamProvider.family<List<TaskEntity>, String>((ref, groupPinId) {
   return ref.watch(taskDaoProvider).watchTasksForGroupPin(groupPinId);
 });
+
+/// Manages the saved user display name from onboarding and settings.
+class UserNameNotifier extends Notifier<String> {
+  @override
+  String build() {
+    _load();
+    return 'Somto';
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('user_name');
+    if (name != null && name.isNotEmpty) {
+      state = name;
+    }
+  }
+
+  Future<void> updateName(String newName) async {
+    final trimmed = newName.trim();
+    if (trimmed.isEmpty) return;
+    state = trimmed;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', trimmed);
+  }
+}
+
+final userNameProvider = NotifierProvider<UserNameNotifier, String>(UserNameNotifier.new);
+
 

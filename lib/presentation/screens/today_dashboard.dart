@@ -25,23 +25,6 @@ class TodayDashboard extends ConsumerStatefulWidget {
 }
 
 class _TodayDashboardState extends ConsumerState<TodayDashboard> {
-  String _userName = 'Somto';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserName();
-  }
-
-  Future<void> _loadUserName() async {
-    final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString('user_name');
-    if (name != null && name.isNotEmpty) {
-      setState(() {
-        _userName = name;
-      });
-    }
-  }
 
   String _formatModified(DateTime date) {
     final now = DateTime.now();
@@ -121,6 +104,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
     final borderClr =
     isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 
+    final userName = ref.watch(userNameProvider);
 
     return ResponsiveScaffold(
       appBar: EpicordiaAppBar(
@@ -139,7 +123,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$greeting, $_userName',
+                      '$greeting, $userName',
                       style:  TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
