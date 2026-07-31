@@ -191,7 +191,7 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                     }).toList(),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
               ],
             ),
           ),

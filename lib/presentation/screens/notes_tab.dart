@@ -127,49 +127,49 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _filters.map((f) {
+                      final selected = _selectedFilter == f;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedFilter = f),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? activeBlue
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: selected
+                                    ? activeBlue
+                                    : borderStrong,
+                              ),
+                            ),
+                            child: Text(
+                              f,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: selected
+                                      ? Colors.white
+                                      : textSecondary),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
                 const SizedBox(height: 20),
-                // SingleChildScrollView(
-                //   scrollDirection: Axis.horizontal,
-                //   child: Row(
-                //     children: _filters.map((f) {
-                //       final selected = _selectedFilter == f;
-                //       return Padding(
-                //         padding: const EdgeInsets.only(right: 8),
-                //         child: GestureDetector(
-                //           onTap: () => setState(() => _selectedFilter = f),
-                //           child: AnimatedContainer(
-                //             duration: const Duration(milliseconds: 150),
-                //             padding: const EdgeInsets.symmetric(
-                //               horizontal: 16,
-                //               vertical: 8,
-                //             ),
-                //             decoration: BoxDecoration(
-                //               color: selected
-                //                   ? activeBlue
-                //                   : Colors.transparent,
-                //               borderRadius: BorderRadius.circular(20),
-                //               border: Border.all(
-                //                 color: selected
-                //                     ? activeBlue
-                //                     : borderStrong,
-                //               ),
-                //             ),
-                //             child: Text(
-                //               f,
-                //               style: TextStyle(
-                //                   fontSize: 13,
-                //                   fontWeight: FontWeight.w500,
-                //                   color: selected
-                //                       ? Colors.white
-                //                       : textSecondary),
-                //             ),
-                //           ),
-                //         ),
-                //       );
-                //     }).toList(),
-                //   ),
-                // ),
-                // const SizedBox(height: 12),
               ],
             ),
           ),

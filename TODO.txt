@@ -49,4 +49,15 @@ Feedback from users
 -the search on the board tab doesnt work
 - the color swatch card ui design isnt nice idk why but some color comes out and it deosnt look good, make it nice looking
 -the list version of the board screen doesnt show the content of the items it should,
-the dialog of the kandabn screen too the theme doesnt match for the set date buttonand the cale button also for the cards pop ups
+the dialog of the kandabn screen too the theme doesnt match for the set date buttonand the cale button also for the cards pop
+
+
+
+
+-I want that when users click on notes and tasks list items on every screen that has them, it is interactive wit a menue appearing for longpress and double tap,
+-for longpress of notes show the notes content in a floating pop up that has the background blurred, for double tap let a menue appear to copy, share, delete etc
+-for longpress of task let a menu appear to see all the info about the task clearly, and for double tap let a menue show that allows for copy, share, delete etc
+-then i noticed on the calendar amd today_dashboard screen the task there isnt like the task on the task tab screen which clearly shows what is the progress of that task so make it look like it -> also add the longpress and double tap features too
+-for the schedules also add long press and double tap
+-note when longpress the backgound should blur when the floating menu appears
+
