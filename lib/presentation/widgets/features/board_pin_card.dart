@@ -935,9 +935,9 @@ class _LinkCardBody extends StatelessWidget {
     try {
       final uri = Uri.parse(url);
       final host = uri.host.replaceFirst('www.', '');
-      return host.isEmpty ? 'MILANOTE.COM' : host;
+      return host.isEmpty ? 'catchme.live' : host;
     } catch (_) {
-      return 'MILANOTE.COM';
+      return 'catchme.live';
     }
   }
 }

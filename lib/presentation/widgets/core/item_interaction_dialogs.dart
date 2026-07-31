@@ -26,7 +26,7 @@ class ItemInteractionDialogs {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Note Details',
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (ctx, anim1, anim2) {
         return const SizedBox.shrink();
@@ -58,7 +58,7 @@ class ItemInteractionDialogs {
                     border: Border.all(color: borderClr, width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                        color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -74,7 +74,7 @@ class ItemInteractionDialogs {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: activeBlue.withOpacity(0.15),
+                              color: activeBlue.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -172,7 +172,7 @@ class ItemInteractionDialogs {
                               label: 'Copy',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                copyToClipboard(context, '${title}\n\n${body}');
+                                copyToClipboard(context, '$title\n\n$body');
                               },
                             ),
                             _ActionButton(
@@ -180,7 +180,7 @@ class ItemInteractionDialogs {
                               label: 'Share',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                shareContent(context, '${title}\n\n${body}');
+                                shareContent(context, '$title\n\n$body');
                               },
                             ),
                             _ActionButton(
@@ -240,7 +240,7 @@ class ItemInteractionDialogs {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Task Details',
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
       transitionBuilder: (ctx, anim1, anim2, child) {
@@ -284,7 +284,7 @@ class ItemInteractionDialogs {
                     border: Border.all(color: borderClr, width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                        color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -300,9 +300,9 @@ class ItemInteractionDialogs {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.15),
+                              color: statusColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: statusColor.withOpacity(0.4), width: 1),
+                              border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 1),
                             ),
                             child: Row(
                               children: [
@@ -461,7 +461,7 @@ class ItemInteractionDialogs {
                               label: 'Copy',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                copyToClipboard(context, 'Task: ${task.title}\nStatus: ${statusLabel}\nNotes: ${task.notes ?? ''}');
+                                copyToClipboard(context, 'Task: ${task.title}\nStatus: $statusLabel\nNotes: ${task.notes ?? ''}');
                               },
                             ),
                             _ActionButton(
@@ -469,7 +469,7 @@ class ItemInteractionDialogs {
                               label: 'Share',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                shareContent(context, 'Task: ${task.title}\nStatus: ${statusLabel}\nNotes: ${task.notes ?? ''}');
+                                shareContent(context, 'Task: ${task.title}\nStatus: $statusLabel\nNotes: ${task.notes ?? ''}');
                               },
                             ),
                             _ActionButton(
@@ -538,7 +538,7 @@ class ItemInteractionDialogs {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Schedule Details',
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
       transitionBuilder: (ctx, anim1, anim2, child) {
@@ -567,7 +567,7 @@ class ItemInteractionDialogs {
                     border: Border.all(color: borderClr, width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                        color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -583,9 +583,9 @@ class ItemInteractionDialogs {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.15),
+                              color: accentColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: accentColor.withOpacity(0.4)),
+                              border: Border.all(color: accentColor.withValues(alpha: 0.4)),
                             ),
                             child: Row(
                               children: [
@@ -697,7 +697,7 @@ class ItemInteractionDialogs {
                               label: 'Copy',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                copyToClipboard(context, '${slot.title}\nDay: ${dayName}\nTime: ${slot.startTime} - ${slot.endTime}\nLocation: ${slot.location ?? ''}');
+                                copyToClipboard(context, '${slot.title}\nDay: $dayName\nTime: ${slot.startTime} - ${slot.endTime}\nLocation: ${slot.location ?? ''}');
                               },
                             ),
                             _ActionButton(
@@ -705,7 +705,7 @@ class ItemInteractionDialogs {
                               label: 'Share',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                shareContent(context, '${slot.title}\nDay: ${dayName}\nTime: ${slot.startTime} - ${slot.endTime}\nLocation: ${slot.location ?? ''}');
+                                shareContent(context, '${slot.title}\nDay: $dayName\nTime: ${slot.startTime} - ${slot.endTime}\nLocation: ${slot.location ?? ''}');
                               },
                             ),
                             _ActionButton(
@@ -761,7 +761,7 @@ class ItemInteractionDialogs {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Action Menu',
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
       transitionBuilder: (ctx, anim1, anim2, child) {
@@ -789,7 +789,7 @@ class ItemInteractionDialogs {
                     border: Border.all(color: borderClr, width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                        color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -836,7 +836,7 @@ class ItemInteractionDialogs {
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: (item.color ?? textPrimary).withOpacity(0.12),
+                                color: (item.color ?? textPrimary).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(

@@ -12,7 +12,6 @@ import '../../data/database/database.dart';
 import '../../data/providers.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../widgets/core/interactive_schedule_card.dart';
-import '../widgets/core/interactive_note_card.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
 
 import '../../core/theme.dart';
@@ -875,10 +874,6 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg =
-    isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
-    final borderClr =
-    isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

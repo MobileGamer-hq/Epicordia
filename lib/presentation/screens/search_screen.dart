@@ -26,7 +26,6 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
     super.dispose();
   }
 
-  @override
   Color _getBoardColor(String? boardId) {
     if (boardId == null) return Colors.grey;
     final colors = [

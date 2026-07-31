@@ -128,7 +128,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -237,112 +237,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
   }
 }
 
-// ── Note list item ────────────────────────────────────────────
-class _NoteListItem extends StatelessWidget {
-  final PinEntity note;
-  final String boardTitle;
-  final String timeFormatted;
-  final VoidCallback onTap;
 
-  const _NoteListItem({
-    required this.note,
-    required this.boardTitle,
-    required this.timeFormatted,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final lines = (note.content ?? '').split('\n');
-    final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-    final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content';
-    final isPinned = note.boardId != null;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
-    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
-    final activeBlue = isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue600;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: EpicordiaCard(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary,
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isPinned ? activeBlue : Colors.transparent,
-                    border: Border.all(
-                      color: isPinned ? activeBlue : borderStrong,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: isPinned ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              preview,
-              style: TextStyle(
-                fontSize: 13,
-                color: textSecondary,
-                height: 1.45,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Text(
-                  timeFormatted,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: textTertiary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Board: $boardTitle',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.more_horiz,
-                  size: 16,
-                  color: textTertiary,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _CreateNoteButton extends StatelessWidget {
   final VoidCallback onTap;

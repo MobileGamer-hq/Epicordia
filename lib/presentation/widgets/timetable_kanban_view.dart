@@ -19,14 +19,7 @@ class TimetableKanbanView extends ConsumerWidget {
     'Sunday'
   ];
 
-  Color _parseColorTag(String? colorHex, Color fallback) {
-    if (colorHex == null || colorHex.isEmpty) return fallback;
-    try {
-      return Color(int.parse(colorHex.replaceFirst('#', '0xff')));
-    } catch (_) {
-      return fallback;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

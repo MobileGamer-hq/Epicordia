@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
-import '../../data/providers.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/database/database.dart';
@@ -209,7 +208,6 @@ class _ActivityTaskTile extends ConsumerWidget {
   final VoidCallback onToggle;
 
   const _ActivityTaskTile({
-    super.key,
     required this.task,
     required this.isOverdue,
     required this.formattedDate,

@@ -10,7 +10,7 @@ class EpicordiaLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final logoColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue500;
+    final logoColor = EpicordiaColors.blue500;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
