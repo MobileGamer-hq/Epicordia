@@ -61,3 +61,10 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 -for the schedules also add long press and double tap
 -note when longpress the backgound should blur when the floating menu appears
 
+-   Connector Upadate
+-All cards should be able to connect to each other
+- the way milanotes cards connect is by having a bubble at the top of every card when the card is selected,
+-this buubles serve as an anchor where the connector can be dragged to another card.
+-this other card will receive it
+
+

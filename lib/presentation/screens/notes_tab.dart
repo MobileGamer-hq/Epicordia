@@ -6,6 +6,7 @@ import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_card.dart';
+import '../widgets/core/interactive_note_card.dart';
 import '../../core/theme.dart';
 
 class NotesTab extends ConsumerStatefulWidget {
@@ -214,11 +215,10 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                       final note = filtered[index];
                       final boardTitle = nBoardTitle(note.boardId, boardsMap);
 
-                      return _NoteListItem(
+                      return InteractiveNoteCard(
                         note: note,
                         boardTitle: boardTitle,
                         timeFormatted: _formatModified(note.modifiedAt),
-                        onTap: () => context.push('/note/${note.id}'),
                       );
                     },
                   );

@@ -34,9 +34,9 @@ This is the key architectural point: **a connector never stores or caches a line
 
 ---
 
-## 2. Geometry: anchoring a line to a card's edge, not its center
+## 2. Geometry: anchoring a line to a card's edge — automatic by default, precisely adjustable when needed
 
-A connector shouldn't visually start at the exact center of a card (it'd look like it's floating over the content) — it should start where a line from center-to-center would exit the card's rectangle. This is a standard line–rectangle clipping calculation:
+A connector shouldn't visually start at the exact center of a card by default — it should start where a line from center-to-center would exit the card's rectangle. This is the **automatic** behavior, used whenever an endpoint's `anchorOffsetX/Y` is `null`:
 
 ```dart
 /// Given a rectangle and a point outside it (the other pin's center),
@@ -58,7 +58,24 @@ Offset edgeIntersection(Rect rect, Offset towards) {
 }
 ```
 
-Used both ways — `edgeIntersection(fromRect, toRect.center)` for the start point, `edgeIntersection(toRect, fromRect.center)` for the end point. The result: a line that visibly touches each card's border, on whichever side actually faces the other card.
+When a user has manually fine-tuned an endpoint (§4 step 5), `anchorOffsetX/Y` is set and simply overrides this calculation for that end — the resolved point becomes `pin.rect.topLeft + Offset(anchorOffsetX, anchorOffsetY)` directly, no intersection math needed, since the user already chose the exact spot.
+
+When an endpoint has no attached pin at all (`fromPinId`/`toPinId` is `null`), the resolved point is just the stored `fromX/Y`/`toX/Y` value directly — a fixed point in world space that doesn't move with anything, since there's nothing for it to track.
+
+```dart
+Offset resolveEndpoint({
+  required PinRect? pin,
+  required Offset? manualOffset,
+  required Offset? freeFloatingPoint,
+  required Offset towardsForAutoIntersection,
+}) {
+  if (pin == null) return freeFloatingPoint!; // unattached end
+  if (manualOffset != null) return pin.rect.topLeft + manualOffset; // fine-tuned
+  return edgeIntersection(pin.rect, towardsForAutoIntersection); // automatic default
+}
+```
+
+Used both ways — resolving the start point using the end pin's center (or its free-floating point) as the "towards" target, and vice versa for the end point.
 
 ### Straight vs. curved
 - **Straight:** just draw the segment between the two edge points.
@@ -164,17 +181,19 @@ Transform(
 
 ## 4. Interaction: creating a connector
 
-Mirrors Milanote's own convention — small handles appear on a selected card's edges, and dragging from one to another card creates the arrow:
+Mirrors Milanote's actual mechanic, confirmed from its own help documentation — not four handles at each edge, but **one anchor bubble** plus a **second, independent creation path** from the toolbar:
 
-1. **Selecting a pin** reveals four small circular connector handles at the midpoint of each edge (top/right/bottom/left), styled per the UI doc's circular-icon-container rule, visible only while that pin is selected/hovered.
-2. **Dragging from a handle** starts a temporary, ephemeral drag state (not written to the database yet):
+1. **Selecting or hovering a pin** reveals a single small circular anchor — a circle-with-arrow icon, per the UI doc's circular-icon-container rule — positioned at the pin's **top-right corner** (not one handle per edge). This is the primary, fastest way to start a connector from an existing card.
+2. **Dragging from that anchor** starts the same ephemeral drag state as before:
    ```dart
    final connectorDraftProvider = StateProvider<ConnectorDraft?>((ref) => null);
    // ConnectorDraft { fromPinId, currentPointerWorldPos }
    ```
-   A lightweight second painter draws just this one in-progress line, following the pointer every frame, with no arrowhead-target logic needed yet — a plain dashed line to the current pointer position reads clearly as "still deciding."
-3. **On pointer-up**, hit-test the drop position against every pin's rectangle (in world coordinates — see §5 for the screen→world conversion). If it lands on a valid, different pin, commit: insert a new `Connectors` row (`fromPinId`, `toPinId`); if it misses every pin (dropped on empty canvas), discard the draft with no database write.
-4. The pin-tray's dedicated Connector tool (§4.3 of the UI doc) is an alternative entry point for the same gesture, for anyone who prefers explicitly choosing "I'm making a connector now" over discovering the edge handles.
+   A lightweight second painter draws just this in-progress line, following the pointer every frame.
+3. **A second, independent creation path exists from the toolbar's connector tool:** dragging it onto empty canvas creates a short, fully unattached connector with **both** ends initially free-floating near the drop point — the user then drags each end independently onto a card (or leaves either end floating in space; this is explicitly allowed, matching Milanote's "manually position each end" behavior, and is why `fromPinId`/`toPinId` are nullable with `fromX/Y`/`toX/Y` fallbacks in the schema).
+4. **On pointer-up** for any end being dragged (from either creation path), hit-test the drop position against every pin's rectangle (world coordinates, §6). Three outcomes: it lands on a pin → attach (`...PinId` set, offset fields left `null` for automatic edge-intersection); it lands in empty space → that end simply stays a free-floating point (`...PinId` stays/becomes `null`, `...X`/`...Y` set to the drop position); nothing is ever silently discarded the way an unattached single-anchor drag used to be — a connector is valid with zero, one, or two attached ends.
+5. **Fine-tuning an existing endpoint:** dragging an already-connected end again lets the user adjust exactly where it touches the target card — as the dragged point nears the card's boundary, a small circle indicator shows the nearest valid snap point; releasing there sets that end's `anchorOffsetX/Y` (relative to the pin's bounds) instead of leaving it on automatic center-facing intersection. This is what lets two connectors both touching the same card visually enter/exit at different, deliberately-chosen points rather than always converging on the same auto-computed spot.
+6. **Holding Shift while dragging an end** constrains the line to the nearest perfectly horizontal or vertical angle relative to its fixed other end — a small, cheap addition (clamp the drag angle to the nearest multiple of 90° when the modifier is held) that makes tidy diagram-style connections easy.
 
 ---
 
@@ -200,7 +219,11 @@ bool isNearConnector(Offset tapWorldPos, ConnectorRenderData c, {double threshol
 }
 ```
 
-The canvas's tap handler runs pin hit-testing first (pins sit visually on top and should win any overlapping tap), and only checks connectors for taps that don't land on a pin. A hit opens the **floating popover** (per the UI doc's light-interaction overlay pattern) anchored at the tap point, offering: change style (straight/curved), edit label, delete.
+The canvas's tap handler runs pin hit-testing first (pins sit visually on top and should win any overlapping tap), and only checks connectors for taps that don't land on a pin. A hit selects the connector and reveals its **bend handle** (§ below) plus opens the **floating popover** (per the UI doc's light-interaction overlay pattern) offering: change style (straight/curved), delete.
+
+**Editing a label directly, without opening a menu:** once a connector is selected, typing (desktop keyboard input, or a small inline text affordance on touch) writes straight into its `label` field, positioned at the connector's midpoint — matching Milanote's own "select a line and start typing" behavior. The floating popover's "Label" option remains as a discoverable alternative for anyone who selects via long-press/right-click first, but typing directly should always work once a connector is the current selection.
+
+**Straightening a bent connector:** in addition to a "Straighten" action in the popover, double-tapping (or double-clicking) the bend handle itself (§3) resets `bendOffsetX`/`bendOffsetY` back to `null` immediately — a faster, more direct shortcut for the same action, matching Milanote's own handle-double-click behavior.
 
 ---
 

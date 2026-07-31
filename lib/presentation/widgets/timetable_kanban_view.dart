@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/database/database.dart';
 import '../../data/providers.dart';
 import '../../core/theme.dart';
+import 'core/interactive_schedule_card.dart';
 import 'edit_timetable_slot_dialog.dart';
 
 class TimetableKanbanView extends ConsumerWidget {
@@ -149,99 +150,7 @@ class TimetableKanbanView extends ConsumerWidget {
                                 const SizedBox(height: 8),
                             itemBuilder: (context, slotIndex) {
                               final slot = daySlots[slotIndex];
-                              final accentColor = _parseColorTag(
-                                slot.colorTag,
-                                colorScheme.primary,
-                              );
-
-                              return InkWell(
-                                onTap: () {
-                                  EditTimetableSlotDialog.show(
-                                    context,
-                                    slot: slot,
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: colorScheme.outlineVariant
-                                          .withOpacity(0.5),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 4,
-                                        height: 38,
-                                        decoration: BoxDecoration(
-                                          color: accentColor,
-                                          borderRadius:
-                                              BorderRadius.circular(2),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '${slot.startTime} - ${slot.endTime}',
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                color: colorScheme.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              slot.title,
-                                              style: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            if (slot.location != null &&
-                                                slot.location!.isNotEmpty) ...[
-                                              const SizedBox(height: 2),
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.location_on_outlined,
-                                                    size: 12,
-                                                    color: colorScheme
-                                                        .onSurfaceVariant,
-                                                  ),
-                                                  const SizedBox(width: 2),
-                                                  Expanded(
-                                                    child: Text(
-                                                      slot.location!,
-                                                      style: theme
-                                                          .textTheme.bodySmall
-                                                          ?.copyWith(
-                                                        color: colorScheme
-                                                            .onSurfaceVariant,
-                                                        fontSize: 11,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
+                              return InteractiveScheduleCard(slot: slot);
                             },
                           ),
 
@@ -373,107 +282,7 @@ class TimetableKanbanView extends ConsumerWidget {
                                       const SizedBox(height: 8),
                                   itemBuilder: (context, slotIndex) {
                                     final slot = daySlots[slotIndex];
-                                    final accentColor = _parseColorTag(
-                                      slot.colorTag,
-                                      colorScheme.primary,
-                                    );
-
-                                    return InkWell(
-                                      onTap: () {
-                                        EditTimetableSlotDialog.show(
-                                          context,
-                                          slot: slot,
-                                        );
-                                      },
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.surface,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: colorScheme.outlineVariant
-                                                .withOpacity(0.5),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 4,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color: accentColor,
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    '${slot.startTime} - ${slot.endTime}',
-                                                    style: theme
-                                                        .textTheme.labelSmall
-                                                        ?.copyWith(
-                                                      color: colorScheme.primary,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    slot.title,
-                                                    style: theme
-                                                        .textTheme.bodyMedium
-                                                        ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  if (slot.location != null &&
-                                                      slot.location!
-                                                          .isNotEmpty) ...[
-                                                    const SizedBox(height: 4),
-                                                    Row(
-                                                      children: [
-                                                        Icon(
-                                                          Icons
-                                                              .location_on_outlined,
-                                                          size: 12,
-                                                          color: colorScheme
-                                                              .onSurfaceVariant,
-                                                        ),
-                                                        const SizedBox(width: 2),
-                                                        Expanded(
-                                                          child: Text(
-                                                            slot.location!,
-                                                            style: theme
-                                                                .textTheme
-                                                                .bodySmall
-                                                                ?.copyWith(
-                                                              color: colorScheme
-                                                                  .onSurfaceVariant,
-                                                              fontSize: 11,
-                                                            ),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
+                                    return InteractiveScheduleCard(slot: slot);
                                   },
                                 ),
                         ),

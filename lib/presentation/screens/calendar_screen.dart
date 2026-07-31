@@ -11,6 +11,8 @@ import '../../domain/services/data_export_service.dart';
 import '../../data/providers.dart';
 import '../widgets/permission_explanation_dialog.dart';
 import '../widgets/timetable_kanban_view.dart';
+import '../widgets/core/interactive_task_card.dart';
+import '../widgets/core/interactive_note_card.dart';
 import 'today_dashboard.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -358,18 +360,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 final boardColor = _getBoardColor(task.boardId);
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
-                                  child: CardTaskItem(
+                                  child: InteractiveTaskCard(
                                     task: task,
                                     boardTitle: boardTitle,
                                     boardColor: boardColor,
-                                    onTap: () => context.push('/task/${task.id}'),
-                                    onToggle: () {
-                                      final isCompleted = task.status == 'done';
-                                      final newStatus = isCompleted ? 'todo' : 'done';
-                                      ref.read(taskRepositoryProvider).updateTask(
-                                            task.copyWith(status: newStatus),
-                                          );
-                                    },
                                   ),
                                 );
                               }),
@@ -392,10 +386,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 final boardTitle = boardsMap[note.boardId]?.title ?? 'Inbox';
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 10),
-                                  child: CardNoteItem(
+                                  child: InteractiveNoteCard(
                                     note: note,
                                     boardTitle: boardTitle,
-                                    onTap: () => context.push('/note/${note.id}'),
                                   ),
                                 );
                               }),
@@ -456,171 +449,4 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 }
 
 // Simple wrappers for lists to avoid layout differences
-class CardTaskItem extends StatelessWidget {
-  final TaskEntity task;
-  final String boardTitle;
-  final Color boardColor;
-  final VoidCallback onTap;
-  final VoidCallback onToggle;
 
-  const CardTaskItem({
-    super.key,
-    required this.task,
-    required this.boardTitle,
-    required this.boardColor,
-    required this.onTap,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isCompleted = task.status == 'done';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
-    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderClr),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: onToggle,
-              child: Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCompleted
-                      ? (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight)
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: isCompleted
-                        ? (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight)
-                        : (isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight),
-                    width: 1.5,
-                  ),
-                ),
-                child: isCompleted
-                    ? const Icon(Icons.check, size: 13, color: Colors.white)
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: textPrimary,
-                      decoration: isCompleted ? TextDecoration.lineThrough : null,
-                      decorationColor: textTertiary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        boardTitle,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: boardColor,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class CardNoteItem extends StatelessWidget {
-  final PinEntity note;
-  final String boardTitle;
-  final VoidCallback onTap;
-
-  const CardNoteItem({
-    super.key,
-    required this.note,
-    required this.boardTitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final lines = (note.content ?? '').split('\n');
-    final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-    final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
-    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
-    final accentBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderClr),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              preview,
-              style: TextStyle(
-                fontSize: 12,
-                color: textSecondary,
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Board: $boardTitle',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: accentBlue,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

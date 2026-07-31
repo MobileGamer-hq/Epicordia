@@ -5,6 +5,8 @@ import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
+import '../widgets/core/interactive_task_card.dart';
+import '../widgets/core/interactive_note_card.dart';
 import '../../core/theme.dart';
 
 class EpicordiaSearchScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,18 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
   }
 
   @override
+  Color _getBoardColor(String? boardId) {
+    if (boardId == null) return Colors.grey;
+    final colors = [
+      const Color(0xFF8B9DC3),
+      const Color(0xFFA8B4C8),
+      const Color(0xFF6B7FA0),
+      const Color(0xFF9EAAC4)
+    ];
+    return colors[boardId.hashCode % colors.length];
+  }
+
+  @override
   Widget build(BuildContext context) {
     final notesAsync = ref.watch(allNotesProvider);
     final tasksAsync = ref.watch(allTasksProvider);
@@ -33,6 +47,14 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
     final notes = notesAsync.value ?? [];
     final tasks = tasksAsync.value ?? [];
     final boards = boardsAsync.value ?? [];
+
+    final boardsMap = boards.fold<Map<String, BoardEntity>>(
+      {},
+      (map, board) {
+        map[board.id] = board;
+        return map;
+      },
+    );
 
     // Filtered results
     final filteredBoards = _query.isEmpty
@@ -158,12 +180,32 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
                             ],
                             if (filteredTasks.isNotEmpty) ...[
                               _buildSectionHeader(context, 'TASKS'),
-                              ...filteredTasks.map((task) => _buildTaskResultItem(context, task)),
+                              ...filteredTasks.map((task) {
+                                final boardTitle = boardsMap[task.boardId]?.title ?? 'Inbox';
+                                final boardColor = _getBoardColor(task.boardId);
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: InteractiveTaskCard(
+                                    task: task,
+                                    boardTitle: boardTitle,
+                                    boardColor: boardColor,
+                                  ),
+                                );
+                              }),
                               const SizedBox(height: 16),
                             ],
                             if (filteredNotes.isNotEmpty) ...[
                               _buildSectionHeader(context, 'NOTES'),
-                              ...filteredNotes.map((note) => _buildNoteResultItem(context, note)),
+                              ...filteredNotes.map((note) {
+                                final boardTitle = boardsMap[note.boardId]?.title ?? 'Inbox';
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: InteractiveNoteCard(
+                                    note: note,
+                                    boardTitle: boardTitle,
+                                  ),
+                                );
+                              }),
                               const SizedBox(height: 16),
                             ],
                           ],
@@ -228,93 +270,7 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
     );
   }
 
-  Widget _buildTaskResultItem(BuildContext context, TaskEntity task) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
-    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
 
-    final isCompleted = task.status == 'done';
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: borderClr),
-      ),
-      color: cardBg,
-      child: ListTile(
-        leading: Icon(
-          isCompleted ? Icons.check_circle_outline : Icons.radio_button_unchecked,
-          color: isCompleted ? (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight) : textTertiary,
-        ),
-        title: Text(
-          task.title,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: textPrimary,
-            decoration: isCompleted ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        subtitle: task.dueDate != null
-            ? Text(
-                'Due: ${task.dueDate!.month}/${task.dueDate!.day}/${task.dueDate!.year}',
-                style: TextStyle(fontSize: 11, color: textTertiary),
-              )
-            : null,
-        onTap: () {
-          context.push('/task/${task.id}');
-        },
-      ),
-    );
-  }
-
-  Widget _buildNoteResultItem(BuildContext context, PinEntity note) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
-    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
-
-    final lines = (note.content ?? '').split('\n');
-    final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-    final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content';
-
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: borderClr),
-      ),
-      color: cardBg,
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF3D3200) : const Color(0xFFFFF3CD),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(Icons.description_outlined, size: 20, color: isDark ? const Color(0xFFF4C453) : const Color(0xFF785A00)),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
-        ),
-        subtitle: Text(
-          preview,
-          style: TextStyle(fontSize: 11, color: textSecondary),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        onTap: () {
-          context.push('/note/${note.id}');
-        },
-      ),
-    );
-  }
 
   Widget _buildEmptyState(
     BuildContext context, {

@@ -7,7 +7,13 @@ import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
+import '../../data/repository/board_repository.dart';
+import '../../data/database/database.dart';
 import '../../data/providers.dart';
+import '../widgets/core/interactive_task_card.dart';
+import '../widgets/core/interactive_schedule_card.dart';
+import '../widgets/core/interactive_note_card.dart';
+import '../widgets/core/item_interaction_dialogs.dart';
 
 import '../../core/theme.dart';
 import 'search_screen.dart';
@@ -79,10 +85,31 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
     );
   }
 
+  Color _getBoardColor(String? boardId) {
+    if (boardId == null) return Colors.grey;
+    final colors = [
+      const Color(0xFF8B9DC3),
+      const Color(0xFFA8B4C8),
+      const Color(0xFF6B7FA0),
+      const Color(0xFF9EAAC4)
+    ];
+    return colors[boardId.hashCode % colors.length];
+  }
+
   @override
   Widget build(BuildContext context) {
     final unsortedNotesAsync = ref.watch(unsortedNotesProvider);
     final todayTasksAsync = ref.watch(tasksDueTodayProvider);
+    final boardsAsync = ref.watch(allBoardsProvider);
+    final boardsMap = boardsAsync.value?.fold<Map<String, BoardEntity>>(
+          {},
+          (map, board) {
+            map[board.id] = board;
+            return map;
+          },
+        ) ??
+        {};
+
     final now = DateTime.now();
     final greeting = now.hour < 12
         ? 'Good morning'
@@ -191,69 +218,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
 
                   return Column(
                     children: todaySlots.map((slot) {
-                      Color accentColor = EpicordiaColors.blue600;
-                      if (slot.colorTag != null && slot.colorTag!.isNotEmpty) {
-                        try {
-                          accentColor = Color(int.parse(slot.colorTag!.replaceFirst('#', '0xff')));
-                        } catch (_) {}
-                      }
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: cardBg,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: borderClr),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: accentColor,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${slot.startTime} - ${slot.endTime}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: accentColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    slot.title,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight,
-                                    ),
-                                  ),
-                                  if (slot.location != null && slot.location!.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      slot.location!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                      return InteractiveScheduleCard(slot: slot);
                     }).toList(),
                   );
                 },
@@ -280,20 +245,15 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                   }
                   return Column(
                     children: tasks.map((task) {
-                      final isCompleted = task.status == 'done';
-                      final meta = task.dueDate != null ? 'Due ${_formatTime(task.dueDate!)}' : 'No due date';
+                      final boardTitle = boardsMap[task.boardId]?.title ?? 'Inbox';
+                      final boardColor = _getBoardColor(task.boardId);
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: _TodayTaskItem(
-                          title: task.title,
-                          meta: isCompleted ? 'Completed' : meta,
-                          isCompleted: isCompleted,
-                          isInProgress: task.status == 'in_progress',
-                          onToggle: () {
-                            final newStatus = isCompleted ? 'todo' : 'done';
-                            ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: newStatus));
-                          },
+                        child: InteractiveTaskCard(
+                          task: task,
+                          boardTitle: boardTitle,
+                          boardColor: boardColor,
                         ),
                       );
                     }).toList(),
@@ -330,9 +290,12 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                         final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
                         final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : null;
 
+                        final boardTitle = boardsMap[note.boardId]?.title ?? 'Inbox';
                         return Padding(
                           padding: const EdgeInsets.only(right: 12),
                           child: _QuickCaptureCard(
+                            note: note,
+                            boardTitle: boardTitle,
                             category: 'QUICK CAPTURE',
                             title: title,
                             preview: preview,
@@ -931,106 +894,107 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _QuickCaptureCard extends StatelessWidget {
+class _QuickCaptureCard extends ConsumerWidget {
+  final PinEntity note;
+  final String boardTitle;
   final String category;
   final String title;
   final String? preview;
   final String? time;
 
-  const _QuickCaptureCard({required this.category, required this.title, this.preview, this.time});
+  const _QuickCaptureCard({
+    required this.note,
+    required this.boardTitle,
+    required this.category,
+    required this.title,
+    this.preview,
+    this.time,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      child: EpicordiaCard(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(category, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: EpicordiaColors.textTertiaryLight, letterSpacing: 0.8)),
-            const SizedBox(height: 6),
-            Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
-            if (preview != null) ...[
-              const SizedBox(height: 8),
-              Text(preview!, style: const TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final body = note.content ?? '';
+
+    return GestureDetector(
+      onTap: () => context.push('/note/${note.id}'),
+      onLongPress: () => ItemInteractionDialogs.showNoteDetailDialog(
+        context: context,
+        ref: ref,
+        note: note,
+        boardTitle: boardTitle,
+      ),
+      onDoubleTap: () => ItemInteractionDialogs.showDoubleTapMenu(
+        context: context,
+        title: title,
+        subtitle: 'Note in $boardTitle',
+        items: [
+          DoubleTapMenuItem(
+            icon: Icons.copy_rounded,
+            label: 'Copy Note',
+            onTap: () {
+              ItemInteractionDialogs.copyToClipboard(context, '$title\n\n$body');
+            },
+          ),
+          DoubleTapMenuItem(
+            icon: Icons.share_outlined,
+            label: 'Share Note',
+            onTap: () {
+              ItemInteractionDialogs.shareContent(context, '$title\n\n$body');
+            },
+          ),
+          DoubleTapMenuItem(
+            icon: Icons.edit_note_rounded,
+            label: 'Edit Note',
+            onTap: () => context.push('/note/${note.id}'),
+          ),
+          DoubleTapMenuItem(
+            icon: Icons.delete_outline_rounded,
+            label: 'Delete Note',
+            color: EpicordiaColors.errorLight,
+            onTap: () async {
+              await ref.read(pinRepositoryProvider).deletePin(note.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Note deleted'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: 160,
+        child: EpicordiaCard(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(category, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: EpicordiaColors.textTertiaryLight, letterSpacing: 0.8)),
+              const SizedBox(height: 6),
+              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
+              if (preview != null) ...[
+                const SizedBox(height: 8),
+                Text(preview!, style: const TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+              ],
+              if (time != null) ...[
+                const Spacer(),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 11, color: EpicordiaColors.textTertiaryLight),
+                    const SizedBox(width: 4),
+                    Text(time!, style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight)),
+                  ],
+                ),
+              ],
             ],
-            if (time != null) ...[
-              const Spacer(),
-              Row(
-                children: [
-                  const Icon(Icons.access_time, size: 11, color: EpicordiaColors.textTertiaryLight),
-                  const SizedBox(width: 4),
-                  Text(time!, style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight)),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TodayTaskItem extends StatelessWidget {
-  final String title;
-  final String meta;
-  final bool isCompleted;
-  final bool isInProgress;
-  final VoidCallback onToggle;
 
-  const _TodayTaskItem({
-    required this.title,
-    required this.meta,
-    required this.isCompleted,
-    required this.isInProgress,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return EpicordiaCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onToggle,
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isInProgress ? EpicordiaColors.blue600 : Colors.transparent,
-                border: Border.all(
-                  color: isCompleted ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight,
-                  width: 1.5,
-                ),
-              ),
-              child: isCompleted ? const Icon(Icons.check, size: 13, color: Colors.white) : null,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: EpicordiaColors.textPrimaryLight,
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
-                    decorationColor: EpicordiaColors.textTertiaryLight,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(meta, style: const TextStyle(fontSize: 12, color: EpicordiaColors.textTertiaryLight)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

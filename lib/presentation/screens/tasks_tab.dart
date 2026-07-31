@@ -6,6 +6,7 @@ import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_card.dart';
+import '../widgets/core/interactive_task_card.dart';
 import '../../core/theme.dart';
 
 class TasksTab extends ConsumerStatefulWidget {
@@ -257,27 +258,12 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                           task.dueDate != null &&
                           task.dueDate!.isBefore(startOfToday);
 
-                      return _TaskListItem(
+                      return InteractiveTaskCard(
                         task: task,
                         boardTitle: boardTitle,
                         boardColor: boardColor,
                         isOverdue: isOverdue,
                         dueFormatted: _formatDue(task.dueDate),
-                        onTap: () => context.push('/task/${task.id}'),
-                        onToggle: () {
-                          // Cycle status: todo -> in_progress -> done -> todo
-                          String nextStatus;
-                          if (task.status == 'todo') {
-                            nextStatus = 'in_progress';
-                          } else if (task.status == 'in_progress') {
-                            nextStatus = 'done';
-                          } else {
-                            nextStatus = 'todo';
-                          }
-                          ref.read(taskRepositoryProvider).updateTask(
-                                task.copyWith(status: nextStatus),
-                              );
-                        },
                       );
                     },
                   );

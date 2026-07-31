@@ -5,6 +5,8 @@ import '../../core/theme.dart';
 import '../../data/providers.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
+import '../../data/database/database.dart';
+import '../widgets/core/item_interaction_dialogs.dart';
 
 class InboxScreen extends ConsumerWidget {
   const InboxScreen({super.key});
@@ -199,14 +201,15 @@ class InboxScreen extends ConsumerWidget {
   }
 }
 
-class _ActivityTaskTile extends StatelessWidget {
-  final dynamic task;
+class _ActivityTaskTile extends ConsumerWidget {
+  final TaskEntity task;
   final bool isOverdue;
   final String formattedDate;
   final VoidCallback onTap;
   final VoidCallback onToggle;
 
   const _ActivityTaskTile({
+    super.key,
     required this.task,
     required this.isOverdue,
     required this.formattedDate,
@@ -215,36 +218,101 @@ class _ActivityTaskTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
     final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final isCompleted = task.status == 'done';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isOverdue ? EpicordiaColors.errorLight.withValues(alpha: 0.5) : borderClr),
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: () => ItemInteractionDialogs.showTaskDetailDialog(
+        context: context,
+        ref: ref,
+        task: task,
+        boardTitle: 'Inbox',
+        boardColor: Colors.grey,
       ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(Icons.circle_outlined, color: isOverdue ? EpicordiaColors.errorLight : textSecondary),
-            onPressed: onToggle,
+      onDoubleTap: () => ItemInteractionDialogs.showDoubleTapMenu(
+        context: context,
+        title: task.title,
+        subtitle: formattedDate,
+        items: [
+          DoubleTapMenuItem(
+            icon: isCompleted ? Icons.undo_rounded : Icons.check_circle_outline,
+            label: isCompleted ? 'Reopen Task' : 'Mark as Done',
+            onTap: onToggle,
           ),
-          Expanded(
-            child: GestureDetector(
-              onTap: onTap,
+          DoubleTapMenuItem(
+            icon: Icons.copy_rounded,
+            label: 'Copy Task',
+            onTap: () {
+              ItemInteractionDialogs.copyToClipboard(context, 'Task: ${task.title}\nDue: $formattedDate');
+            },
+          ),
+          DoubleTapMenuItem(
+            icon: Icons.share_outlined,
+            label: 'Share Task',
+            onTap: () {
+              ItemInteractionDialogs.shareContent(context, 'Task: ${task.title}\nDue: $formattedDate');
+            },
+          ),
+          DoubleTapMenuItem(
+            icon: Icons.edit_outlined,
+            label: 'Edit Task',
+            onTap: () => context.push('/task/${task.id}'),
+          ),
+          DoubleTapMenuItem(
+            icon: Icons.delete_outline_rounded,
+            label: 'Delete Task',
+            color: EpicordiaColors.errorLight,
+            onTap: () async {
+              await ref.read(taskRepositoryProvider).deleteTask(task.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Task deleted'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isOverdue ? EpicordiaColors.errorLight.withValues(alpha: 0.5) : borderClr),
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(
+                isCompleted ? Icons.check_circle : Icons.circle_outlined,
+                color: isCompleted
+                    ? (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight)
+                    : (isOverdue ? EpicordiaColors.errorLight : textSecondary),
+              ),
+              onPressed: onToggle,
+            ),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     task.title,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: textPrimary,
+                      decoration: isCompleted ? TextDecoration.lineThrough : null,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Row(
@@ -260,9 +328,9 @@ class _ActivityTaskTile extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-          Icon(Icons.chevron_right, color: textSecondary, size: 18),
-        ],
+            Icon(Icons.chevron_right, color: textSecondary, size: 18),
+          ],
+        ),
       ),
     );
   }
