@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' as drift;
 import '../../data/database/database.dart';
 import '../../data/providers.dart';
 import '../../core/theme.dart';
+import '../../domain/services/notification_service.dart';
 
 class EditTimetableSlotDialog extends ConsumerStatefulWidget {
   final TimetableSlotEntity? slot;
@@ -38,6 +39,7 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
   final _notesController = TextEditingController();
+  final _notificationService = NotificationService();
 
   late int _selectedDay;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
@@ -109,12 +111,16 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
     final dao = ref.read(timetableDaoProvider);
     final startTimeStr = _formatTimeOfDay(_startTime);
     final endTimeStr = _formatTimeOfDay(_endTime);
+    final locText = _locationController.text.trim().isEmpty ? null : _locationController.text.trim();
+
+    String slotId;
 
     if (widget.slot != null) {
+      slotId = widget.slot!.id;
       await dao.updateSlot(
         widget.slot!.copyWith(
           title: title,
-          location: drift.Value(_locationController.text.trim().isEmpty ? null : _locationController.text.trim()),
+          location: drift.Value(locText),
           dayOfWeek: _selectedDay,
           startTime: startTimeStr,
           endTime: endTimeStr,
@@ -123,20 +129,29 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
         ),
       );
     } else {
-      final newId = const Uuid().v4();
+      slotId = const Uuid().v4();
       await dao.insertSlot(
         TimetableSlotsCompanion.insert(
-          id: newId,
+          id: slotId,
           title: title,
           dayOfWeek: _selectedDay,
           startTime: startTimeStr,
           endTime: endTimeStr,
-          location: drift.Value(_locationController.text.trim().isEmpty ? null : _locationController.text.trim()),
+          location: drift.Value(locText),
           colorTag: drift.Value(_selectedColorTag),
           notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
         ),
       );
     }
+
+    // Schedule weekly recurring notifications for this slot
+    await _notificationService.scheduleTimetableSlotNotification(
+      slotId: slotId,
+      title: title,
+      dayOfWeek: _selectedDay,
+      startTime: startTimeStr,
+      location: locText,
+    );
 
     if (mounted) Navigator.of(context).pop();
   }
@@ -144,6 +159,7 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
   Future<void> _delete() async {
     if (widget.slot != null) {
       await ref.read(timetableDaoProvider).deleteSlot(widget.slot!.id);
+      await _notificationService.cancelTimetableSlotNotification(widget.slot!.id);
     }
     if (mounted) Navigator.of(context).pop();
   }
@@ -202,7 +218,7 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
 
             // Day of Week Selector
             DropdownButtonFormField<int>(
-              value: _selectedDay,
+              initialValue: _selectedDay,
               dropdownColor: cardBg,
               style: TextStyle(color: textPrimary),
               decoration: InputDecoration(

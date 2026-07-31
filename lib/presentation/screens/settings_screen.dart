@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/app_lock_provider.dart';
 import '../../core/board_settings_provider.dart';
 import '../../core/theme.dart';
 import '../../core/theme_provider.dart';
@@ -8,6 +9,7 @@ import '../../domain/services/data_export_service.dart';
 import '../../data/providers.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
+import 'pin_lock_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -19,8 +21,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _defaultView = 'Canvas';
-  bool _appLock = true;
-  bool _backup = true;
   late final TextEditingController _nameController;
 
   @override
@@ -452,27 +452,83 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const _SectionHeader(
                 icon: Icons.shield_outlined, label: 'Privacy & Security'),
             const SizedBox(height: 10),
-            _Card(
-              child: Column(
-                children: [
-                  _SwitchRow(
-                    icon: Icons.lock_outline,
-                    label: 'App Lock',
-                    value: _appLock,
-                    onChanged: (v) => setState(() => _appLock = v),
-                    showDivider: true,
+            Consumer(
+              builder: (context, ref, _) {
+                final lockState = ref.watch(appLockProvider);
+                final lockNotifier = ref.read(appLockProvider.notifier);
+
+                return _Card(
+                  child: Column(
+                    children: [
+                      _SwitchRow(
+                        icon: Icons.lock_outline,
+                        label: 'App Lock',
+                        value: lockState.isEnabled,
+                        onChanged: (enabled) async {
+                          if (enabled) {
+                            if (!lockState.hasPin) {
+                              final created = await PinLockScreen.showCreate(context);
+                              if (created == true && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('App Lock enabled with your new PIN.'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } else {
+                              await lockNotifier.enableAppLock();
+                            }
+                          } else {
+                            final verified = await PinLockScreen.showVerify(context);
+                            if (verified == true && context.mounted) {
+                              await lockNotifier.disableAppLock();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('App Lock disabled.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        showDivider: true,
+                      ),
+                      _ActionRow(
+                        icon: Icons.pin_outlined,
+                        label: 'Change PIN',
+                        labelColor: isDark
+                            ? EpicordiaColors.blue300
+                            : EpicordiaColors.blue600,
+                        showChevron: true,
+                        onTap: () async {
+                          if (!lockState.hasPin) {
+                            final created = await PinLockScreen.showCreate(context);
+                            if (created == true && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('PIN created successfully.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } else {
+                            final changed = await PinLockScreen.showChange(context);
+                            if (changed == true && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('PIN changed successfully.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  _ActionRow(
-                    icon: Icons.pin_outlined,
-                    label: 'Change PIN',
-                    labelColor: isDark
-                        ? EpicordiaColors.blue300
-                        : EpicordiaColors.blue600,
-                    showChevron: true,
-                    onTap: () {},
-                  ),
-                ],
-              ),
+                );
+              },
             ),
 
             const SizedBox(height: 24),

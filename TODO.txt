@@ -69,3 +69,4 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 
 
 -Make app lock work with an our own custom lock screen, which uses pin only
+-The app deosnt send notifications to the user to remind them of their tasks and schedules
