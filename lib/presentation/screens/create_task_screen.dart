@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,14 +22,32 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   final List<String> _items = [''];
   DateTime? _dueDate;
   String? _selectedBoardId;
+  Timer? _debounceTimer;
+  String _saveStatus = 'Saved';
+  bool _isAutoSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (mounted && _saveStatus != 'Saving...') {
+      setState(() => _saveStatus = 'Saving...');
+    }
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), _autoSave);
+  }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _titleController.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> _autoSave() async {
     final title = _titleController.text.trim();
     final tasks = _items.where((i) => i.trim().isNotEmpty).toList();
     if (title.isEmpty && tasks.isEmpty) return;
@@ -37,63 +56,59 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     final notificationService = NotificationService();
     final timerAlarmService = DeviceTimerAlarmService();
 
-    if (tasks.isEmpty && title.isNotEmpty) {
-      final taskId = '${DateTime.now().millisecondsSinceEpoch}_0';
-      await repo.createTask(
-        TasksCompanion.insert(
-          id: taskId,
-          title: title,
-          boardId: _selectedBoardId != null
-              ? drift.Value(_selectedBoardId)
-              : const drift.Value.absent(),
-          dueDate: _dueDate != null
-              ? drift.Value(_dueDate)
-              : const drift.Value.absent(),
-        ),
-      );
-      if (_dueDate != null) {
-        await notificationService.scheduleTaskRemindersAndAlarm(
-          baseId: taskId.hashCode,
-          title: title,
-          scheduledDate: _dueDate!,
-        );
-        timerAlarmService.createAlarm(
-          hour: _dueDate!.hour,
-          minute: _dueDate!.minute,
-          title: title,
-        );
-      }
-    } else {
-      for (final item in tasks) {
-        final taskId = '${DateTime.now().millisecondsSinceEpoch}_${tasks.indexOf(item)}';
-        final itemTitle = item.trim();
+    if (!_isAutoSaved) {
+      _isAutoSaved = true;
+      if (tasks.isEmpty && title.isNotEmpty) {
+        final taskId = '${DateTime.now().millisecondsSinceEpoch}_0';
         await repo.createTask(
           TasksCompanion.insert(
             id: taskId,
-            title: itemTitle,
+            title: title,
             boardId: _selectedBoardId != null
                 ? drift.Value(_selectedBoardId)
                 : const drift.Value.absent(),
             dueDate: _dueDate != null
                 ? drift.Value(_dueDate)
                 : const drift.Value.absent(),
-            notes: title.isNotEmpty ? drift.Value(title) : const drift.Value.absent(),
           ),
         );
         if (_dueDate != null) {
           await notificationService.scheduleTaskRemindersAndAlarm(
             baseId: taskId.hashCode,
-            title: itemTitle,
+            title: title,
             scheduledDate: _dueDate!,
           );
           timerAlarmService.createAlarm(
             hour: _dueDate!.hour,
             minute: _dueDate!.minute,
-            title: itemTitle,
+            title: title,
+          );
+        }
+      } else {
+        for (final item in tasks) {
+          final taskId = '${DateTime.now().millisecondsSinceEpoch}_${tasks.indexOf(item)}';
+          final itemTitle = item.trim();
+          await repo.createTask(
+            TasksCompanion.insert(
+              id: taskId,
+              title: itemTitle,
+              boardId: _selectedBoardId != null
+                  ? drift.Value(_selectedBoardId)
+                  : const drift.Value.absent(),
+              dueDate: _dueDate != null
+                  ? drift.Value(_dueDate)
+                  : const drift.Value.absent(),
+              notes: title.isNotEmpty ? drift.Value(title) : const drift.Value.absent(),
+            ),
           );
         }
       }
     }
+    if (mounted) setState(() => _saveStatus = 'Saved');
+  }
+
+  Future<void> _save() async {
+    await _autoSave();
     if (mounted) context.go('/tasks');
   }
 
@@ -106,46 +121,77 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
     final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
     final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
-    return Scaffold(
-      backgroundColor: bgApp,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        await _autoSave();
+      },
+      child: Scaffold(
         backgroundColor: bgApp,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: textPrimary,
+        appBar: AppBar(
+          backgroundColor: bgApp,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: textPrimary,
+            ),
+            onPressed: () async {
+              await _autoSave();
+              if (context.mounted) context.go('/tasks');
+            },
           ),
-          onPressed: () => context.go('/tasks'),
-        ),
-        title: Text(
-          'New To-do List',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textPrimary,
+          title: Row(
+            children: [
+              Text(
+                'New To-do List',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _saveStatus == 'Saving...'
+                      ? EpicordiaColors.blue100
+                      : (isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6)),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _saveStatus,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: _saveStatus == 'Saving...'
+                        ? EpicordiaColors.blue600
+                        : EpicordiaColors.textSecondaryLight,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: activeBlue,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+          actions: [
+            TextButton(
+              onPressed: _save,
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  color: activeBlue,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),
@@ -285,8 +331,9 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatDateTime(DateTime? date) {
     if (date == null) return 'Add due date';

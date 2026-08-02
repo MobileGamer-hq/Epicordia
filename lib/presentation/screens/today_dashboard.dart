@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';
@@ -13,6 +12,8 @@ import '../../data/providers.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../widgets/core/interactive_schedule_card.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
+import '../widgets/core/link_preview_dialog.dart';
+import '../../core/utils/markdown_formatter.dart';
 
 import '../../core/theme.dart';
 import 'search_screen.dart';
@@ -953,10 +954,27 @@ class _QuickCaptureCard extends ConsumerWidget {
             children: [
               Text(category, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: EpicordiaColors.textTertiaryLight, letterSpacing: 0.8)),
               const SizedBox(height: 6),
-              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
+              Text.rich(
+                MarkdownFormatter.formatToTextSpan(
+                  title,
+                  baseStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.3),
+                  isTitle: true,
+                  onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
               if (preview != null) ...[
                 const SizedBox(height: 8),
-                Text(preview!, style: const TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text.rich(
+                  MarkdownFormatter.formatToTextSpan(
+                    preview!,
+                    baseStyle: const TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight, height: 1.4),
+                    onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
               if (time != null) ...[
                 const Spacer(),

@@ -347,11 +347,14 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
     final isSelectedNode = _selectedPinId == pin.id ||
         _controller.selection.map((n) => (n.key as ValueKey<String>).value).contains(pin.id);
 
+    final collapsed = isPinCollapsed(pin.content);
+    final nodeHeight = collapsed ? 56.0 : pin.height;
+
     return InfiniteCanvasNode(
       key: ValueKey<String>(pin.id),
       offset: Offset(pin.x, pin.y),
-      size: Size(pin.width, pin.height),
-      resizeMode: isHeading ? ResizeMode.disabled : ResizeMode.corners,
+      size: Size(pin.width, nodeHeight),
+      resizeMode: (isHeading || collapsed) ? ResizeMode.disabled : ResizeMode.corners,
       child: Stack(
         clipBehavior: Clip.none,
         children: [

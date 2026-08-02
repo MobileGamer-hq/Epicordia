@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,9 +11,7 @@ import '../../data/providers.dart';
 import '../../core/theme.dart';
 import '../../domain/services/device_reminder_service.dart';
 import '../../domain/services/notification_service.dart';
-import '../../domain/services/device_timer_alarm_service.dart';
 import '../widgets/timer_picker_popover.dart';
-import '../widgets/permission_explanation_dialog.dart';
 
 class EditTaskScreen extends ConsumerStatefulWidget {
   final String taskId;
@@ -33,18 +32,32 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   int _selectedPriority = 0;
   bool _alsoAddToReminders = false;
   String? _osReminderId;
+  Timer? _debounceTimer;
+  String _saveStatus = 'Saved';
+  bool _isLoadingTask = false;
 
   final _reminderService = DeviceReminderService();
   final _notificationService = NotificationService();
-  final _alarmService = DeviceTimerAlarmService();
 
   @override
   void initState() {
     super.initState();
+    _titleController.addListener(_onTextChanged);
+    _notesController.addListener(_onTextChanged);
     _loadTask();
   }
 
+  void _onTextChanged() {
+    if (_isLoadingTask) return;
+    if (mounted && _saveStatus != 'Saving...') {
+      setState(() => _saveStatus = 'Saving...');
+    }
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), _autoSave);
+  }
+
   Future<void> _loadTask() async {
+    _isLoadingTask = true;
     final task = await ref.read(taskDaoProvider).getTask(widget.taskId);
     if (task != null && mounted) {
       setState(() {
@@ -57,12 +70,15 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
         _selectedPriority = task.priority;
         _osReminderId = task.osReminderId;
         _alsoAddToReminders = task.osReminderId != null;
+        _saveStatus = 'Saved';
       });
     }
+    _isLoadingTask = false;
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _titleController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -95,63 +111,37 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
     }
   }
 
-  Future<void> _save() async {
+  Future<void> _autoSave() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty || _task == null) return;
 
-    String? reminderId = _osReminderId;
+    final updatedTask = _task!.copyWith(
+      title: title,
+      notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+      dueDate: drift.Value(_dueDate),
+      boardId: drift.Value(_selectedBoardId),
+      status: _selectedStatus,
+      priority: _selectedPriority,
+      osReminderId: drift.Value(_osReminderId),
+    );
 
-    if (_alsoAddToReminders && defaultTargetPlatform == TargetPlatform.iOS) {
-      if (reminderId == null) {
-        final proceed = await PermissionExplanationDialog.show(
-          context: context,
-          title: 'Sync to iOS Reminders',
-          description: 'Epicordia will add this task to your native Reminders app.',
-          icon: Icons.notifications_active_outlined,
-        );
-        if (proceed) {
-          reminderId = await _reminderService.createReminder(
-            title: title,
-            notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-            dueDate: _dueDate,
-          );
-        }
-      }
-    } else if (!_alsoAddToReminders && reminderId != null) {
-      await _reminderService.deleteReminder(reminderId);
-      reminderId = null;
+    await ref.read(taskRepositoryProvider).updateTask(updatedTask);
+    _task = updatedTask;
+
+    if (_dueDate != null) {
+      await _notificationService.scheduleTaskRemindersAndAlarm(
+        baseId: _task!.id.hashCode,
+        title: title,
+        body: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        scheduledDate: _dueDate!,
+        osReminderId: _osReminderId,
+      );
     }
+    if (mounted) setState(() => _saveStatus = 'Saved');
+  }
 
-    if (_task != null) {
-      await ref.read(taskRepositoryProvider).updateTask(
-            _task!.copyWith(
-              title: title,
-              notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
-              dueDate: drift.Value(_dueDate),
-              boardId: drift.Value(_selectedBoardId),
-              status: _selectedStatus,
-              priority: _selectedPriority,
-              osReminderId: drift.Value(reminderId),
-            ),
-          );
-
-      if (_dueDate != null) {
-        await _notificationService.scheduleTaskRemindersAndAlarm(
-          baseId: _task!.id.hashCode,
-          title: title,
-          body: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-          scheduledDate: _dueDate!,
-          osReminderId: reminderId,
-        );
-        await _alarmService.createAlarm(
-          hour: _dueDate!.hour,
-          minute: _dueDate!.minute,
-          title: title,
-        );
-      } else {
-        await _notificationService.cancelTaskRemindersAndAlarm(_task!.id.hashCode);
-      }
-    }
+  Future<void> _save() async {
+    await _autoSave();
     if (mounted) context.go('/tasks');
   }
 
@@ -167,44 +157,76 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
     final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
-    return Scaffold(
-      backgroundColor: bgApp,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        await _autoSave();
+      },
+      child: Scaffold(
         backgroundColor: bgApp,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: textPrimary,
+        appBar: AppBar(
+          backgroundColor: bgApp,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: textPrimary,
+            ),
+            onPressed: () async {
+              await _autoSave();
+              if (context.mounted) context.go('/tasks');
+            },
           ),
-          onPressed: () => context.go('/tasks'),
-        ),
-        title: Text(
-          'Edit Task',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textPrimary,
+          title: Row(
+            children: [
+              Text(
+                'Edit Task',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _saveStatus == 'Saving...'
+                      ? EpicordiaColors.blue100
+                      : (isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6)),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _saveStatus,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: _saveStatus == 'Saving...'
+                        ? EpicordiaColors.blue600
+                        : EpicordiaColors.textSecondaryLight,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight),
-            onPressed: _delete,
-          ),
-          TextButton(
-            onPressed: _save,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: activeBlue,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.delete_outline, color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight),
+              onPressed: _delete,
+            ),
+            TextButton(
+              onPressed: _save,
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  color: activeBlue,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       body: SafeArea(
         child: _task == null
             ? const Center(child: CircularProgressIndicator())
@@ -507,8 +529,9 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                 ],
               ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatDateTime(DateTime? date) {
     if (date == null) return 'Add due date';

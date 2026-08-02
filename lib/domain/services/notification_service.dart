@@ -280,7 +280,7 @@ class NotificationService {
     try {
       await _safeZonedSchedule(
         id: safeBaseId * 10 + 4,
-        title: '⏰ ALARM: $title',
+        title: 'ALARM: $title',
         body: body ?? 'Task is due now!',
         scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
         notificationDetails: alarmNotificationDetails,
@@ -358,7 +358,7 @@ class NotificationService {
     try {
       await _safeZonedSchedule(
         id: safeBaseId * 10 + 2,
-        title: '🗓️ Schedule Now: $title',
+        title: 'Schedule Now: $title',
         body: 'Scheduled event starting now at $startTime$locText',
         scheduledDate: tz.TZDateTime.from(nextOccurrence, tz.local),
         notificationDetails: notificationDetails,

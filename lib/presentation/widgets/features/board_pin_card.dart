@@ -92,6 +92,14 @@ class BoardPinCard extends ConsumerWidget {
                   },
                 ),
                 ListTile(
+                  leading: Icon(isPinCollapsed(content) ? Icons.unfold_more_rounded : Icons.unfold_less_rounded),
+                  title: Text(isPinCollapsed(content) ? 'Expand Card' : 'Collapse Card', style: TextStyle(color: textPrimary)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await togglePinCollapse(ref, pinId, content);
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.palette_outlined),
                   title: Text('Change Color Tag', style: TextStyle(color: textPrimary)),
                   onTap: () {
@@ -229,7 +237,7 @@ class BoardPinCard extends ConsumerWidget {
   Widget _buildBody(BuildContext context, WidgetRef ref) {
     switch (type) {
       case 'note':
-        return _NoteCardBody(content: content ?? '');
+        return _NoteCardBody(pinId: pinId, content: content ?? '');
       case 'task':
         return _TaskCardBody(pinId: pinId, content: content ?? '');
       case 'tasklist':
@@ -258,7 +266,7 @@ class BoardPinCard extends ConsumerWidget {
       case 'file':
         return _FileCardBody(content: content);
       default:
-        return _NoteCardBody(content: content ?? '');
+        return _NoteCardBody(pinId: pinId, content: content ?? '');
     }
   }
 
@@ -284,26 +292,92 @@ class BoardPinCard extends ConsumerWidget {
   }
 }
 
+bool isPinCollapsed(String? content) {
+  if (content == null || content.isEmpty) return false;
+  if (content.startsWith('{') && content.endsWith('}')) {
+    try {
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      return map['collapsed'] as bool? ?? false;
+    } catch (_) {}
+  }
+  return false;
+}
+
+Future<void> togglePinCollapse(WidgetRef ref, String pinId, String? currentContent) async {
+  final pinRepo = ref.read(pinRepositoryProvider);
+  final pin = await pinRepo.getPin(pinId);
+  if (pin == null) return;
+
+  Map<String, dynamic> data = {};
+  if (currentContent != null && currentContent.startsWith('{') && currentContent.endsWith('}')) {
+    try {
+      data = Map<String, dynamic>.from(jsonDecode(currentContent) as Map<String, dynamic>);
+    } catch (_) {
+      data = {'text': currentContent};
+    }
+  } else if (currentContent != null && currentContent.isNotEmpty) {
+    data = {'text': currentContent};
+  }
+
+  final isCurrentlyCollapsed = data['collapsed'] as bool? ?? false;
+  data['collapsed'] = !isCurrentlyCollapsed;
+
+  final updated = pin.copyWith(
+    content: Value(jsonEncode(data)),
+    modifiedAt: DateTime.now(),
+  );
+  await pinRepo.updatePin(updated);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTE CARD
 // ─────────────────────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────────────────────
-// NOTE CARD
-// ─────────────────────────────────────────────────────────────────────────────
-class _NoteCardBody extends StatelessWidget {
+class _NoteCardBody extends ConsumerWidget {
+  final String pinId;
   final String content;
-  const _NoteCardBody({required this.content});
+  const _NoteCardBody({required this.pinId, required this.content});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final iconColor = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
 
+    final collapsed = isPinCollapsed(content);
     final parsed = _parseContent(content);
     final title = parsed['title'] as String;
     final body = parsed['body'] as String;
+    final displayTitle = title.isNotEmpty ? title : (body.isNotEmpty ? body.split('\n').first : 'Untitled Note');
+
+    if (collapsed) {
+      return Row(
+        children: [
+          _TypeLabel(label: 'NOTE', icon: Icons.sticky_note_2_outlined),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              displayTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textPrimary,
+              ),
+            ),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => togglePinCollapse(ref, pinId, content),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(Icons.unfold_more_rounded, size: 18, color: iconColor),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,7 +386,21 @@ class _NoteCardBody extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _TypeLabel(label: 'NOTE', icon: Icons.sticky_note_2_outlined),
-            Icon(Icons.drag_indicator, size: 14, color: iconColor.withValues(alpha: 0.5)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => togglePinCollapse(ref, pinId, content),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(Icons.unfold_less_rounded, size: 18, color: iconColor),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.drag_indicator, size: 14, color: iconColor.withValues(alpha: 0.5)),
+              ],
+            ),
           ],
         ),
         if (title.isNotEmpty) ...[
@@ -359,7 +447,18 @@ class _NoteCardBody extends StatelessWidget {
 
   Map<String, String> _parseContent(String text) {
     if (text.trim().isEmpty) return {'title': '', 'body': ''};
-    final lines = text.trim().split('\n');
+    String rawText = text;
+    if (text.startsWith('{') && text.endsWith('}')) {
+      try {
+        final map = jsonDecode(text) as Map<String, dynamic>;
+        if (map.containsKey('text')) {
+          rawText = map['text'] as String? ?? '';
+        } else if (map.containsKey('body')) {
+          return {'title': map['title'] as String? ?? '', 'body': map['body'] as String? ?? ''};
+        }
+      } catch (_) {}
+    }
+    final lines = rawText.trim().split('\n');
     if (lines.first.startsWith('#')) {
       final title = lines.first.replaceAll(RegExp(r'^#+\s*'), '');
       final body = lines.skip(1).join('\n').trim();
@@ -386,7 +485,7 @@ class _TaskCardBody extends ConsumerWidget {
       error: (_, _) => _FallbackTaskBody(content: content),
       data: (task) {
         if (task == null) return _FallbackTaskBody(content: content);
-        return _TaskBodyWithData(task: task, ref: ref);
+        return _TaskBodyWithData(pinId: pinId, content: content, task: task, ref: ref);
       },
     );
   }
@@ -440,9 +539,11 @@ class _FallbackTaskBody extends StatelessWidget {
 }
 
 class _TaskBodyWithData extends StatelessWidget {
+  final String pinId;
+  final String content;
   final TaskEntity task;
   final WidgetRef ref;
-  const _TaskBodyWithData({required this.task, required this.ref});
+  const _TaskBodyWithData({required this.pinId, required this.content, required this.task, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -451,11 +552,62 @@ class _TaskBodyWithData extends StatelessWidget {
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final isOverdue = task.status != 'done' && task.dueDate != null && task.dueDate!.isBefore(DateTime.now());
     final isCompleted = task.status == 'done';
+    final collapsed = isPinCollapsed(content);
+
+    if (collapsed) {
+      return Row(
+        children: [
+          _StatusRing(
+            status: task.status,
+            onToggle: () {
+              final next = _nextStatus(task.status);
+              ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: next));
+            },
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              task.title.isEmpty ? 'Untitled task' : task.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isCompleted ? textSecondary : textPrimary,
+                decoration: isCompleted ? TextDecoration.lineThrough : null,
+                decorationColor: textSecondary,
+              ),
+            ),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => togglePinCollapse(ref, pinId, content),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(Icons.unfold_more_rounded, size: 18, color: textSecondary),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TypeLabel(label: 'TASK', icon: Icons.check_circle_outline_rounded),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _TypeLabel(label: 'TASK', icon: Icons.check_circle_outline_rounded),
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => togglePinCollapse(ref, pinId, content),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(Icons.unfold_less_rounded, size: 18, color: textSecondary),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -554,6 +706,32 @@ class _TaskListCardBody extends ConsumerWidget {
 
     final tasksStream = ref.watch(tasksForGroupPinProvider(pinId));
     final title = _parseTitle(content);
+    final collapsed = isPinCollapsed(content);
+
+    if (collapsed) {
+      return Row(
+        children: [
+          _TypeLabel(label: 'TASKLIST', icon: Icons.checklist_rounded),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title.isEmpty ? 'Development Milestones' : title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
+            ),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => togglePinCollapse(ref, pinId, content),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(Icons.unfold_more_rounded, size: 18, color: textSecondary),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,20 +747,34 @@ class _TaskListCardBody extends ConsumerWidget {
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
               ),
             ),
-            tasksStream.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (tasks) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(6),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                tasksStream.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (tasks) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${tasks.length} items',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: textSecondary),
+                    ),
+                  ),
                 ),
-                child: Text(
-                  '${tasks.length} items',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: textSecondary),
+                const SizedBox(width: 4),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => togglePinCollapse(ref, pinId, content),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(Icons.unfold_less_rounded, size: 18, color: textSecondary),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

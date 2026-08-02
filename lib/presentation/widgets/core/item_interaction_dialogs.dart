@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils/markdown_formatter.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/task_repository.dart';
 import '../../../data/repository/pin_repository.dart';
 import '../../../data/providers.dart';
 import '../edit_timetable_slot_dialog.dart';
+import 'link_preview_dialog.dart';
 
 class ItemInteractionDialogs {
   /// Displays a floating detail popup for a Note over a blurred background.
@@ -104,13 +106,18 @@ class ItemInteractionDialogs {
                       const SizedBox(height: 12),
 
                       // Title
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: textPrimary,
-                          letterSpacing: -0.3,
+                      Text.rich(
+                        MarkdownFormatter.formatToTextSpan(
+                          title,
+                          baseStyle: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                            letterSpacing: -0.3,
+                          ),
+                          activeBlue: activeBlue,
+                          isTitle: true,
+                          onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -143,12 +150,16 @@ class ItemInteractionDialogs {
                       Flexible(
                         child: SingleChildScrollView(
                           child: SelectionArea(
-                            child: Text(
-                              body.isEmpty ? 'No additional content.' : body,
-                              style: TextStyle(
-                                fontSize: 14,
-                                height: 1.5,
-                                color: textSecondary,
+                            child: Text.rich(
+                              MarkdownFormatter.formatToTextSpan(
+                                body.isEmpty ? 'No additional content.' : body,
+                                baseStyle: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.5,
+                                  color: textSecondary,
+                                ),
+                                activeBlue: activeBlue,
+                                onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
                               ),
                             ),
                           ),

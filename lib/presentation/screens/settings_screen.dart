@@ -533,70 +533,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            // // ── Data & Backup ─────────────────────────────────────
-            // const _SectionHeader(
-            //     icon: Icons.cloud_outlined, label: 'Data & Backup'),
-            // const SizedBox(height: 10),
-            // _Card(
-            //   child: Column(
-            //     children: [
-            //       _SwitchRow(
-            //         icon: Icons.backup_outlined,
-            //         label: 'Backup to Cloud',
-            //         value: _backup,
-            //         onChanged: (v) => setState(() => _backup = v),
-            //         showDivider: true,
-            //       ),
-            //       const SizedBox(height: 12),
-            //       Row(
-            //         children: [
-            //           Expanded(
-            //             child: OutlinedButton(
-            //               onPressed: () => _showExportOptions(context),
-            //               style: OutlinedButton.styleFrom(
-            //                 side: BorderSide(
-            //                   color: isDark
-            //                       ? EpicordiaColors.borderStrongDark
-            //                       : EpicordiaColors.borderStrongLight,
-            //                 ),
-            //                 foregroundColor: textPrimary,
-            //                 shape: RoundedRectangleBorder(
-            //                   borderRadius: BorderRadius.circular(8),
-            //                 ),
-            //               ),
-            //               child: const Text('Export All Data',
-            //                   style: TextStyle(fontSize: 13)),
-            //             ),
-            //           ),
-            //           const SizedBox(width: 12),
-            //           Expanded(
-            //             child: OutlinedButton(
-            //               onPressed: () => _confirmResetAppData(context),
-            //               style: OutlinedButton.styleFrom(
-            //                 side: BorderSide(
-            //                   color: isDark
-            //                       ? EpicordiaColors.errorDark
-            //                       : EpicordiaColors.errorLight,
-            //                 ),
-            //                 foregroundColor: isDark
-            //                     ? EpicordiaColors.errorDark
-            //                     : EpicordiaColors.errorLight,
-            //                 shape: RoundedRectangleBorder(
-            //                   borderRadius: BorderRadius.circular(8),
-            //                 ),
-            //               ),
-            //               child: const Text('Reset App Data',
-            //                   style: TextStyle(fontSize: 13)),
-            //             ),
-            //           ),
-            //         ],
-            //       ),
-            //       const SizedBox(height: 4),
-            //     ],
-            //   ),
-            // ),
-            //
-            // const SizedBox(height: 24),
+            // ── Data & Backup ─────────────────────────────────────
+            const _SectionHeader(
+                icon: Icons.cloud_outlined, label: 'Data ',),
+            const SizedBox(height: 10),
+            _Card(
+              child: Column(
+                children: [
+                  // Text(
+                  //   'Do What You Want With Your Data',
+                  //   style: TextStyle(
+                  //     fontSize: 14,
+                  //     color: isDark
+                  //         ? EpicordiaColors.textSecondaryDark
+                  //         : EpicordiaColors.textSecondaryLight,
+                  //   ),
+                  // ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _showExportOptions(context),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: isDark
+                                  ? EpicordiaColors.borderStrongDark
+                                  : EpicordiaColors.borderStrongLight,
+                            ),
+                            foregroundColor: textPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Export All Data',
+                              style: TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _confirmResetAppData(context),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: isDark
+                                  ? EpicordiaColors.errorDark
+                                  : EpicordiaColors.errorLight,
+                            ),
+                            foregroundColor: isDark
+                                ? EpicordiaColors.errorDark
+                                : EpicordiaColors.errorLight,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Reset App Data',
+                              style: TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
 
             // ── About ─────────────────────────────────────────────
             const _SectionHeader(icon: Icons.info_outline, label: 'About'),
@@ -606,7 +607,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   _InfoRow(
                       label: 'Version',
-                      value: 'v2.4.0-stable',
+                      value: 'v1.0.3-stable',
                       showDivider: true),
                   _ActionRow(
                       label: 'Terms of Service',

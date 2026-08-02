@@ -3118,27 +3118,48 @@ class $AttachmentsTable extends Attachments
       'REFERENCES pins (id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _filePathMeta = const VerificationMeta(
-    'filePath',
-  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
-  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
-    'file_path',
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _fileTypeMeta = const VerificationMeta(
-    'fileType',
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
   );
   @override
-  late final GeneratedColumn<String> fileType = GeneratedColumn<String>(
-    'file_type',
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _originalFileNameMeta = const VerificationMeta(
+    'originalFileName',
+  );
+  @override
+  late final GeneratedColumn<String> originalFileName = GeneratedColumn<String>(
+    'original_file_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
+    'sizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+    'size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3156,8 +3177,10 @@ class $AttachmentsTable extends Attachments
   List<GeneratedColumn> get $columns => [
     id,
     pinId,
-    filePath,
-    fileType,
+    type,
+    localPath,
+    originalFileName,
+    sizeBytes,
     createdAt,
   ];
   @override
@@ -3185,21 +3208,36 @@ class $AttachmentsTable extends Attachments
     } else if (isInserting) {
       context.missing(_pinIdMeta);
     }
-    if (data.containsKey('file_path')) {
+    if (data.containsKey('type')) {
       context.handle(
-        _filePathMeta,
-        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
       );
     } else if (isInserting) {
-      context.missing(_filePathMeta);
+      context.missing(_typeMeta);
     }
-    if (data.containsKey('file_type')) {
+    if (data.containsKey('local_path')) {
       context.handle(
-        _fileTypeMeta,
-        fileType.isAcceptableOrUnknown(data['file_type']!, _fileTypeMeta),
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
       );
     } else if (isInserting) {
-      context.missing(_fileTypeMeta);
+      context.missing(_localPathMeta);
+    }
+    if (data.containsKey('original_file_name')) {
+      context.handle(
+        _originalFileNameMeta,
+        originalFileName.isAcceptableOrUnknown(
+          data['original_file_name']!,
+          _originalFileNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(
+        _sizeBytesMeta,
+        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
+      );
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -3224,13 +3262,21 @@ class $AttachmentsTable extends Attachments
         DriftSqlType.string,
         data['${effectivePrefix}pin_id'],
       )!,
-      filePath: attachedDatabase.typeMapping.read(
+      type: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}file_path'],
+        data['${effectivePrefix}type'],
       )!,
-      fileType: attachedDatabase.typeMapping.read(
+      localPath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}file_type'],
+        data['${effectivePrefix}local_path'],
+      )!,
+      originalFileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_file_name'],
+      ),
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -3249,14 +3295,18 @@ class AttachmentEntity extends DataClass
     implements Insertable<AttachmentEntity> {
   final String id;
   final String pinId;
-  final String filePath;
-  final String fileType;
+  final String type;
+  final String localPath;
+  final String? originalFileName;
+  final int sizeBytes;
   final DateTime createdAt;
   const AttachmentEntity({
     required this.id,
     required this.pinId,
-    required this.filePath,
-    required this.fileType,
+    required this.type,
+    required this.localPath,
+    this.originalFileName,
+    required this.sizeBytes,
     required this.createdAt,
   });
   @override
@@ -3264,8 +3314,12 @@ class AttachmentEntity extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['pin_id'] = Variable<String>(pinId);
-    map['file_path'] = Variable<String>(filePath);
-    map['file_type'] = Variable<String>(fileType);
+    map['type'] = Variable<String>(type);
+    map['local_path'] = Variable<String>(localPath);
+    if (!nullToAbsent || originalFileName != null) {
+      map['original_file_name'] = Variable<String>(originalFileName);
+    }
+    map['size_bytes'] = Variable<int>(sizeBytes);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -3274,8 +3328,12 @@ class AttachmentEntity extends DataClass
     return AttachmentsCompanion(
       id: Value(id),
       pinId: Value(pinId),
-      filePath: Value(filePath),
-      fileType: Value(fileType),
+      type: Value(type),
+      localPath: Value(localPath),
+      originalFileName: originalFileName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalFileName),
+      sizeBytes: Value(sizeBytes),
       createdAt: Value(createdAt),
     );
   }
@@ -3288,8 +3346,10 @@ class AttachmentEntity extends DataClass
     return AttachmentEntity(
       id: serializer.fromJson<String>(json['id']),
       pinId: serializer.fromJson<String>(json['pinId']),
-      filePath: serializer.fromJson<String>(json['filePath']),
-      fileType: serializer.fromJson<String>(json['fileType']),
+      type: serializer.fromJson<String>(json['type']),
+      localPath: serializer.fromJson<String>(json['localPath']),
+      originalFileName: serializer.fromJson<String?>(json['originalFileName']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -3299,8 +3359,10 @@ class AttachmentEntity extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'pinId': serializer.toJson<String>(pinId),
-      'filePath': serializer.toJson<String>(filePath),
-      'fileType': serializer.toJson<String>(fileType),
+      'type': serializer.toJson<String>(type),
+      'localPath': serializer.toJson<String>(localPath),
+      'originalFileName': serializer.toJson<String?>(originalFileName),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -3308,22 +3370,32 @@ class AttachmentEntity extends DataClass
   AttachmentEntity copyWith({
     String? id,
     String? pinId,
-    String? filePath,
-    String? fileType,
+    String? type,
+    String? localPath,
+    Value<String?> originalFileName = const Value.absent(),
+    int? sizeBytes,
     DateTime? createdAt,
   }) => AttachmentEntity(
     id: id ?? this.id,
     pinId: pinId ?? this.pinId,
-    filePath: filePath ?? this.filePath,
-    fileType: fileType ?? this.fileType,
+    type: type ?? this.type,
+    localPath: localPath ?? this.localPath,
+    originalFileName: originalFileName.present
+        ? originalFileName.value
+        : this.originalFileName,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
     createdAt: createdAt ?? this.createdAt,
   );
   AttachmentEntity copyWithCompanion(AttachmentsCompanion data) {
     return AttachmentEntity(
       id: data.id.present ? data.id.value : this.id,
       pinId: data.pinId.present ? data.pinId.value : this.pinId,
-      filePath: data.filePath.present ? data.filePath.value : this.filePath,
-      fileType: data.fileType.present ? data.fileType.value : this.fileType,
+      type: data.type.present ? data.type.value : this.type,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      originalFileName: data.originalFileName.present
+          ? data.originalFileName.value
+          : this.originalFileName,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -3333,65 +3405,87 @@ class AttachmentEntity extends DataClass
     return (StringBuffer('AttachmentEntity(')
           ..write('id: $id, ')
           ..write('pinId: $pinId, ')
-          ..write('filePath: $filePath, ')
-          ..write('fileType: $fileType, ')
+          ..write('type: $type, ')
+          ..write('localPath: $localPath, ')
+          ..write('originalFileName: $originalFileName, ')
+          ..write('sizeBytes: $sizeBytes, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, pinId, filePath, fileType, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    pinId,
+    type,
+    localPath,
+    originalFileName,
+    sizeBytes,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AttachmentEntity &&
           other.id == this.id &&
           other.pinId == this.pinId &&
-          other.filePath == this.filePath &&
-          other.fileType == this.fileType &&
+          other.type == this.type &&
+          other.localPath == this.localPath &&
+          other.originalFileName == this.originalFileName &&
+          other.sizeBytes == this.sizeBytes &&
           other.createdAt == this.createdAt);
 }
 
 class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
   final Value<String> id;
   final Value<String> pinId;
-  final Value<String> filePath;
-  final Value<String> fileType;
+  final Value<String> type;
+  final Value<String> localPath;
+  final Value<String?> originalFileName;
+  final Value<int> sizeBytes;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const AttachmentsCompanion({
     this.id = const Value.absent(),
     this.pinId = const Value.absent(),
-    this.filePath = const Value.absent(),
-    this.fileType = const Value.absent(),
+    this.type = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.originalFileName = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AttachmentsCompanion.insert({
     required String id,
     required String pinId,
-    required String filePath,
-    required String fileType,
+    required String type,
+    required String localPath,
+    this.originalFileName = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        pinId = Value(pinId),
-       filePath = Value(filePath),
-       fileType = Value(fileType);
+       type = Value(type),
+       localPath = Value(localPath);
   static Insertable<AttachmentEntity> custom({
     Expression<String>? id,
     Expression<String>? pinId,
-    Expression<String>? filePath,
-    Expression<String>? fileType,
+    Expression<String>? type,
+    Expression<String>? localPath,
+    Expression<String>? originalFileName,
+    Expression<int>? sizeBytes,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (pinId != null) 'pin_id': pinId,
-      if (filePath != null) 'file_path': filePath,
-      if (fileType != null) 'file_type': fileType,
+      if (type != null) 'type': type,
+      if (localPath != null) 'local_path': localPath,
+      if (originalFileName != null) 'original_file_name': originalFileName,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3400,16 +3494,20 @@ class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
   AttachmentsCompanion copyWith({
     Value<String>? id,
     Value<String>? pinId,
-    Value<String>? filePath,
-    Value<String>? fileType,
+    Value<String>? type,
+    Value<String>? localPath,
+    Value<String?>? originalFileName,
+    Value<int>? sizeBytes,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
     return AttachmentsCompanion(
       id: id ?? this.id,
       pinId: pinId ?? this.pinId,
-      filePath: filePath ?? this.filePath,
-      fileType: fileType ?? this.fileType,
+      type: type ?? this.type,
+      localPath: localPath ?? this.localPath,
+      originalFileName: originalFileName ?? this.originalFileName,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3424,11 +3522,17 @@ class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
     if (pinId.present) {
       map['pin_id'] = Variable<String>(pinId.value);
     }
-    if (filePath.present) {
-      map['file_path'] = Variable<String>(filePath.value);
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
     }
-    if (fileType.present) {
-      map['file_type'] = Variable<String>(fileType.value);
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (originalFileName.present) {
+      map['original_file_name'] = Variable<String>(originalFileName.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3444,8 +3548,10 @@ class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
     return (StringBuffer('AttachmentsCompanion(')
           ..write('id: $id, ')
           ..write('pinId: $pinId, ')
-          ..write('filePath: $filePath, ')
-          ..write('fileType: $fileType, ')
+          ..write('type: $type, ')
+          ..write('localPath: $localPath, ')
+          ..write('originalFileName: $originalFileName, ')
+          ..write('sizeBytes: $sizeBytes, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -7491,8 +7597,10 @@ typedef $$AttachmentsTableCreateCompanionBuilder =
     AttachmentsCompanion Function({
       required String id,
       required String pinId,
-      required String filePath,
-      required String fileType,
+      required String type,
+      required String localPath,
+      Value<String?> originalFileName,
+      Value<int> sizeBytes,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -7500,8 +7608,10 @@ typedef $$AttachmentsTableUpdateCompanionBuilder =
     AttachmentsCompanion Function({
       Value<String> id,
       Value<String> pinId,
-      Value<String> filePath,
-      Value<String> fileType,
+      Value<String> type,
+      Value<String> localPath,
+      Value<String?> originalFileName,
+      Value<int> sizeBytes,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -7542,13 +7652,23 @@ class $$AttachmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get filePath => $composableBuilder(
-    column: $table.filePath,
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fileType => $composableBuilder(
-    column: $table.fileType,
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalFileName => $composableBuilder(
+    column: $table.originalFileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7595,13 +7715,23 @@ class $$AttachmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get filePath => $composableBuilder(
-    column: $table.filePath,
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fileType => $composableBuilder(
-    column: $table.fileType,
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalFileName => $composableBuilder(
+    column: $table.originalFileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7646,11 +7776,19 @@ class $$AttachmentsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get filePath =>
-      $composableBuilder(column: $table.filePath, builder: (column) => column);
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
 
-  GeneratedColumn<String> get fileType =>
-      $composableBuilder(column: $table.fileType, builder: (column) => column);
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<String> get originalFileName => $composableBuilder(
+    column: $table.originalFileName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7709,15 +7847,19 @@ class $$AttachmentsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> pinId = const Value.absent(),
-                Value<String> filePath = const Value.absent(),
-                Value<String> fileType = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> localPath = const Value.absent(),
+                Value<String?> originalFileName = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentsCompanion(
                 id: id,
                 pinId: pinId,
-                filePath: filePath,
-                fileType: fileType,
+                type: type,
+                localPath: localPath,
+                originalFileName: originalFileName,
+                sizeBytes: sizeBytes,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -7725,15 +7867,19 @@ class $$AttachmentsTableTableManager
               ({
                 required String id,
                 required String pinId,
-                required String filePath,
-                required String fileType,
+                required String type,
+                required String localPath,
+                Value<String?> originalFileName = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentsCompanion.insert(
                 id: id,
                 pinId: pinId,
-                filePath: filePath,
-                fileType: fileType,
+                type: type,
+                localPath: localPath,
+                originalFileName: originalFileName,
+                sizeBytes: sizeBytes,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

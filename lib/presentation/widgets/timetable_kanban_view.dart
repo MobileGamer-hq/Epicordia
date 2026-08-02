@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/database/database.dart';
 import '../../data/providers.dart';
 import '../../core/theme.dart';
+import '../../domain/services/notification_service.dart';
 import 'core/interactive_schedule_card.dart';
 import 'edit_timetable_slot_dialog.dart';
 
@@ -19,7 +20,20 @@ class TimetableKanbanView extends ConsumerWidget {
     'Sunday'
   ];
 
+  Future<void> _moveSlotToDay(WidgetRef ref, TimetableSlotEntity slot, int targetDayNumber) async {
+    if (slot.dayOfWeek == targetDayNumber) return;
+    final dao = ref.read(timetableDaoProvider);
+    await dao.updateSlot(slot.copyWith(dayOfWeek: targetDayNumber));
 
+    final notificationService = NotificationService();
+    await notificationService.scheduleTimetableSlotNotification(
+      slotId: slot.id,
+      title: slot.title,
+      dayOfWeek: targetDayNumber,
+      startTime: slot.startTime,
+      location: slot.location,
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,116 +76,141 @@ class TimetableKanbanView extends ConsumerWidget {
                   final dayName = _dayNames[index];
                   final daySlots = slotsByDay[dayNumber] ?? [];
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? EpicordiaColors.surfaceCardDark
-                          : EpicordiaColors.surfaceCardLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? EpicordiaColors.borderSubtleDark
-                            : EpicordiaColors.borderSubtleLight,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Day Section Header
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: isDark
-                                    ? EpicordiaColors.borderSubtleDark
-                                    : EpicordiaColors.borderSubtleLight,
-                              ),
-                            ),
+                  return DragTarget<TimetableSlotEntity>(
+                    onAcceptWithDetails: (details) async {
+                      await _moveSlotToDay(ref, details.data, dayNumber);
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      final isTargeted = candidateData.isNotEmpty;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: isTargeted
+                              ? (isDark ? EpicordiaColors.blue900.withValues(alpha: 0.3) : EpicordiaColors.blue100.withValues(alpha: 0.5))
+                              : (isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isTargeted
+                                ? (isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600)
+                                : (isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight),
+                            width: isTargeted ? 2.0 : 1.0,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                dayName,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  '${daySlots.length}',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Day Section Header
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: isDark
+                                        ? EpicordiaColors.borderSubtleDark
+                                        : EpicordiaColors.borderSubtleLight,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-
-                        // Day Events List
-                        if (daySlots.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                            child: Text(
-                              'No events scheduled for $dayName',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    dayName,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '${daySlots.length}',
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        color: colorScheme.onPrimaryContainer,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          )
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(12),
-                            itemCount: daySlots.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (context, slotIndex) {
-                              final slot = daySlots[slotIndex];
-                              return InteractiveScheduleCard(slot: slot);
-                            },
-                          ),
 
-                        // Add Event Action
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
+                            // Day Events List
+                            if (daySlots.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
                                 ),
-                                minimumSize: const Size(120, 36),
+                                child: Text(
+                                  'No events scheduled for $dayName — drag event here to reschedule',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(12),
+                                itemCount: daySlots.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, slotIndex) {
+                                  final slot = daySlots[slotIndex];
+                                  return LongPressDraggable<TimetableSlotEntity>(
+                                    data: slot,
+                                    feedback: Material(
+                                      elevation: 8,
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.transparent,
+                                      child: SizedBox(
+                                        width: constraints.maxWidth - 64,
+                                        child: InteractiveScheduleCard(slot: slot),
+                                      ),
+                                    ),
+                                    childWhenDragging: Opacity(
+                                      opacity: 0.4,
+                                      child: InteractiveScheduleCard(slot: slot),
+                                    ),
+                                    child: InteractiveScheduleCard(slot: slot),
+                                  );
+                                },
                               ),
-                              icon: const Icon(Icons.add, size: 16),
-                              label: Text('Add Event for $dayName'),
-                              onPressed: () {
-                                EditTimetableSlotDialog.show(
-                                  context,
-                                  defaultDayOfWeek: dayNumber,
-                                );
-                              },
+
+                            // Add Event Action
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    minimumSize: const Size(120, 36),
+                                  ),
+                                  icon: const Icon(Icons.add, size: 16),
+                                  label: Text('Add Event for $dayName'),
+                                  onPressed: () {
+                                    EditTimetableSlotDialog.show(
+                                      context,
+                                      defaultDayOfWeek: dayNumber,
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               );
@@ -192,120 +231,146 @@ class TimetableKanbanView extends ConsumerWidget {
                   final dayName = _dayNames[index];
                   final daySlots = slotsByDay[dayNumber] ?? [];
 
-                  return Container(
-                    width: columnWidth,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? EpicordiaColors.surfaceCardDark
-                          : EpicordiaColors.surfaceCardLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? EpicordiaColors.borderSubtleDark
-                            : EpicordiaColors.borderSubtleLight,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Column Header
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: isDark
-                                    ? EpicordiaColors.borderSubtleDark
-                                    : EpicordiaColors.borderSubtleLight,
-                              ),
-                            ),
+                  return DragTarget<TimetableSlotEntity>(
+                    onAcceptWithDetails: (details) async {
+                      await _moveSlotToDay(ref, details.data, dayNumber);
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      final isTargeted = candidateData.isNotEmpty;
+                      return Container(
+                        width: columnWidth,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: isTargeted
+                              ? (isDark ? EpicordiaColors.blue900.withValues(alpha: 0.3) : EpicordiaColors.blue100.withValues(alpha: 0.5))
+                              : (isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isTargeted
+                                ? (isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600)
+                                : (isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight),
+                            width: isTargeted ? 2.0 : 1.0,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                dayName,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  '${daySlots.length}',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Column Header
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: isDark
+                                        ? EpicordiaColors.borderSubtleDark
+                                        : EpicordiaColors.borderSubtleLight,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-
-                        // Slot Cards List
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 500),
-                          child: daySlots.isEmpty
-                              ? Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    dayName,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
                                     child: Text(
-                                      'No events scheduled',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
+                                      '${daySlots.length}',
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        color: colorScheme.onPrimaryContainer,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
-                                )
-                              : ListView.separated(
-                                  shrinkWrap: true,
-                                  padding: const EdgeInsets.all(12),
-                                  itemCount: daySlots.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 8),
-                                  itemBuilder: (context, slotIndex) {
-                                    final slot = daySlots[slotIndex];
-                                    return InteractiveScheduleCard(slot: slot);
+                                ],
+                              ),
+                            ),
+
+                            // Slot Cards List
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 500),
+                              child: daySlots.isEmpty
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Center(
+                                        child: Text(
+                                          'No events scheduled — drag event here',
+                                          textAlign: TextAlign.center,
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      shrinkWrap: true,
+                                      padding: const EdgeInsets.all(12),
+                                      itemCount: daySlots.length,
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(height: 8),
+                                      itemBuilder: (context, slotIndex) {
+                                        final slot = daySlots[slotIndex];
+                                        return LongPressDraggable<TimetableSlotEntity>(
+                                          data: slot,
+                                          feedback: Material(
+                                            elevation: 8,
+                                            borderRadius: BorderRadius.circular(12),
+                                            color: Colors.transparent,
+                                            child: SizedBox(
+                                              width: columnWidth - 24,
+                                              child: InteractiveScheduleCard(slot: slot),
+                                            ),
+                                          ),
+                                          childWhenDragging: Opacity(
+                                            opacity: 0.4,
+                                            child: InteractiveScheduleCard(slot: slot),
+                                          ),
+                                          child: InteractiveScheduleCard(slot: slot),
+                                        );
+                                      },
+                                    ),
+                            ),
+
+                            // Add Event Button
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(999),
+                                    ),
+                                    minimumSize: const Size.fromHeight(36),
+                                  ),
+                                  icon: const Icon(Icons.add, size: 16),
+                                  label: const Text('Add Event'),
+                                  onPressed: () {
+                                    EditTimetableSlotDialog.show(
+                                      context,
+                                      defaultDayOfWeek: dayNumber,
+                                    );
                                   },
                                 ),
-                        ),
-
-                        // Add Event Button
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(999),
-                                ),
-                                minimumSize: const Size.fromHeight(36),
                               ),
-                              icon: const Icon(Icons.add, size: 16),
-                              label: const Text('Add Event'),
-                              onPressed: () {
-                                EditTimetableSlotDialog.show(
-                                  context,
-                                  defaultDayOfWeek: dayNumber,
-                                );
-                              },
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 }),
               ),

@@ -41,7 +41,7 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
   final _notesController = TextEditingController();
   final _notificationService = NotificationService();
 
-  late int _selectedDay;
+  late Set<int> _selectedDays;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   String? _selectedColorTag;
@@ -55,16 +55,6 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
     '#89f1ca', // Mint
   ];
 
-  static const List<String> _days = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday'
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -72,12 +62,12 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
       _titleController.text = widget.slot!.title;
       _locationController.text = widget.slot!.location ?? '';
       _notesController.text = widget.slot!.notes ?? '';
-      _selectedDay = widget.slot!.dayOfWeek;
+      _selectedDays = {widget.slot!.dayOfWeek};
       _selectedColorTag = widget.slot!.colorTag;
       _startTime = _parseTimeOfDay(widget.slot!.startTime);
       _endTime = _parseTimeOfDay(widget.slot!.endTime);
     } else {
-      _selectedDay = widget.defaultDayOfWeek ?? 1;
+      _selectedDays = {widget.defaultDayOfWeek ?? 1};
     }
   }
 
@@ -106,52 +96,82 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
 
   Future<void> _save() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty || _selectedDays.isEmpty) return;
 
     final dao = ref.read(timetableDaoProvider);
     final startTimeStr = _formatTimeOfDay(_startTime);
     final endTimeStr = _formatTimeOfDay(_endTime);
     final locText = _locationController.text.trim().isEmpty ? null : _locationController.text.trim();
-
-    String slotId;
+    final notesText = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
 
     if (widget.slot != null) {
-      slotId = widget.slot!.id;
+      final primaryDay = _selectedDays.first;
       await dao.updateSlot(
         widget.slot!.copyWith(
           title: title,
           location: drift.Value(locText),
-          dayOfWeek: _selectedDay,
+          dayOfWeek: primaryDay,
           startTime: startTimeStr,
           endTime: endTimeStr,
           colorTag: drift.Value(_selectedColorTag),
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+          notes: drift.Value(notesText),
         ),
       );
-    } else {
-      slotId = const Uuid().v4();
-      await dao.insertSlot(
-        TimetableSlotsCompanion.insert(
-          id: slotId,
-          title: title,
-          dayOfWeek: _selectedDay,
-          startTime: startTimeStr,
-          endTime: endTimeStr,
-          location: drift.Value(locText),
-          colorTag: drift.Value(_selectedColorTag),
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
-        ),
+      await _notificationService.scheduleTimetableSlotNotification(
+        slotId: widget.slot!.id,
+        title: title,
+        dayOfWeek: primaryDay,
+        startTime: startTimeStr,
+        location: locText,
       );
-    }
 
-    // Schedule weekly recurring notifications for this slot
-    await _notificationService.scheduleTimetableSlotNotification(
-      slotId: slotId,
-      title: title,
-      dayOfWeek: _selectedDay,
-      startTime: startTimeStr,
-      location: locText,
-    );
+      final otherDays = _selectedDays.where((d) => d != primaryDay);
+      for (final dayNum in otherDays) {
+        final slotId = const Uuid().v4();
+        await dao.insertSlot(
+          TimetableSlotsCompanion.insert(
+            id: slotId,
+            title: title,
+            dayOfWeek: dayNum,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            location: drift.Value(locText),
+            colorTag: drift.Value(_selectedColorTag),
+            notes: drift.Value(notesText),
+          ),
+        );
+        await _notificationService.scheduleTimetableSlotNotification(
+          slotId: slotId,
+          title: title,
+          dayOfWeek: dayNum,
+          startTime: startTimeStr,
+          location: locText,
+        );
+      }
+    } else {
+      for (final dayNum in _selectedDays) {
+        final slotId = const Uuid().v4();
+        await dao.insertSlot(
+          TimetableSlotsCompanion.insert(
+            id: slotId,
+            title: title,
+            dayOfWeek: dayNum,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            location: drift.Value(locText),
+            colorTag: drift.Value(_selectedColorTag),
+            notes: drift.Value(notesText),
+          ),
+        );
+        await _notificationService.scheduleTimetableSlotNotification(
+          slotId: slotId,
+          title: title,
+          dayOfWeek: dayNum,
+          startTime: startTimeStr,
+          location: locText,
+        );
+      }
+    }
 
     if (mounted) Navigator.of(context).pop();
   }
@@ -216,24 +236,55 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
             ),
             const SizedBox(height: 16),
 
-            // Day of Week Selector
-            DropdownButtonFormField<int>(
-              initialValue: _selectedDay,
-              dropdownColor: cardBg,
-              style: TextStyle(color: textPrimary),
-              decoration: InputDecoration(
-                labelText: 'Day of Week',
-                labelStyle: TextStyle(color: textSecondary),
-              ),
-              items: List.generate(7, (index) {
-                return DropdownMenuItem<int>(
-                  value: index + 1,
-                  child: Text(_days[index], style: TextStyle(color: textPrimary)),
-                );
-              }),
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedDay = val);
-              },
+            // Multi-Day Selector
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Days of Week (Select one or more):',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textSecondary),
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(7, (index) {
+                      final dayNum = index + 1;
+                      final dayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index];
+                      final isSelected = _selectedDays.contains(dayNum);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: FilterChip(
+                          selected: isSelected,
+                          label: Text(
+                            dayShort,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? Colors.white : textPrimary,
+                            ),
+                          ),
+                          selectedColor: isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue700,
+                          backgroundColor: isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6),
+                          showCheckmark: false,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedDays.add(dayNum);
+                              } else {
+                                if (_selectedDays.length > 1) {
+                                  _selectedDays.remove(dayNum);
+                                }
+                              }
+                            });
+                          },
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils/markdown_formatter.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/pin_repository.dart';
 import 'epicordia_card.dart';
 import 'item_interaction_dialogs.dart';
+import 'link_preview_dialog.dart';
 
 class InteractiveNoteCard extends ConsumerWidget {
   final PinEntity note;
@@ -122,13 +124,20 @@ class InteractiveNoteCard extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary,
+                  child: Text.rich(
+                    MarkdownFormatter.formatToTextSpan(
+                      title,
+                      baseStyle: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: textPrimary,
+                      ),
+                      activeBlue: activeBlue,
+                      isTitle: true,
+                      onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
@@ -147,12 +156,16 @@ class InteractiveNoteCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text(
-              preview,
-              style: TextStyle(
-                fontSize: 13,
-                color: textSecondary,
-                height: 1.45,
+            Text.rich(
+              MarkdownFormatter.formatToTextSpan(
+                preview,
+                baseStyle: TextStyle(
+                  fontSize: 13,
+                  color: textSecondary,
+                  height: 1.45,
+                ),
+                activeBlue: activeBlue,
+                onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,

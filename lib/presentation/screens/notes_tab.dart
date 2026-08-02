@@ -5,7 +5,6 @@ import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../widgets/layout/responsive_scaffold.dart';
-import '../widgets/core/epicordia_card.dart';
 import '../widgets/core/interactive_note_card.dart';
 import '../../core/theme.dart';
 
