@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme.dart';
 import '../notifiers/alarm_timer_provider.dart';
 
 class AlarmRingingDialog extends StatefulWidget {
+
   final RingingEvent event;
   final VoidCallback onDismiss;
   final ValueChanged<Duration> onSnooze;
@@ -40,10 +43,11 @@ class AlarmRingingDialog extends StatefulWidget {
   @override
   State<AlarmRingingDialog> createState() => _AlarmRingingDialogState();
 }
-
 class _AlarmRingingDialogState extends State<AlarmRingingDialog>
+
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Timer? _soundLoopTimer;
 
   @override
   void initState() {
@@ -52,13 +56,25 @@ class _AlarmRingingDialogState extends State<AlarmRingingDialog>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
+
+    // Play immediate audio alert & vibration feedback
+    SystemSound.play(SystemSoundType.alert);
+    HapticFeedback.vibrate();
+
+    // Repeat sound alert chime & vibration every 1.5 seconds while ringing dialog is visible
+    _soundLoopTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      SystemSound.play(SystemSoundType.alert);
+      HapticFeedback.vibrate();
+    });
   }
 
   @override
   void dispose() {
+    _soundLoopTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {

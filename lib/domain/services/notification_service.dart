@@ -490,5 +490,48 @@ class NotificationService {
       }
     }
   }
+
+  /// Trigger an immediate ringing notification with full alarm sound and vibration.
+  Future<void> showImmediateAlarmNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const androidAlarmDetails = AndroidNotificationDetails(
+      'epicordia_alarms_channel',
+      'Task Audio Alarms',
+      channelDescription: 'Ringing alarms for task due times',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      fullScreenIntent: true,
+    );
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentSound: true,
+      presentAlert: true,
+      presentBadge: true,
+      sound: 'default',
+    );
+
+    const alarmNotificationDetails = NotificationDetails(
+      android: androidAlarmDetails,
+      iOS: darwinDetails,
+    );
+
+    try {
+      await _notificationsPlugin.show(
+        id: _toSafe32BitId(id),
+        title: title,
+        body: body,
+        notificationDetails: alarmNotificationDetails,
+      );
+    } catch (e) {
+
+      debugPrint('Failed to trigger immediate alarm sound notification: $e');
+    }
+  }
 }
+
 

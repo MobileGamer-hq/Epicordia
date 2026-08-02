@@ -86,6 +86,9 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           onSelected: (value) {
             switch (value) {
+              case 'reports':
+                context.push('/report');
+                break;
               case 'alarms':
                 context.push('/alarms');
                 break;
@@ -102,6 +105,16 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'reports',
+              child: Row(
+                children: [
+                  Icon(Icons.bar_chart_rounded, color: iconColor, size: 20),
+                  const SizedBox(width: 12),
+                  Text('Progress & Reports', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                ],
+              ),
+            ),
             PopupMenuItem(
               value: 'alarms',
               child: Row(

@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/in_app_alarm_model.dart';
 import '../../domain/models/in_app_timer_model.dart';
@@ -292,7 +293,19 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   // ─────────────────────────────────────────────────────────────
   void triggerRinging(RingingEvent event) {
     state = state.copyWith(ringingEvent: event);
+
+    // 1. Play immediate system sound & haptic vibration
+    SystemSound.play(SystemSoundType.alert);
+    HapticFeedback.vibrate();
+
+    // 2. Dispatch high-priority ringing audio notification
+    _notificationService.showImmediateAlarmNotification(
+      id: DateTime.now().millisecondsSinceEpoch,
+      title: event.title,
+      body: event.subtitle ?? 'Epicordia Alarm Ringing!',
+    );
   }
+
 
   void dismissRinging() {
     state = state.copyWith(clearRinging: true);
