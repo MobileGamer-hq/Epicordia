@@ -172,6 +172,10 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   String _saveStatus = 'Saved';
   bool _isLoadingNote = false;
 
+  DateTime _entryDate = DateTime.now();
+  String _selectedTag = 'Journal';
+  bool _isLocked = false;
+
   @override
   void initState() {
     super.initState();
@@ -279,6 +283,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         _bodyController.text = lines.length > 1
             ? lines.sublist(1).join('\n').trim()
             : '';
+        _selectedTag = note.tags ?? 'Journal';
+        _isLocked = note.isLocked;
+        _entryDate = note.entryDate ?? note.createdAt;
         _saveStatus = 'Saved';
       });
     }
@@ -294,6 +301,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     if (_currentNoteId != null && _existingNote != null) {
       final updatedPin = _existingNote!.copyWith(
         content: drift.Value(content),
+        tags: drift.Value(_selectedTag),
+        isLocked: _isLocked,
+        entryDate: drift.Value(_entryDate),
         modifiedAt: DateTime.now(),
       );
       await ref.read(pinRepositoryProvider).updatePin(updatedPin);
@@ -306,6 +316,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         boardId: const drift.Value(null),
         type: 'note',
         content: drift.Value(content),
+        tags: drift.Value(_selectedTag),
+        isLocked: drift.Value(_isLocked),
+        entryDate: drift.Value(_entryDate),
       );
       await ref.read(pinRepositoryProvider).createPin(companion);
       _existingNote = await ref.read(pinDaoProvider).getPin(newId);
@@ -708,6 +721,20 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: Icon(
+                _isLocked ? Icons.lock : Icons.lock_open_outlined,
+                color: _isLocked ? activeBlue : textTertiary,
+              ),
+              tooltip: _isLocked ? 'Note Locked' : 'Lock Note',
+              onPressed: () {
+                setState(() {
+                  _isLocked = !_isLocked;
+                  _saveStatus = 'Saving...';
+                });
+                _autoSave();
+              },
+            ),
             if (isEditing)
               IconButton(
                 icon: Icon(
@@ -734,6 +761,86 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(
             children: [
+              // Entry Date Picker + Tag Selection Row
+              Row(
+                children: [
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _entryDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _entryDate = picked;
+                          _saveStatus = 'Saving...';
+                        });
+                        _autoSave();
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: borderClr),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_today_outlined, size: 14, color: activeBlue),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${_entryDate.year}-${_entryDate.month.toString().padLeft(2, '0')}-${_entryDate.day.toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: ['Journal', 'Idea', 'Task', 'Personal', 'Work'].map((tag) {
+                          final selected = _selectedTag == tag;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: FilterChip(
+                              label: Text(tag),
+                              selected: selected,
+                              visualDensity: VisualDensity.compact,
+                              selectedColor: isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100,
+                              checkmarkColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
+                              labelStyle: TextStyle(
+                                fontSize: 12,
+                                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                color: selected ? (isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700) : textPrimary,
+                              ),
+                              onSelected: (_) {
+                                setState(() {
+                                  _selectedTag = tag;
+                                  _saveStatus = 'Saving...';
+                                });
+                                _autoSave();
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               // Title
               TextField(
                 controller: _titleController,

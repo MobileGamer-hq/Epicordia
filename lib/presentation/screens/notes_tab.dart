@@ -19,7 +19,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
   String _selectedFilter = 'All';
   final _searchController = TextEditingController();
 
-  final List<String> _filters = ['All', 'Recent', 'Pinned', 'Ideas'];
+  final List<String> _filters = ['All', 'Journal', 'Ideas', 'Locked', 'Recent', 'Pinned'];
 
   @override
   void initState() {
@@ -194,11 +194,19 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     filtered.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
                   } else if (_selectedFilter == 'Pinned') {
                     filtered = filtered.where((n) => n.boardId != null).toList();
+                  } else if (_selectedFilter == 'Journal') {
+                    filtered = filtered.where((n) {
+                      final t = (n.tags ?? n.colorTag ?? '').toLowerCase();
+                      return t.contains('journal');
+                    }).toList();
                   } else if (_selectedFilter == 'Ideas') {
                     filtered = filtered.where((n) {
+                      final t = (n.tags ?? n.colorTag ?? '').toLowerCase();
                       final c = (n.content ?? '').toLowerCase();
-                      return c.contains('idea') || c.contains('thought');
+                      return t.contains('idea') || c.contains('idea') || c.contains('thought');
                     }).toList();
+                  } else if (_selectedFilter == 'Locked') {
+                    filtered = filtered.where((n) => n.isLocked).toList();
                   }
 
                   return ListView.separated(

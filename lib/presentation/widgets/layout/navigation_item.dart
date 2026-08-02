@@ -20,3 +20,12 @@ const List<NavigationItem> appNavItems = [
   NavigationItem(label: 'Notes',  icon: Icons.description_outlined,     route: '/notes'),
   NavigationItem(label: 'Tasks',  icon: Icons.check_circle_outline,     route: '/tasks'),
 ];
+
+const List<NavigationItem> sidebarNavItems = [
+  NavigationItem(label: 'Home',    icon: Icons.home_outlined,            route: '/'),
+  NavigationItem(label: 'Reports', icon: Icons.bar_chart_rounded,         route: '/report'),
+  NavigationItem(label: 'Boards',  icon: Icons.space_dashboard_outlined, route: '/boards'),
+  NavigationItem(label: 'Notes',   icon: Icons.description_outlined,     route: '/notes'),
+  NavigationItem(label: 'Tasks',   icon: Icons.check_circle_outline,     route: '/tasks'),
+];
+

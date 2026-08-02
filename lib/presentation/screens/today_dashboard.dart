@@ -120,24 +120,60 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
               // Greeting
               Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 16),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$greeting, $userName',
-                      style:  TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ?EpicordiaColors.textPrimaryDark :  EpicordiaColors.textPrimaryLight,
-                        letterSpacing: -0.5,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$greeting, $userName',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Here's your workspace overview for today.",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark ? EpicordiaColors.textTertiaryLight : EpicordiaColors.textTertiaryLight,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                     Text(
-                      "Here's your workspace overview for today.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDark ? EpicordiaColors.textTertiaryLight : EpicordiaColors.textTertiaryLight,
+                    InkWell(
+                      onTap: () => context.push('/report'),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark ? EpicordiaColors.blue600 : EpicordiaColors.blue300,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.bar_chart_rounded, size: 16, color: EpicordiaColors.blue600),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Reports',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

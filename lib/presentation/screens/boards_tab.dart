@@ -6,6 +6,7 @@ import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
+import '../../data/repository/task_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/theme.dart';
 
@@ -68,9 +69,6 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
     final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 
     return ResponsiveScaffold(
-      // appBar: EpicordiaAppBar(
-      //   onSearch: () => _showSearchScreen(context),
-      // ),
       child: Column(
         children: [
           // Header with Title & View Mode Toggle
@@ -102,14 +100,6 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
                     ],
                   ),
                 ),
-                // IconButton(
-                //   icon: Icon(
-                //     Icons.search,
-                //     color: textPrimary,
-                //   ),
-                //   onPressed: () => _showSearchScreen(context),
-                //   tooltip: 'Global Search',
-                // ),
                 IconButton(
                   icon: Icon(
                     _isGrid ? Icons.grid_view : Icons.list,
@@ -183,7 +173,7 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
   }
 }
 
-// ── Placeholder empty state ─────────────────────────────────────
+// ── Empty State ──────────────────────────────────────────────────
 class _EmptyBoardsState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -233,21 +223,18 @@ class _EmptyBoardsState extends StatelessWidget {
   }
 }
 
-// ── Grid layout ─────────────────────────────────────────────────
+// ── Grid Layout ──────────────────────────────────────────────────
 class _GridView extends StatelessWidget {
   final List<dynamic> boards;
   const _GridView({required this.boards});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
     final width = MediaQuery.of(context).size.width;
 
     return GridView.builder(
       padding: const EdgeInsets.all(20),
-      gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: width > 500 ? 3 : 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
@@ -264,64 +251,99 @@ class _GridView extends StatelessWidget {
         ];
         final color = colors[index % colors.length];
 
-        return EpicordiaCard(
-          padding: EdgeInsets.zero,
-          onTap: () => context.push('/board/${board.id}'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
+        return _BoardGridCard(board: board, color: color);
+      },
+    );
+  }
+}
+
+class _BoardGridCard extends ConsumerWidget {
+  final dynamic board;
+  final Color color;
+  const _BoardGridCard({required this.board, required this.color});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
+    final pinsStream = ref.watch(pinRepositoryProvider).watchPinsForBoard(board.id);
+    final tasksStream = ref.watch(taskRepositoryProvider).watchTasksForBoard(board.id);
+
+    return StreamBuilder<List<PinEntity>>(
+      stream: pinsStream,
+      builder: (context, pinSnapshot) {
+        final pins = pinSnapshot.data ?? const <PinEntity>[];
+
+        return StreamBuilder<List<TaskEntity>>(
+          stream: tasksStream,
+          builder: (context, taskSnapshot) {
+            final tasks = taskSnapshot.data ?? const <TaskEntity>[];
+            final pinIds = pins.map((p) => p.id).toSet();
+            final standaloneTasks = tasks.where((t) => t.pinId == null || !pinIds.contains(t.pinId)).toList();
+            final totalItems = pins.length + standaloneTasks.length;
+            final countLabel = totalItems == 1 ? '1 item' : '$totalItems items';
+
+            return EpicordiaCard(
+              padding: EdgeInsets.zero,
+              onTap: () => context.push('/board/${board.id}'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.dashboard_outlined,
+                          size: 28,
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
+                      ),
                     ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.dashboard_outlined,
-                      size: 28,
-                      color: Colors.white.withValues(alpha: 0.5),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          board.title,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          countLabel,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: textTertiary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      board.title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '0 items',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 }
 
-// ── List layout ─────────────────────────────────────────────────
-// ── List layout with Collapsible Board Cards ────────────────────
+// ── List Layout ──────────────────────────────────────────────────
 class _ListView extends StatelessWidget {
   final List<dynamic> boards;
   const _ListView({required this.boards});
@@ -351,200 +373,6 @@ class _CollapsibleBoardListCard extends ConsumerStatefulWidget {
 class _CollapsibleBoardListCardState extends ConsumerState<_CollapsibleBoardListCard> {
   bool _isExpanded = false;
 
-  @override
-  Widget build(BuildContext context) {
-    final board = widget.board;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
-    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-    final iconBg = isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100;
-    final iconClr = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
-    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
-
-    final pinsStream = ref.watch(pinRepositoryProvider).watchPinsForBoard(board.id);
-
-    return StreamBuilder<List<PinEntity>>(
-      stream: pinsStream,
-      builder: (context, snapshot) {
-        final pins = snapshot.data ?? const <PinEntity>[];
-        final noteCount = pins.where((p) => p.type == 'note').length;
-        final taskCount = pins.where((p) => p.type == 'task' || p.type == 'tasklist' || p.type == 'checklist').length;
-        final frameCount = pins.where((p) => p.type == 'frame').length;
-        final itemCount = pins.length;
-
-        return EpicordiaCard(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row — Tapping toggles collapse/expand or opens board
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.push('/board/${board.id}'),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: iconBg,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.space_dashboard_outlined,
-                        size: 22,
-                        color: iconClr,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _isExpanded = !_isExpanded),
-                      behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            board.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$itemCount items • $noteCount notes • $taskCount tasks',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: textTertiary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _isExpanded ? Icons.expand_less : Icons.expand_more,
-                      color: textSecondary,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                    tooltip: _isExpanded ? 'Collapse Board Details' : 'Expand Board Details',
-                  ),
-                ],
-              ),
-
-              // Expanded Detailed Section
-              if (_isExpanded) ...[
-                const SizedBox(height: 14),
-                Divider(height: 1, color: borderSubtle),
-                const SizedBox(height: 14),
-
-                // Metrics Chips
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _StatChip(
-                      icon: Icons.sticky_note_2_outlined,
-                      label: '$noteCount Notes',
-                      isDark: isDark,
-                    ),
-                    _StatChip(
-                      icon: Icons.check_circle_outline,
-                      label: '$taskCount Tasks',
-                      isDark: isDark,
-                    ),
-                    _StatChip(
-                      icon: Icons.view_column_outlined,
-                      label: '$frameCount Frames',
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-
-                // Preview of items inside board
-                Text(
-                  'Board Items Preview:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (pins.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      'No items pinned to this board yet.',
-                      style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: textTertiary),
-                    ),
-                  )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: pins.take(4).map((pin) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _iconForPinType(pin.type),
-                              size: 14,
-                              color: iconClr,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _titleForPin(pin),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 12, color: textPrimary),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-
-                const SizedBox(height: 14),
-
-                // Open Board Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: iconClr,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(Icons.launch, size: 18),
-                    label: const Text('Open Board Canvas', style: TextStyle(fontWeight: FontWeight.w700)),
-                    onPressed: () => context.push('/board/${board.id}'),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   IconData _iconForPinType(String type) {
     switch (type) {
       case 'note': return Icons.sticky_note_2_outlined;
@@ -566,6 +394,228 @@ class _CollapsibleBoardListCardState extends ConsumerState<_CollapsibleBoardList
       } catch (_) {}
     }
     return pin.content!.split('\n').first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final board = widget.board;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final iconBg = isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100;
+    final iconClr = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
+    final pinsStream = ref.watch(pinRepositoryProvider).watchPinsForBoard(board.id);
+    final tasksStream = ref.watch(taskRepositoryProvider).watchTasksForBoard(board.id);
+
+    return StreamBuilder<List<PinEntity>>(
+      stream: pinsStream,
+      builder: (context, pinSnapshot) {
+        final pins = pinSnapshot.data ?? const <PinEntity>[];
+
+        return StreamBuilder<List<TaskEntity>>(
+          stream: tasksStream,
+          builder: (context, taskSnapshot) {
+            final tasks = taskSnapshot.data ?? const <TaskEntity>[];
+            final pinIds = pins.map((p) => p.id).toSet();
+            final standaloneTasks = tasks.where((t) => t.pinId == null || !pinIds.contains(t.pinId)).toList();
+
+            final noteCount = pins.where((p) => p.type == 'note').length;
+            final taskCount = pins.where((p) => p.type == 'task' || p.type == 'tasklist' || p.type == 'checklist').length + standaloneTasks.length;
+            final frameCount = pins.where((p) => p.type == 'frame').length;
+            final itemCount = pins.length + standaloneTasks.length;
+
+            return EpicordiaCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Row — Tapping toggles collapse/expand or opens board
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.push('/board/${board.id}'),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: iconBg,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.space_dashboard_outlined,
+                            size: 22,
+                            color: iconClr,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isExpanded = !_isExpanded),
+                          behavior: HitTestBehavior.opaque,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                board.title,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$itemCount items • $noteCount notes • $taskCount tasks',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _isExpanded ? Icons.expand_less : Icons.expand_more,
+                          color: textSecondary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isExpanded = !_isExpanded;
+                          });
+                        },
+                        tooltip: _isExpanded ? 'Collapse Board Details' : 'Expand Board Details',
+                      ),
+                    ],
+                  ),
+
+                  // Expanded Detailed Section
+                  if (_isExpanded) ...[
+                    const SizedBox(height: 14),
+                    Divider(height: 1, color: borderSubtle),
+                    const SizedBox(height: 14),
+
+                    // Metrics Chips
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _StatChip(
+                          icon: Icons.sticky_note_2_outlined,
+                          label: '$noteCount Notes',
+                          isDark: isDark,
+                        ),
+                        _StatChip(
+                          icon: Icons.check_circle_outline,
+                          label: '$taskCount Tasks',
+                          isDark: isDark,
+                        ),
+                        _StatChip(
+                          icon: Icons.view_column_outlined,
+                          label: '$frameCount Frames',
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Preview of items inside board
+                    Text(
+                      'Board Items Preview:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (pins.isEmpty && standaloneTasks.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'No items on this board canvas yet.',
+                          style: TextStyle(fontSize: 12, color: textTertiary),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: [
+                          ...pins.take(4).map((pin) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(
+                                children: [
+                                  Icon(_iconForPinType(pin.type), size: 16, color: iconClr),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _titleForPin(pin),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 12, color: textPrimary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          ...standaloneTasks.take(2).map((t) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle_outline, size: 16, color: iconClr),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      t.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 12, color: textPrimary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+
+                    const SizedBox(height: 14),
+
+                    // Open Board Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: iconClr,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: const Icon(Icons.launch, size: 18),
+                        label: const Text('Open Board Canvas', style: TextStyle(fontWeight: FontWeight.w700)),
+                        onPressed: () => context.push('/board/${board.id}'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 

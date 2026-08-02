@@ -30,6 +30,9 @@ class Pins extends Table {
   TextColumn get content => text().nullable()(); // JSON or raw string depending on type
   TextColumn get parentFrameId => text().nullable().references(Pins, #id, onDelete: KeyAction.setNull)();
   TextColumn get linkedBoardId => text().nullable().references(Boards, #id, onDelete: KeyAction.cascade)();
+  TextColumn get tags => text().nullable()();
+  BoolColumn get isLocked => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get entryDate => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get modifiedAt => dateTime().withDefault(currentDateAndTime)();
 

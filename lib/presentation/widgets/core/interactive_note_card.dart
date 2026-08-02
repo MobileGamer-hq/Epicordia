@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
+import '../../../core/app_lock_provider.dart';
+import '../../../domain/state/journaling_provider.dart';
 import '../../../core/utils/markdown_formatter.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/pin_repository.dart';
+import '../../screens/pin_lock_screen.dart';
 import 'epicordia_card.dart';
 import 'item_interaction_dialogs.dart';
 import 'link_preview_dialog.dart';
@@ -41,11 +44,49 @@ class InteractiveNoteCard extends ConsumerWidget {
     }
   }
 
+  Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
+    final lockAll = ref.read(lockAllJournalsProvider);
+    final noteTags = (note.tags ?? note.colorTag ?? '').toLowerCase();
+    final isJournal = noteTags.contains('journal');
+    final isLocked = note.isLocked || (lockAll && isJournal);
+
+    if (isLocked) {
+      final appLock = ref.read(appLockProvider);
+      bool? verified;
+      if (!appLock.hasPin) {
+        verified = await PinLockScreen.showCreate(context);
+      } else {
+        verified = await PinLockScreen.showVerify(context);
+      }
+      if (verified == true && context.mounted) {
+        if (onTap != null) {
+          onTap!();
+        } else {
+          context.push('/note/${note.id}');
+        }
+      }
+    } else {
+      if (onTap != null) {
+        onTap!();
+      } else {
+        context.push('/note/${note.id}');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lockAll = ref.watch(lockAllJournalsProvider);
+    final noteTags = note.tags ?? note.colorTag ?? 'Journal';
+    final isJournal = noteTags.toLowerCase().contains('journal');
+    final isLocked = note.isLocked || (lockAll && isJournal);
+
     final lines = (note.content ?? '').split('\n');
-    final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-    final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content';
+    final rawTitle = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
+    final title = isLocked ? 'Locked Note' : rawTitle;
+    final preview = isLocked
+        ? 'Protected content. Tap to verify PIN and unlock.'
+        : (lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content');
     final body = note.content ?? '';
     final isPinned = note.boardId != null;
 
@@ -57,65 +98,71 @@ class InteractiveNoteCard extends ConsumerWidget {
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     final formattedTime = timeFormatted ?? _formatModified(note.modifiedAt);
+    final entryDate = note.entryDate ?? note.createdAt;
+    final entryDateStr = '${entryDate.year}-${entryDate.month.toString().padLeft(2, '0')}-${entryDate.day.toString().padLeft(2, '0')}';
 
     return GestureDetector(
-      onTap: onTap ?? () => context.push('/note/${note.id}'),
-      onLongPress: onLongPress ??
-          () => ItemInteractionDialogs.showNoteDetailDialog(
-                context: context,
-                ref: ref,
-                note: note,
-                boardTitle: boardTitle,
-              ),
-      onDoubleTap: onDoubleTap ??
-          () => ItemInteractionDialogs.showDoubleTapMenu(
-                context: context,
-                title: title,
-                subtitle: 'Note in $boardTitle',
-                items: [
-                  DoubleTapMenuItem(
-                    icon: Icons.copy_rounded,
-                    label: 'Copy Note',
-                    onTap: () {
-                      ItemInteractionDialogs.copyToClipboard(
-                        context,
-                        '$title\n\n$body',
-                      );
-                    },
-                  ),
-                  DoubleTapMenuItem(
-                    icon: Icons.share_outlined,
-                    label: 'Share Note',
-                    onTap: () {
-                      ItemInteractionDialogs.shareContent(
-                        context,
-                        '$title\n\n$body',
-                      );
-                    },
-                  ),
-                  DoubleTapMenuItem(
-                    icon: Icons.edit_note_rounded,
-                    label: 'Edit Note',
-                    onTap: () => context.push('/note/${note.id}'),
-                  ),
-                  DoubleTapMenuItem(
-                    icon: Icons.delete_outline_rounded,
-                    label: 'Delete Note',
-                    color: EpicordiaColors.errorLight,
-                    onTap: () async {
-                      await ref.read(pinRepositoryProvider).deletePin(note.id);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Note deleted'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
+      onTap: () => _handleTap(context, ref),
+      onLongPress: isLocked
+          ? null
+          : (onLongPress ??
+              () => ItemInteractionDialogs.showNoteDetailDialog(
+                    context: context,
+                    ref: ref,
+                    note: note,
+                    boardTitle: boardTitle,
+                  )),
+      onDoubleTap: isLocked
+          ? null
+          : (onDoubleTap ??
+              () => ItemInteractionDialogs.showDoubleTapMenu(
+                    context: context,
+                    title: title,
+                    subtitle: 'Note in $boardTitle',
+                    items: [
+                      DoubleTapMenuItem(
+                        icon: Icons.copy_rounded,
+                        label: 'Copy Note',
+                        onTap: () {
+                          ItemInteractionDialogs.copyToClipboard(
+                            context,
+                            '$title\n\n$body',
+                          );
+                        },
+                      ),
+                      DoubleTapMenuItem(
+                        icon: Icons.share_outlined,
+                        label: 'Share Note',
+                        onTap: () {
+                          ItemInteractionDialogs.shareContent(
+                            context,
+                            '$title\n\n$body',
+                          );
+                        },
+                      ),
+                      DoubleTapMenuItem(
+                        icon: Icons.edit_note_rounded,
+                        label: 'Edit Note',
+                        onTap: () => context.push('/note/${note.id}'),
+                      ),
+                      DoubleTapMenuItem(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Delete Note',
+                        color: EpicordiaColors.errorLight,
+                        onTap: () async {
+                          await ref.read(pinRepositoryProvider).deletePin(note.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Note deleted'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  )),
       child: EpicordiaCard(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -140,6 +187,26 @@ class InteractiveNoteCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (isLocked) ...[
+                  const Icon(Icons.lock, size: 16, color: EpicordiaColors.blue600),
+                  const SizedBox(width: 6),
+                ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    noteTags,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Container(
                   width: 18,
                   height: 18,
@@ -161,7 +228,8 @@ class InteractiveNoteCard extends ConsumerWidget {
                 preview,
                 baseStyle: TextStyle(
                   fontSize: 13,
-                  color: textSecondary,
+                  color: isLocked ? textTertiary : textSecondary,
+                  fontStyle: isLocked ? FontStyle.italic : FontStyle.normal,
                   height: 1.45,
                 ),
                 activeBlue: activeBlue,
@@ -173,20 +241,22 @@ class InteractiveNoteCard extends ConsumerWidget {
             const SizedBox(height: 10),
             Row(
               children: [
+                Icon(Icons.calendar_today_outlined, size: 12, color: textTertiary),
+                const SizedBox(width: 4),
+                Text(
+                  'Log: $entryDateStr',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: textTertiary,
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Text(
                   formattedTime,
                   style: TextStyle(
                     fontSize: 11,
                     color: textTertiary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Board: $boardTitle',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: activeBlue,
                   ),
                 ),
                 const Spacer(),
@@ -203,3 +273,4 @@ class InteractiveNoteCard extends ConsumerWidget {
     );
   }
 }
+

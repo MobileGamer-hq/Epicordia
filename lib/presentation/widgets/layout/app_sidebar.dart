@@ -41,10 +41,10 @@ class AppSidebar extends StatelessWidget {
           const SizedBox(height: 24),
           Expanded(
             child: ListView.builder(
-              itemCount: appNavItems.length,
+              itemCount: sidebarNavItems.length,
               padding: EdgeInsets.symmetric(horizontal: isTablet ? 8 : 12),
               itemBuilder: (context, index) {
-                final item = appNavItems[index];
+                final item = sidebarNavItems[index];
                 final isActive = location == item.route;
 
                 return Padding(

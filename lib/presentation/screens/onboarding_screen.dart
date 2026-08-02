@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme.dart';
+import '../../domain/state/journaling_provider.dart';
 import '../widgets/core/epicordia_brand.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
-  int _currentStep = 0; // 0: Name, 1: Use Cases, 2: Workflow Preference
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+  int _currentStep = 0; // 0: Name, 1: Use Cases, 2: Journaling Habit, 3: Workflow
   final _nameController = TextEditingController();
   final List<String> _selectedUseCases = [];
   String? _selectedWorkflow = 'boards';
+
+  bool _enableJournaling = true;
+  String _journalFrequency = 'daily';
+  TimeOfDay _journalTime = const TimeOfDay(hour: 20, minute: 0);
 
   final List<String> _useCaseOptions = [
     'Project Management',
@@ -38,11 +44,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setString('app_use_cases', _selectedUseCases.join(','));
     await prefs.setString('workflow_preference', _selectedWorkflow ?? 'boards');
     await prefs.setBool('onboarding_complete', true);
+
+    await ref.read(journalingPlanProvider.notifier).updatePlan(
+      isEnabled: _enableJournaling,
+      frequency: _journalFrequency,
+      reminderHour: _journalTime.hour,
+      reminderMinute: _journalTime.minute,
+    );
+
     if (mounted) context.go('/');
   }
 
   void _nextStep() {
-    if (_currentStep < 2) {
+    if (_currentStep < 3) {
       setState(() => _currentStep++);
     } else {
       _completeOnboarding();
@@ -62,6 +76,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_currentStep == 1) {
       return _selectedUseCases.isNotEmpty;
     }
+    if (_currentStep == 2) {
+      return true;
+    }
     return _selectedWorkflow != null;
   }
 
@@ -79,7 +96,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
-                children: [0, 1, 2].map((step) {
+                children: [0, 1, 2, 3].map((step) {
                   final isActive = step <= _currentStep;
                   return Expanded(
                     child: Container(
@@ -120,7 +137,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        _currentStep == 2 ? 'Get Started' : 'Continue',
+                        _currentStep == 3 ? 'Get Started' : 'Continue',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 18,
@@ -301,9 +318,171 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
 
       case 2:
-      default:
+        final h = _journalTime.hour % 12 == 0 ? 12 : _journalTime.hour % 12;
+        final m = _journalTime.minute.toString().padLeft(2, '0');
+        final ampm = _journalTime.hour >= 12 ? 'PM' : 'AM';
+        final timeStr = '$h:$m $ampm';
+
         return Column(
           key: const ValueKey(2),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const EpicordiaLogo(size: 20),
+            const SizedBox(height: 32),
+            Text(
+              'Build a Journaling\nHabit Plan',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: textPrimary,
+                height: 1.2,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Set your journaling frequency and reminder schedule. Epicordia will automatically remind you on schedule.',
+              style: TextStyle(
+                fontSize: 14,
+                color: textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Toggle Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: surfaceCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_calendar_outlined, color: EpicordiaColors.blue600, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Enable Journaling Habit',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Automatic notifications on scheduled days',
+                          style: TextStyle(fontSize: 12, color: textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _enableJournaling,
+                    onChanged: (val) => setState(() => _enableJournaling = val),
+                    activeColor: EpicordiaColors.blue600,
+                  ),
+                ],
+              ),
+            ),
+
+            if (_enableJournaling) ...[
+              const SizedBox(height: 24),
+              Text(
+                'Journaling Frequency',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textPrimary),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  {'id': 'daily', 'label': 'Daily (7x)'},
+                  {'id': 'fiveDays', 'label': '5 Days / Wk'},
+                  {'id': 'threeDays', 'label': '3 Days / Wk'},
+                ].map((item) {
+                  final selected = _journalFrequency == item['id'];
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _journalFrequency = item['id']!),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: selected ? EpicordiaColors.blue600 : surfaceCard,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selected ? EpicordiaColors.blue600 : borderSubtle,
+                            ),
+                          ),
+                          child: Text(
+                            item['label']!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: selected ? Colors.white : textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 24),
+              Text(
+                'Daily Reminder Time',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textPrimary),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _journalTime,
+                  );
+                  if (picked != null) {
+                    setState(() => _journalTime = picked);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderSubtle),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time_rounded, color: EpicordiaColors.blue600, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Reminder Time',
+                        style: TextStyle(fontSize: 14, color: textSecondary),
+                      ),
+                      const Spacer(),
+                      Text(
+                        timeStr,
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right, color: textSecondary, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+
+      case 3:
+      default:
+        return Column(
+          key: const ValueKey(3),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const EpicordiaLogo(size: 20),

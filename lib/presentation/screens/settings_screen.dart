@@ -12,6 +12,7 @@ import '../../data/repository/board_repository.dart';
 import 'pin_lock_screen.dart';
 import '../notifiers/alarm_settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../domain/state/journaling_provider.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -490,6 +491,170 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 24),
 
+            // ── Journaling Plan & Habit ─────────────────────────────
+            const _SectionHeader(
+                icon: Icons.edit_calendar_outlined, label: 'Journaling Plan & Habit'),
+            const SizedBox(height: 10),
+            Consumer(
+              builder: (context, ref, _) {
+                final journalingState = ref.watch(journalingPlanProvider);
+                final journalingNotifier = ref.read(journalingPlanProvider.notifier);
+
+                return _Card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SwitchRow(
+                        icon: Icons.notifications_active_outlined,
+                        label: 'Enable Journaling Habit Plan',
+                        value: journalingState.isEnabled,
+                        onChanged: (enabled) async {
+                          await journalingNotifier.updatePlan(isEnabled: enabled);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  enabled
+                                      ? 'Journaling habit enabled. Automatic reminders scheduled!'
+                                      : 'Journaling habit disabled. Reminders cancelled.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        showDivider: journalingState.isEnabled,
+                      ),
+                      if (journalingState.isEnabled) ...[
+                        const SizedBox(height: 14),
+                        Text(
+                          'Target Frequency',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _SegmentedToggle(
+                          options: const ['Daily', '5 Days', '3 Days'],
+                          selected: journalingState.frequency == 'daily'
+                              ? 'Daily'
+                              : (journalingState.frequency == 'fiveDays' ? '5 Days' : '3 Days'),
+                          onSelect: (v) {
+                            final targetFreq = v == 'Daily'
+                                ? 'daily'
+                                : (v == '5 Days' ? 'fiveDays' : 'threeDays');
+                            journalingNotifier.updatePlan(frequency: targetFreq);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(height: 1, color: EpicordiaColors.borderSubtleLight),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Icon(Icons.access_time_outlined,
+                                size: 18,
+                                color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Reminder Time',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: textPrimary,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(
+                                    hour: journalingState.reminderHour,
+                                    minute: journalingState.reminderMinute,
+                                  ),
+                                );
+                                if (picked != null) {
+                                  journalingNotifier.updatePlan(
+                                    reminderHour: picked.hour,
+                                    reminderMinute: picked.minute,
+                                  );
+                                }
+                              },
+                              child: Text(
+                                journalingState.formattedTime,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Column(
+                                children: [
+                                  Text(
+                                    '${journalingState.currentStreak} Days',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Current Streak',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(height: 28, width: 1, color: EpicordiaColors.borderSubtleLight),
+                              Column(
+                                children: [
+                                  Text(
+                                    '${journalingState.longestStreak} Days',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Longest Streak',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
             // ── Privacy & Security ────────────────────────────────
 
             const _SectionHeader(
@@ -499,6 +664,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               builder: (context, ref, _) {
                 final lockState = ref.watch(appLockProvider);
                 final lockNotifier = ref.read(appLockProvider.notifier);
+                final lockAllJournals = ref.watch(lockAllJournalsProvider);
+                final lockAllNotifier = ref.read(lockAllJournalsProvider.notifier);
 
                 return _Card(
                   child: Column(
@@ -533,6 +700,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ),
                               );
                             }
+                          }
+                        },
+                        showDivider: true,
+                      ),
+                      _SwitchRow(
+                        icon: Icons.security_rounded,
+                        label: 'Lock All Journal Notes',
+                        value: lockAllJournals,
+                        onChanged: (enabled) async {
+                          if (enabled && !lockState.hasPin) {
+                            final created = await PinLockScreen.showCreate(context);
+                            if (created == true) {
+                              await lockAllNotifier.toggle(true);
+                            }
+                          } else {
+                            await lockAllNotifier.toggle(enabled);
+                          }
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  enabled
+                                      ? 'All journal notes are now PIN locked.'
+                                      : 'Global journal lock disabled.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                           }
                         },
                         showDivider: true,

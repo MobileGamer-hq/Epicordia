@@ -428,4 +428,67 @@ class NotificationService {
       debugPrint('Failed to sync all timetable slot notifications: $e');
     }
   }
+
+  /// Cancel all active journaling reminder notifications (IDs 999001 - 999007)
+  Future<void> cancelJournalingReminders() async {
+    for (int day = 1; day <= 7; day++) {
+      await _notificationsPlugin.cancel(id: 999000 + day);
+    }
+    debugPrint('Cancelled all active journaling notifications');
+  }
+
+  /// Schedule automatic recurring journaling reminders based on frequency and target time of day.
+  /// [daysOfWeek]: List of weekdays (1=Mon ... 7=Sun). If null/empty and frequency is "daily", schedules for all 7 days.
+  Future<void> scheduleJournalingReminders({
+    required int hour,
+    required int minute,
+    List<int>? daysOfWeek,
+  }) async {
+    await cancelJournalingReminders();
+
+    const androidDetails = AndroidNotificationDetails(
+      'epicordia_journaling_channel',
+      'Journaling Habit Reminders',
+      channelDescription: 'Daily & weekly habit notifications to encourage journaling',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentSound: true,
+      presentAlert: true,
+      presentBadge: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+    );
+
+    final targetDays = daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7];
+    final now = DateTime.now();
+
+    for (final dayOfWeek in targetDays) {
+      var nextOccurrence = DateTime(now.year, now.month, now.day, hour, minute);
+      while (nextOccurrence.weekday != dayOfWeek || nextOccurrence.isBefore(now)) {
+        nextOccurrence = nextOccurrence.add(const Duration(days: 1));
+      }
+
+      final safeId = 999000 + dayOfWeek;
+      try {
+        await _safeZonedSchedule(
+          id: safeId,
+          title: 'Time to Journal 📝',
+          body: 'Take a moment to reflect and write down your thoughts in Epicordia.',
+          scheduledDate: tz.TZDateTime.from(nextOccurrence, tz.local),
+          notificationDetails: details,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      } catch (e) {
+        debugPrint('Failed to schedule journaling notification for day $dayOfWeek: $e');
+      }
+    }
+  }
 }
+

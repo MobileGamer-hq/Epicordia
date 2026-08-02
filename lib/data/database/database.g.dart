@@ -692,6 +692,41 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
       'REFERENCES boards (id) ON DELETE CASCADE',
     ),
   );
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+    'tags',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isLockedMeta = const VerificationMeta(
+    'isLocked',
+  );
+  @override
+  late final GeneratedColumn<bool> isLocked = GeneratedColumn<bool>(
+    'is_locked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_locked" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _entryDateMeta = const VerificationMeta(
+    'entryDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> entryDate = GeneratedColumn<DateTime>(
+    'entry_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -731,6 +766,9 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
     content,
     parentFrameId,
     linkedBoardId,
+    tags,
+    isLocked,
+    entryDate,
     createdAt,
     modifiedAt,
   ];
@@ -825,6 +863,24 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
         ),
       );
     }
+    if (data.containsKey('tags')) {
+      context.handle(
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
+      );
+    }
+    if (data.containsKey('is_locked')) {
+      context.handle(
+        _isLockedMeta,
+        isLocked.isAcceptableOrUnknown(data['is_locked']!, _isLockedMeta),
+      );
+    }
+    if (data.containsKey('entry_date')) {
+      context.handle(
+        _entryDateMeta,
+        entryDate.isAcceptableOrUnknown(data['entry_date']!, _entryDateMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -898,6 +954,18 @@ class $PinsTable extends Pins with TableInfo<$PinsTable, PinEntity> {
         DriftSqlType.string,
         data['${effectivePrefix}linked_board_id'],
       ),
+      tags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags'],
+      ),
+      isLocked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_locked'],
+      )!,
+      entryDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}entry_date'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -929,6 +997,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
   final String? content;
   final String? parentFrameId;
   final String? linkedBoardId;
+  final String? tags;
+  final bool isLocked;
+  final DateTime? entryDate;
   final DateTime createdAt;
   final DateTime modifiedAt;
   const PinEntity({
@@ -945,6 +1016,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     this.content,
     this.parentFrameId,
     this.linkedBoardId,
+    this.tags,
+    required this.isLocked,
+    this.entryDate,
     required this.createdAt,
     required this.modifiedAt,
   });
@@ -973,6 +1047,13 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     }
     if (!nullToAbsent || linkedBoardId != null) {
       map['linked_board_id'] = Variable<String>(linkedBoardId);
+    }
+    if (!nullToAbsent || tags != null) {
+      map['tags'] = Variable<String>(tags);
+    }
+    map['is_locked'] = Variable<bool>(isLocked);
+    if (!nullToAbsent || entryDate != null) {
+      map['entry_date'] = Variable<DateTime>(entryDate);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['modified_at'] = Variable<DateTime>(modifiedAt);
@@ -1004,6 +1085,11 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       linkedBoardId: linkedBoardId == null && nullToAbsent
           ? const Value.absent()
           : Value(linkedBoardId),
+      tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
+      isLocked: Value(isLocked),
+      entryDate: entryDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entryDate),
       createdAt: Value(createdAt),
       modifiedAt: Value(modifiedAt),
     );
@@ -1028,6 +1114,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       content: serializer.fromJson<String?>(json['content']),
       parentFrameId: serializer.fromJson<String?>(json['parentFrameId']),
       linkedBoardId: serializer.fromJson<String?>(json['linkedBoardId']),
+      tags: serializer.fromJson<String?>(json['tags']),
+      isLocked: serializer.fromJson<bool>(json['isLocked']),
+      entryDate: serializer.fromJson<DateTime?>(json['entryDate']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
     );
@@ -1049,6 +1138,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       'content': serializer.toJson<String?>(content),
       'parentFrameId': serializer.toJson<String?>(parentFrameId),
       'linkedBoardId': serializer.toJson<String?>(linkedBoardId),
+      'tags': serializer.toJson<String?>(tags),
+      'isLocked': serializer.toJson<bool>(isLocked),
+      'entryDate': serializer.toJson<DateTime?>(entryDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
     };
@@ -1068,6 +1160,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     Value<String?> content = const Value.absent(),
     Value<String?> parentFrameId = const Value.absent(),
     Value<String?> linkedBoardId = const Value.absent(),
+    Value<String?> tags = const Value.absent(),
+    bool? isLocked,
+    Value<DateTime?> entryDate = const Value.absent(),
     DateTime? createdAt,
     DateTime? modifiedAt,
   }) => PinEntity(
@@ -1088,6 +1183,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     linkedBoardId: linkedBoardId.present
         ? linkedBoardId.value
         : this.linkedBoardId,
+    tags: tags.present ? tags.value : this.tags,
+    isLocked: isLocked ?? this.isLocked,
+    entryDate: entryDate.present ? entryDate.value : this.entryDate,
     createdAt: createdAt ?? this.createdAt,
     modifiedAt: modifiedAt ?? this.modifiedAt,
   );
@@ -1110,6 +1208,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
       linkedBoardId: data.linkedBoardId.present
           ? data.linkedBoardId.value
           : this.linkedBoardId,
+      tags: data.tags.present ? data.tags.value : this.tags,
+      isLocked: data.isLocked.present ? data.isLocked.value : this.isLocked,
+      entryDate: data.entryDate.present ? data.entryDate.value : this.entryDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       modifiedAt: data.modifiedAt.present
           ? data.modifiedAt.value
@@ -1133,6 +1234,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
           ..write('content: $content, ')
           ..write('parentFrameId: $parentFrameId, ')
           ..write('linkedBoardId: $linkedBoardId, ')
+          ..write('tags: $tags, ')
+          ..write('isLocked: $isLocked, ')
+          ..write('entryDate: $entryDate, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt')
           ..write(')'))
@@ -1154,6 +1258,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
     content,
     parentFrameId,
     linkedBoardId,
+    tags,
+    isLocked,
+    entryDate,
     createdAt,
     modifiedAt,
   );
@@ -1174,6 +1281,9 @@ class PinEntity extends DataClass implements Insertable<PinEntity> {
           other.content == this.content &&
           other.parentFrameId == this.parentFrameId &&
           other.linkedBoardId == this.linkedBoardId &&
+          other.tags == this.tags &&
+          other.isLocked == this.isLocked &&
+          other.entryDate == this.entryDate &&
           other.createdAt == this.createdAt &&
           other.modifiedAt == this.modifiedAt);
 }
@@ -1192,6 +1302,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
   final Value<String?> content;
   final Value<String?> parentFrameId;
   final Value<String?> linkedBoardId;
+  final Value<String?> tags;
+  final Value<bool> isLocked;
+  final Value<DateTime?> entryDate;
   final Value<DateTime> createdAt;
   final Value<DateTime> modifiedAt;
   final Value<int> rowid;
@@ -1209,6 +1322,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     this.content = const Value.absent(),
     this.parentFrameId = const Value.absent(),
     this.linkedBoardId = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.isLocked = const Value.absent(),
+    this.entryDate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1227,6 +1343,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     this.content = const Value.absent(),
     this.parentFrameId = const Value.absent(),
     this.linkedBoardId = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.isLocked = const Value.absent(),
+    this.entryDate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1246,6 +1365,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     Expression<String>? content,
     Expression<String>? parentFrameId,
     Expression<String>? linkedBoardId,
+    Expression<String>? tags,
+    Expression<bool>? isLocked,
+    Expression<DateTime>? entryDate,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? modifiedAt,
     Expression<int>? rowid,
@@ -1264,6 +1386,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
       if (content != null) 'content': content,
       if (parentFrameId != null) 'parent_frame_id': parentFrameId,
       if (linkedBoardId != null) 'linked_board_id': linkedBoardId,
+      if (tags != null) 'tags': tags,
+      if (isLocked != null) 'is_locked': isLocked,
+      if (entryDate != null) 'entry_date': entryDate,
       if (createdAt != null) 'created_at': createdAt,
       if (modifiedAt != null) 'modified_at': modifiedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1284,6 +1409,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     Value<String?>? content,
     Value<String?>? parentFrameId,
     Value<String?>? linkedBoardId,
+    Value<String?>? tags,
+    Value<bool>? isLocked,
+    Value<DateTime?>? entryDate,
     Value<DateTime>? createdAt,
     Value<DateTime>? modifiedAt,
     Value<int>? rowid,
@@ -1302,6 +1430,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
       content: content ?? this.content,
       parentFrameId: parentFrameId ?? this.parentFrameId,
       linkedBoardId: linkedBoardId ?? this.linkedBoardId,
+      tags: tags ?? this.tags,
+      isLocked: isLocked ?? this.isLocked,
+      entryDate: entryDate ?? this.entryDate,
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
       rowid: rowid ?? this.rowid,
@@ -1350,6 +1481,15 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
     if (linkedBoardId.present) {
       map['linked_board_id'] = Variable<String>(linkedBoardId.value);
     }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
+    if (isLocked.present) {
+      map['is_locked'] = Variable<bool>(isLocked.value);
+    }
+    if (entryDate.present) {
+      map['entry_date'] = Variable<DateTime>(entryDate.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1378,6 +1518,9 @@ class PinsCompanion extends UpdateCompanion<PinEntity> {
           ..write('content: $content, ')
           ..write('parentFrameId: $parentFrameId, ')
           ..write('linkedBoardId: $linkedBoardId, ')
+          ..write('tags: $tags, ')
+          ..write('isLocked: $isLocked, ')
+          ..write('entryDate: $entryDate, ')
           ..write('createdAt: $createdAt, ')
           ..write('modifiedAt: $modifiedAt, ')
           ..write('rowid: $rowid')
@@ -3118,48 +3261,27 @@ class $AttachmentsTable extends Attachments
       'REFERENCES pins (id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
   @override
-  late final GeneratedColumn<String> type = GeneratedColumn<String>(
-    'type',
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _localPathMeta = const VerificationMeta(
-    'localPath',
+  static const VerificationMeta _fileTypeMeta = const VerificationMeta(
+    'fileType',
   );
   @override
-  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
-    'local_path',
+  late final GeneratedColumn<String> fileType = GeneratedColumn<String>(
+    'file_type',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-  );
-  static const VerificationMeta _originalFileNameMeta = const VerificationMeta(
-    'originalFileName',
-  );
-  @override
-  late final GeneratedColumn<String> originalFileName = GeneratedColumn<String>(
-    'original_file_name',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
-    'sizeBytes',
-  );
-  @override
-  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
-    'size_bytes',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3177,10 +3299,8 @@ class $AttachmentsTable extends Attachments
   List<GeneratedColumn> get $columns => [
     id,
     pinId,
-    type,
-    localPath,
-    originalFileName,
-    sizeBytes,
+    filePath,
+    fileType,
     createdAt,
   ];
   @override
@@ -3208,36 +3328,21 @@ class $AttachmentsTable extends Attachments
     } else if (isInserting) {
       context.missing(_pinIdMeta);
     }
-    if (data.containsKey('type')) {
+    if (data.containsKey('file_path')) {
       context.handle(
-        _typeMeta,
-        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
       );
     } else if (isInserting) {
-      context.missing(_typeMeta);
+      context.missing(_filePathMeta);
     }
-    if (data.containsKey('local_path')) {
+    if (data.containsKey('file_type')) {
       context.handle(
-        _localPathMeta,
-        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+        _fileTypeMeta,
+        fileType.isAcceptableOrUnknown(data['file_type']!, _fileTypeMeta),
       );
     } else if (isInserting) {
-      context.missing(_localPathMeta);
-    }
-    if (data.containsKey('original_file_name')) {
-      context.handle(
-        _originalFileNameMeta,
-        originalFileName.isAcceptableOrUnknown(
-          data['original_file_name']!,
-          _originalFileNameMeta,
-        ),
-      );
-    }
-    if (data.containsKey('size_bytes')) {
-      context.handle(
-        _sizeBytesMeta,
-        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
-      );
+      context.missing(_fileTypeMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -3262,21 +3367,13 @@ class $AttachmentsTable extends Attachments
         DriftSqlType.string,
         data['${effectivePrefix}pin_id'],
       )!,
-      type: attachedDatabase.typeMapping.read(
+      filePath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}type'],
+        data['${effectivePrefix}file_path'],
       )!,
-      localPath: attachedDatabase.typeMapping.read(
+      fileType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}local_path'],
-      )!,
-      originalFileName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}original_file_name'],
-      ),
-      sizeBytes: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}size_bytes'],
+        data['${effectivePrefix}file_type'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -3295,18 +3392,14 @@ class AttachmentEntity extends DataClass
     implements Insertable<AttachmentEntity> {
   final String id;
   final String pinId;
-  final String type;
-  final String localPath;
-  final String? originalFileName;
-  final int sizeBytes;
+  final String filePath;
+  final String fileType;
   final DateTime createdAt;
   const AttachmentEntity({
     required this.id,
     required this.pinId,
-    required this.type,
-    required this.localPath,
-    this.originalFileName,
-    required this.sizeBytes,
+    required this.filePath,
+    required this.fileType,
     required this.createdAt,
   });
   @override
@@ -3314,12 +3407,8 @@ class AttachmentEntity extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['pin_id'] = Variable<String>(pinId);
-    map['type'] = Variable<String>(type);
-    map['local_path'] = Variable<String>(localPath);
-    if (!nullToAbsent || originalFileName != null) {
-      map['original_file_name'] = Variable<String>(originalFileName);
-    }
-    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['file_path'] = Variable<String>(filePath);
+    map['file_type'] = Variable<String>(fileType);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -3328,12 +3417,8 @@ class AttachmentEntity extends DataClass
     return AttachmentsCompanion(
       id: Value(id),
       pinId: Value(pinId),
-      type: Value(type),
-      localPath: Value(localPath),
-      originalFileName: originalFileName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(originalFileName),
-      sizeBytes: Value(sizeBytes),
+      filePath: Value(filePath),
+      fileType: Value(fileType),
       createdAt: Value(createdAt),
     );
   }
@@ -3346,10 +3431,8 @@ class AttachmentEntity extends DataClass
     return AttachmentEntity(
       id: serializer.fromJson<String>(json['id']),
       pinId: serializer.fromJson<String>(json['pinId']),
-      type: serializer.fromJson<String>(json['type']),
-      localPath: serializer.fromJson<String>(json['localPath']),
-      originalFileName: serializer.fromJson<String?>(json['originalFileName']),
-      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      fileType: serializer.fromJson<String>(json['fileType']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -3359,10 +3442,8 @@ class AttachmentEntity extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'pinId': serializer.toJson<String>(pinId),
-      'type': serializer.toJson<String>(type),
-      'localPath': serializer.toJson<String>(localPath),
-      'originalFileName': serializer.toJson<String?>(originalFileName),
-      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'filePath': serializer.toJson<String>(filePath),
+      'fileType': serializer.toJson<String>(fileType),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -3370,32 +3451,22 @@ class AttachmentEntity extends DataClass
   AttachmentEntity copyWith({
     String? id,
     String? pinId,
-    String? type,
-    String? localPath,
-    Value<String?> originalFileName = const Value.absent(),
-    int? sizeBytes,
+    String? filePath,
+    String? fileType,
     DateTime? createdAt,
   }) => AttachmentEntity(
     id: id ?? this.id,
     pinId: pinId ?? this.pinId,
-    type: type ?? this.type,
-    localPath: localPath ?? this.localPath,
-    originalFileName: originalFileName.present
-        ? originalFileName.value
-        : this.originalFileName,
-    sizeBytes: sizeBytes ?? this.sizeBytes,
+    filePath: filePath ?? this.filePath,
+    fileType: fileType ?? this.fileType,
     createdAt: createdAt ?? this.createdAt,
   );
   AttachmentEntity copyWithCompanion(AttachmentsCompanion data) {
     return AttachmentEntity(
       id: data.id.present ? data.id.value : this.id,
       pinId: data.pinId.present ? data.pinId.value : this.pinId,
-      type: data.type.present ? data.type.value : this.type,
-      localPath: data.localPath.present ? data.localPath.value : this.localPath,
-      originalFileName: data.originalFileName.present
-          ? data.originalFileName.value
-          : this.originalFileName,
-      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      fileType: data.fileType.present ? data.fileType.value : this.fileType,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -3405,87 +3476,65 @@ class AttachmentEntity extends DataClass
     return (StringBuffer('AttachmentEntity(')
           ..write('id: $id, ')
           ..write('pinId: $pinId, ')
-          ..write('type: $type, ')
-          ..write('localPath: $localPath, ')
-          ..write('originalFileName: $originalFileName, ')
-          ..write('sizeBytes: $sizeBytes, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileType: $fileType, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    pinId,
-    type,
-    localPath,
-    originalFileName,
-    sizeBytes,
-    createdAt,
-  );
+  int get hashCode => Object.hash(id, pinId, filePath, fileType, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AttachmentEntity &&
           other.id == this.id &&
           other.pinId == this.pinId &&
-          other.type == this.type &&
-          other.localPath == this.localPath &&
-          other.originalFileName == this.originalFileName &&
-          other.sizeBytes == this.sizeBytes &&
+          other.filePath == this.filePath &&
+          other.fileType == this.fileType &&
           other.createdAt == this.createdAt);
 }
 
 class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
   final Value<String> id;
   final Value<String> pinId;
-  final Value<String> type;
-  final Value<String> localPath;
-  final Value<String?> originalFileName;
-  final Value<int> sizeBytes;
+  final Value<String> filePath;
+  final Value<String> fileType;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const AttachmentsCompanion({
     this.id = const Value.absent(),
     this.pinId = const Value.absent(),
-    this.type = const Value.absent(),
-    this.localPath = const Value.absent(),
-    this.originalFileName = const Value.absent(),
-    this.sizeBytes = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.fileType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AttachmentsCompanion.insert({
     required String id,
     required String pinId,
-    required String type,
-    required String localPath,
-    this.originalFileName = const Value.absent(),
-    this.sizeBytes = const Value.absent(),
+    required String filePath,
+    required String fileType,
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        pinId = Value(pinId),
-       type = Value(type),
-       localPath = Value(localPath);
+       filePath = Value(filePath),
+       fileType = Value(fileType);
   static Insertable<AttachmentEntity> custom({
     Expression<String>? id,
     Expression<String>? pinId,
-    Expression<String>? type,
-    Expression<String>? localPath,
-    Expression<String>? originalFileName,
-    Expression<int>? sizeBytes,
+    Expression<String>? filePath,
+    Expression<String>? fileType,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (pinId != null) 'pin_id': pinId,
-      if (type != null) 'type': type,
-      if (localPath != null) 'local_path': localPath,
-      if (originalFileName != null) 'original_file_name': originalFileName,
-      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (filePath != null) 'file_path': filePath,
+      if (fileType != null) 'file_type': fileType,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3494,20 +3543,16 @@ class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
   AttachmentsCompanion copyWith({
     Value<String>? id,
     Value<String>? pinId,
-    Value<String>? type,
-    Value<String>? localPath,
-    Value<String?>? originalFileName,
-    Value<int>? sizeBytes,
+    Value<String>? filePath,
+    Value<String>? fileType,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
     return AttachmentsCompanion(
       id: id ?? this.id,
       pinId: pinId ?? this.pinId,
-      type: type ?? this.type,
-      localPath: localPath ?? this.localPath,
-      originalFileName: originalFileName ?? this.originalFileName,
-      sizeBytes: sizeBytes ?? this.sizeBytes,
+      filePath: filePath ?? this.filePath,
+      fileType: fileType ?? this.fileType,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3522,17 +3567,11 @@ class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
     if (pinId.present) {
       map['pin_id'] = Variable<String>(pinId.value);
     }
-    if (type.present) {
-      map['type'] = Variable<String>(type.value);
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
     }
-    if (localPath.present) {
-      map['local_path'] = Variable<String>(localPath.value);
-    }
-    if (originalFileName.present) {
-      map['original_file_name'] = Variable<String>(originalFileName.value);
-    }
-    if (sizeBytes.present) {
-      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    if (fileType.present) {
+      map['file_type'] = Variable<String>(fileType.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3548,10 +3587,8 @@ class AttachmentsCompanion extends UpdateCompanion<AttachmentEntity> {
     return (StringBuffer('AttachmentsCompanion(')
           ..write('id: $id, ')
           ..write('pinId: $pinId, ')
-          ..write('type: $type, ')
-          ..write('localPath: $localPath, ')
-          ..write('originalFileName: $originalFileName, ')
-          ..write('sizeBytes: $sizeBytes, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileType: $fileType, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -5102,6 +5139,9 @@ typedef $$PinsTableCreateCompanionBuilder =
       Value<String?> content,
       Value<String?> parentFrameId,
       Value<String?> linkedBoardId,
+      Value<String?> tags,
+      Value<bool> isLocked,
+      Value<DateTime?> entryDate,
       Value<DateTime> createdAt,
       Value<DateTime> modifiedAt,
       Value<int> rowid,
@@ -5121,6 +5161,9 @@ typedef $$PinsTableUpdateCompanionBuilder =
       Value<String?> content,
       Value<String?> parentFrameId,
       Value<String?> linkedBoardId,
+      Value<String?> tags,
+      Value<bool> isLocked,
+      Value<DateTime?> entryDate,
       Value<DateTime> createdAt,
       Value<DateTime> modifiedAt,
       Value<int> rowid,
@@ -5255,6 +5298,21 @@ class $$PinsTableFilterComposer extends Composer<_$AppDatabase, $PinsTable> {
 
   ColumnFilters<String> get content => $composableBuilder(
     column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isLocked => $composableBuilder(
+    column: $table.isLocked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get entryDate => $composableBuilder(
+    column: $table.entryDate,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5421,6 +5479,21 @@ class $$PinsTableOrderingComposer extends Composer<_$AppDatabase, $PinsTable> {
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isLocked => $composableBuilder(
+    column: $table.isLocked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get entryDate => $composableBuilder(
+    column: $table.entryDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5539,6 +5612,15 @@ class $$PinsTableAnnotationComposer
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
+
+  GeneratedColumn<bool> get isLocked =>
+      $composableBuilder(column: $table.isLocked, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get entryDate =>
+      $composableBuilder(column: $table.entryDate, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5689,6 +5771,9 @@ class $$PinsTableTableManager
                 Value<String?> content = const Value.absent(),
                 Value<String?> parentFrameId = const Value.absent(),
                 Value<String?> linkedBoardId = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                Value<bool> isLocked = const Value.absent(),
+                Value<DateTime?> entryDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5706,6 +5791,9 @@ class $$PinsTableTableManager
                 content: content,
                 parentFrameId: parentFrameId,
                 linkedBoardId: linkedBoardId,
+                tags: tags,
+                isLocked: isLocked,
+                entryDate: entryDate,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 rowid: rowid,
@@ -5725,6 +5813,9 @@ class $$PinsTableTableManager
                 Value<String?> content = const Value.absent(),
                 Value<String?> parentFrameId = const Value.absent(),
                 Value<String?> linkedBoardId = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                Value<bool> isLocked = const Value.absent(),
+                Value<DateTime?> entryDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> modifiedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5742,6 +5833,9 @@ class $$PinsTableTableManager
                 content: content,
                 parentFrameId: parentFrameId,
                 linkedBoardId: linkedBoardId,
+                tags: tags,
+                isLocked: isLocked,
+                entryDate: entryDate,
                 createdAt: createdAt,
                 modifiedAt: modifiedAt,
                 rowid: rowid,
@@ -7597,10 +7691,8 @@ typedef $$AttachmentsTableCreateCompanionBuilder =
     AttachmentsCompanion Function({
       required String id,
       required String pinId,
-      required String type,
-      required String localPath,
-      Value<String?> originalFileName,
-      Value<int> sizeBytes,
+      required String filePath,
+      required String fileType,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -7608,10 +7700,8 @@ typedef $$AttachmentsTableUpdateCompanionBuilder =
     AttachmentsCompanion Function({
       Value<String> id,
       Value<String> pinId,
-      Value<String> type,
-      Value<String> localPath,
-      Value<String?> originalFileName,
-      Value<int> sizeBytes,
+      Value<String> filePath,
+      Value<String> fileType,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -7652,23 +7742,13 @@ class $$AttachmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get type => $composableBuilder(
-    column: $table.type,
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get localPath => $composableBuilder(
-    column: $table.localPath,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get originalFileName => $composableBuilder(
-    column: $table.originalFileName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get sizeBytes => $composableBuilder(
-    column: $table.sizeBytes,
+  ColumnFilters<String> get fileType => $composableBuilder(
+    column: $table.fileType,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7715,23 +7795,13 @@ class $$AttachmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get type => $composableBuilder(
-    column: $table.type,
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get localPath => $composableBuilder(
-    column: $table.localPath,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get originalFileName => $composableBuilder(
-    column: $table.originalFileName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get sizeBytes => $composableBuilder(
-    column: $table.sizeBytes,
+  ColumnOrderings<String> get fileType => $composableBuilder(
+    column: $table.fileType,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7776,19 +7846,11 @@ class $$AttachmentsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get type =>
-      $composableBuilder(column: $table.type, builder: (column) => column);
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
 
-  GeneratedColumn<String> get localPath =>
-      $composableBuilder(column: $table.localPath, builder: (column) => column);
-
-  GeneratedColumn<String> get originalFileName => $composableBuilder(
-    column: $table.originalFileName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get sizeBytes =>
-      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+  GeneratedColumn<String> get fileType =>
+      $composableBuilder(column: $table.fileType, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7847,19 +7909,15 @@ class $$AttachmentsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> pinId = const Value.absent(),
-                Value<String> type = const Value.absent(),
-                Value<String> localPath = const Value.absent(),
-                Value<String?> originalFileName = const Value.absent(),
-                Value<int> sizeBytes = const Value.absent(),
+                Value<String> filePath = const Value.absent(),
+                Value<String> fileType = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentsCompanion(
                 id: id,
                 pinId: pinId,
-                type: type,
-                localPath: localPath,
-                originalFileName: originalFileName,
-                sizeBytes: sizeBytes,
+                filePath: filePath,
+                fileType: fileType,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -7867,19 +7925,15 @@ class $$AttachmentsTableTableManager
               ({
                 required String id,
                 required String pinId,
-                required String type,
-                required String localPath,
-                Value<String?> originalFileName = const Value.absent(),
-                Value<int> sizeBytes = const Value.absent(),
+                required String filePath,
+                required String fileType,
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AttachmentsCompanion.insert(
                 id: id,
                 pinId: pinId,
-                type: type,
-                localPath: localPath,
-                originalFileName: originalFileName,
-                sizeBytes: sizeBytes,
+                filePath: filePath,
+                fileType: fileType,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

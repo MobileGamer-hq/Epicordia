@@ -20,7 +20,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -34,6 +34,11 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 3) {
           await m.createTable(this.timetableSlots);
+        }
+        if (from < 4) {
+          await m.addColumn(this.pins, this.pins.tags as GeneratedColumn<Object>);
+          await m.addColumn(this.pins, this.pins.isLocked as GeneratedColumn<Object>);
+          await m.addColumn(this.pins, this.pins.entryDate as GeneratedColumn<Object>);
         }
       },
       beforeOpen: (details) async {
