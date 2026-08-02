@@ -63,6 +63,9 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
     final bg = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
     final iconColor = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
 
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+
     return AppBar(
       backgroundColor: bg,
       elevation: 0,
@@ -72,16 +75,70 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
         if (showSearch)
           IconButton(
             icon: Icon(Icons.search, color: iconColor),
+            tooltip: 'Search',
             onPressed: onSearch,
           ),
-        if (showSettings)
-          IconButton(
-            icon: Icon(Icons.settings_outlined, color: iconColor),
-            tooltip: 'Settings',
-            onPressed: onSettings ?? () => context.push('/settings'),
-          ),
+        PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert_rounded, color: iconColor),
+          tooltip: 'Menu',
+          color: cardBg,
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          onSelected: (value) {
+            switch (value) {
+              case 'alarms':
+                context.push('/alarms');
+                break;
+              case 'activity':
+                context.push('/activity');
+                break;
+              case 'settings':
+                if (onSettings != null) {
+                  onSettings!();
+                } else {
+                  context.push('/settings');
+                }
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'alarms',
+              child: Row(
+                children: [
+                  Icon(Icons.alarm_outlined,  color: iconColor, size: 20),
+                  const SizedBox(width: 12),
+                  Text('Alarms & Timers', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'activity',
+              child: Row(
+                children: [
+                  Icon(Icons.notifications_outlined,  color: iconColor, size: 20),
+                  const SizedBox(width: 12),
+                  Text('Activity & Notifications', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                ],
+              ),
+            ),
+            if (showSettings)
+              PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined, color: iconColor, size: 20),
+                    const SizedBox(width: 12),
+                    Text('Settings', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(width: 8),
       ],
     );
+
   }
 }
 

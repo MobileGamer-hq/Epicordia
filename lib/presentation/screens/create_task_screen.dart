@@ -54,7 +54,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
     final repo = ref.read(taskRepositoryProvider);
     final notificationService = NotificationService();
-    final timerAlarmService = DeviceTimerAlarmService();
+    final timerAlarmService = ref.read(deviceTimerAlarmServiceProvider);
+
 
     if (!_isAutoSaved) {
       _isAutoSaved = true;

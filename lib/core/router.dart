@@ -14,7 +14,7 @@ import '../presentation/screens/create_board_screen.dart';
 import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/edit_task_screen.dart';
 import '../presentation/screens/calendar_screen.dart';
-
+import '../presentation/screens/alarms_timers_screen.dart';
 import '../presentation/screens/inbox_screen.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,8 +38,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/activity', builder: (context, state) => const InboxScreen()),
       GoRoute(path: '/inbox',    builder: (context, state) => const InboxScreen()),
       GoRoute(path: '/calendar', builder: (context, state) => const CalendarScreen()),
-      // GoRoute(path: '/',       builder: (context, state) => const DashboardScreen()),
+      GoRoute(path: '/alarms',   builder: (context, state) => const AlarmsTimersScreen()),
       GoRoute(path: '/boards', builder: (context, state) => const BoardsTab()),
+
       GoRoute(
         path: '/board/:id',
         builder: (context, state) => BoardScreen(boardId: state.pathParameters['id']!),

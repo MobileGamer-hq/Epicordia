@@ -1,30 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../domain/services/device_timer_alarm_service.dart';
 import '../../domain/services/notification_service.dart';
 
-class TimerPickerPopover extends StatefulWidget {
+class TimerPickerPopover extends ConsumerStatefulWidget {
   final String? taskTitle;
+  final String? taskId;
 
-  const TimerPickerPopover({super.key, this.taskTitle});
+  const TimerPickerPopover({super.key, this.taskTitle, this.taskId});
 
-  static Future<void> show(BuildContext context, {String? taskTitle}) {
+  static Future<void> show(BuildContext context, {String? taskTitle, String? taskId}) {
     return showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => TimerPickerPopover(taskTitle: taskTitle),
+      builder: (ctx) => TimerPickerPopover(taskTitle: taskTitle, taskId: taskId),
     );
   }
 
   @override
-  State<TimerPickerPopover> createState() => _TimerPickerPopoverState();
+  ConsumerState<TimerPickerPopover> createState() => _TimerPickerPopoverState();
 }
 
-class _TimerPickerPopoverState extends State<TimerPickerPopover> {
+class _TimerPickerPopoverState extends ConsumerState<TimerPickerPopover> {
   final TextEditingController _customMinutesController = TextEditingController();
   int _selectedMinutes = 25; // Default Pomodoro duration
-  final _timerService = DeviceTimerAlarmService();
   final _notificationService = NotificationService();
 
   final List<int> _presetDurations = [5, 10, 15, 25, 30, 45, 60];
@@ -39,14 +41,25 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
     final minutes = int.tryParse(_customMinutesController.text) ?? _selectedMinutes;
     if (minutes <= 0) return;
 
-    final result = await _timerService.startTimer(
+    final service = ref.read(deviceTimerAlarmServiceProvider);
+    final result = await service.startTimer(
       minutes: minutes,
       title: widget.taskTitle ?? 'Epicordia Task Timer',
+      taskId: widget.taskId,
     );
 
     if (!mounted) return;
 
-    if (result == TimerActionResult.androidSystemHandoffSuccess) {
+    if (result == TimerActionResult.inAppTimerStarted) {
+      Navigator.of(context).pop();
+      context.push('/alarms');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Started $minutes min in-app timer!'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (result == TimerActionResult.androidSystemHandoffSuccess) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -55,7 +68,6 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
         ),
       );
     } else if (result == TimerActionResult.iosNotificationScheduled) {
-      // Schedule local notification fallback for iOS
       await _notificationService.scheduleTimerNotification(
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: widget.taskTitle ?? 'Timer Finished',
@@ -65,7 +77,7 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Timer set for $minutes min (Local notification fallback for iOS)'),
+          content: Text('Timer set for $minutes min (Scheduled notification)'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -93,7 +105,7 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20), // radius-l
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             width: 1,
@@ -162,7 +174,7 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999), // pill
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   onSelected: (selected) {
                     if (selected) {
@@ -183,7 +195,7 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
               decoration: InputDecoration(
                 labelText: 'Custom duration (minutes)',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10), // radius-s
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -203,7 +215,7 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999), // pill
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
                 onPressed: _handleStartTimer,
@@ -219,4 +231,3 @@ class _TimerPickerPopoverState extends State<TimerPickerPopover> {
     );
   }
 }
-

@@ -10,7 +10,9 @@ import '../../data/providers.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 import 'pin_lock_screen.dart';
+import '../notifiers/alarm_settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -448,7 +450,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 24),
 
+            // ── Alarms & Timers Engine ────────────────────────────
+            const _SectionHeader(
+                icon: Icons.alarm_outlined, label: 'Alarms & Timers Engine'),
+            const SizedBox(height: 10),
+            Consumer(
+              builder: (context, ref, _) {
+                final useSystem = ref.watch(alarmSettingsProvider);
+
+                return _Card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SwitchRow(
+                        icon: Icons.app_shortcut_outlined,
+                        label: 'Use Native System Clock App',
+                        value: useSystem,
+                        onChanged: (enabled) {
+                          ref.read(alarmSettingsProvider.notifier).setUseSystemClockApp(enabled);
+                        },
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        useSystem
+                            ? 'Timer & alarm creation opens your device\'s system Clock app (Android/iOS handoff).'
+                            : 'Alarms and timers run directly in Epicordia with animated progress rings & active alarm lists.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? EpicordiaColors.textTertiaryDark
+                              : EpicordiaColors.textTertiaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
             // ── Privacy & Security ────────────────────────────────
+
             const _SectionHeader(
                 icon: Icons.shield_outlined, label: 'Privacy & Security'),
             const SizedBox(height: 10),

@@ -1,72 +1,130 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_alarm_clock/flutter_alarm_clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/in_app_alarm_model.dart';
+import '../../presentation/notifiers/alarm_settings_provider.dart';
+import '../../presentation/notifiers/alarm_timer_provider.dart';
 
 enum TimerActionResult {
   androidSystemHandoffSuccess,
+  inAppTimerStarted,
+  inAppAlarmCreated,
   iosNotificationScheduled,
   error,
 }
 
 class DeviceTimerAlarmService {
+  final Ref? _ref;
+  DeviceTimerAlarmService([this._ref]);
+
   /// Start a Timer.
-  /// On Android: Handoff to System Clock app via flutter_alarm_clock.
-  /// On iOS/other: Schedule local notification fallback (handled by caller/NotificationService).
+  /// If [useSystemClockApp] is enabled in settings: handoff to System Clock app on Android.
+  /// Otherwise: start in-app timer with animated progress UI.
   Future<TimerActionResult> startTimer({
     required int minutes,
     String? title,
+    String? taskId,
   }) async {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      try {
-        FlutterAlarmClock.createTimer(
-          length: minutes,
-          title: title ?? 'Epicordia Timer',
-        );
-        return TimerActionResult.androidSystemHandoffSuccess;
-      } catch (e) {
-        debugPrint('Android timer handoff error: $e');
-        return TimerActionResult.error;
+    final useSystem = _ref?.read(alarmSettingsProvider) ?? false;
+
+    if (useSystem) {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        try {
+          FlutterAlarmClock.createTimer(
+            length: minutes,
+            title: title ?? 'Epicordia Timer',
+          );
+          return TimerActionResult.androidSystemHandoffSuccess;
+        } catch (e) {
+          debugPrint('Android timer handoff error: $e');
+          return TimerActionResult.error;
+        }
+      } else {
+        return TimerActionResult.iosNotificationScheduled;
       }
     } else {
-      // iOS / Desktop / Web: caller schedules in-app local notification fallback
-      return TimerActionResult.iosNotificationScheduled;
+      // In-App Engine
+      if (_ref != null) {
+        _ref.read(alarmTimerProvider.notifier).startTimer(
+              duration: Duration(minutes: minutes),
+              label: title ?? 'Focus Timer',
+              taskId: taskId,
+            );
+        return TimerActionResult.inAppTimerStarted;
+      }
+      return TimerActionResult.error;
     }
   }
 
   /// Create an Alarm at specific hour/minute.
-  /// On Android: Handoff to System Clock app via flutter_alarm_clock.
-  /// On iOS/other: Schedule local notification fallback.
+  /// If [useSystemClockApp] is enabled: handoff to System Clock app.
+  /// Otherwise: save into in-app active alarms list.
   Future<TimerActionResult> createAlarm({
     required int hour,
     required int minute,
     String? title,
+    String? taskId,
+    List<int> repeatDays = const [],
   }) async {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      try {
-        FlutterAlarmClock.createAlarm(
-          hour: hour,
-          minutes: minute,
-          title: title ?? 'Epicordia Alarm',
-        );
-        return TimerActionResult.androidSystemHandoffSuccess;
-      } catch (e) {
-        debugPrint('Android alarm handoff error: $e');
-        return TimerActionResult.error;
+    final useSystem = _ref?.read(alarmSettingsProvider) ?? false;
+
+    if (useSystem) {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        try {
+          FlutterAlarmClock.createAlarm(
+            hour: hour,
+            minutes: minute,
+            title: title ?? 'Epicordia Alarm',
+          );
+          return TimerActionResult.androidSystemHandoffSuccess;
+        } catch (e) {
+          debugPrint('Android alarm handoff error: $e');
+          return TimerActionResult.error;
+        }
+      } else {
+        return TimerActionResult.iosNotificationScheduled;
       }
     } else {
-      return TimerActionResult.iosNotificationScheduled;
+      // In-App Engine
+      if (_ref != null) {
+        final newAlarm = InAppAlarm(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: title ?? 'Task Alarm',
+          hour: hour,
+          minute: minute,
+          repeatDays: repeatDays,
+          isEnabled: true,
+          taskId: taskId,
+        );
+        await _ref.read(alarmTimerProvider.notifier).addAlarm(newAlarm);
+        return TimerActionResult.inAppAlarmCreated;
+      }
+      return TimerActionResult.error;
     }
   }
 
   /// Open System Clock App Screens (Android only)
   Future<void> showAlarms() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
-      FlutterAlarmClock.showAlarms();
+      try {
+        FlutterAlarmClock.showAlarms();
+      } catch (e) {
+        debugPrint('showAlarms error: $e');
+      }
     }
   }
 
   Future<void> showTimers() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
-      FlutterAlarmClock.showTimers();
+      try {
+        FlutterAlarmClock.showTimers();
+      } catch (e) {
+        debugPrint('showTimers error: $e');
+      }
     }
   }
 }
+
+final deviceTimerAlarmServiceProvider = Provider<DeviceTimerAlarmService>((ref) {
+  return DeviceTimerAlarmService(ref);
+});
