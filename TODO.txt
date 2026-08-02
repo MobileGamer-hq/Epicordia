@@ -9,11 +9,11 @@
 -The app designs should have a glass like designs on cards and ui for buttons and all make it look nice.
 -on the dashboard there should be a settings button that will link tot the settings screen.
 
--There should be ba cresta button on the notes_tab screen and tasks_tabs screen the button is there for the tasks_tab screen but once there is a task it doesnt show again which is wrong it should show even when there is content in the list, and the create button on the tasks_tab screen doesnt work
+-There should be a create button on the notes_tab screen and tasks_tabs screen the button is there for the tasks_tab screen but once there is a task it doesn't show again which is wrong it should show even when there is content in the list, and the create button on the tasks_tab screen doesnt work
 -Let the notes_tabs and tasks_tabs screens get their data from the database, and the filters on top should work for both of them so recents, pinned and ideas  and due today, overdu and boards
 -Have a greeting either below or above the heatmap
 
--I want the heatmap to be linked to a calnedar screen by hero widget.
+-I want the heatmap to be linked to a calendar screen by hero widget.
 -also the heatmap widget has a small row height, make it bigger but it should scale for screens and for desktopns or wide screens the heat map should show work done for 3 months
 
 -let the Format toolbar and for notes work,
@@ -74,11 +74,24 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 -make the notes and task auto save and not just save on the click of that save button
 
 -The toolbar on the notes screen should show the current tool beiog used so the color of the icon should chnage, when it in use and the user can turn it off by deselcting it
--The markdown for notes formats on the notes screen but doesnt format on the notes tab screen with the notes list items so it just shows the raw text
+-The markdown for notes formats on the notes screen but doesn't format on the notes tab screen with the notes list items so it just shows the raw text
 
 -the underline, number and bullet dont turn to a list so after i click enter the next line doesnt continue
 -the link doesnt haev the option to show preview and to use a web view to go to the website when clicked
 
--Change the alarm system to make it
+-Change the alarm system to make it in app so instead of setting up alamrs on the users device with the clock app there shoukd be  a screen with alarms and timers for the taka dnschedules in the app,
+-There should be an alaram and timer screen with nice animations and progress circle with n ice ui that matches the apps ui and theme.
+
+-When onboarding and also in the setting sthe user shoud be able to say if they want to creatr a journalling plan, and setup what is the frequency of the journaling.
+-The journaling will be done in the notes part of the app and will have its own filter too, so notes should have tags, if an idea, journal, etc, also notes hsould be able to be locked and if the user should be able to say if they want to lock all journals in the settings
+-Add report screen which shows progress made per week, per day, based on calculations of missed task, if the user sets a goal to journal more how much, wheter they have a journal streak and kept to it etc
+-This reort shoud come withgrapsh and charts and each weeks events and tasks houd be able to bee seen so the stuff should be clickable which will open menues and other screens that shows insights
+
+
+Claude certifie Architect
+Github Foundations
+Google AI Enssentials
+IBM Skills Build
+Hubspot digital marketing
 
 

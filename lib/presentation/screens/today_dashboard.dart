@@ -585,7 +585,7 @@ class _ActivityHeatmapState extends ConsumerState<ActivityHeatmap> {
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-    final activeBorderColor = isDark ? EpicordiaColors.Primary : EpicordiaColors.blue700;
+    final activeBorderColor = isDark ? EpicordiaColors.Primary : EpicordiaColors.blue600;
 
     // Retrieve real tasks and notes to build real activity count per day
     final tasksAsync = ref.watch(allTasksProvider);
