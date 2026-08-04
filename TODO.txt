@@ -88,7 +88,7 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 -This reort shoud come withgrapsh and charts and each weeks events and tasks houd be able to bee seen so the stuff should be clickable which will open menues and other screens that shows insights
 
 
-Claude certifie Architect
+Claude certified Architect
 Github Foundations
 Google AI Enssentials
 IBM Skills Build

@@ -72,7 +72,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final resetButton = find.text('Reset App Data');
-      await tester.scrollUntilVisible(resetButton, 100);
+      await tester.scrollUntilVisible(resetButton, 100, scrollable: find.byType(Scrollable).first);
       expect(resetButton, findsOneWidget);
     });
   });

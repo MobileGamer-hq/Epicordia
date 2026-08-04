@@ -79,16 +79,16 @@ class _AnimatedProgressRingState extends State<AnimatedProgressRing>
               Transform.scale(
                 scale: pulseScale,
                 child: Container(
-                  width: widget.size * 0.92,
-                  height: widget.size * 0.92,
+                  width: widget.size * 0.90,
+                  height: widget.size * 0.90,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: EpicordiaColors.blue500.withValues(alpha: glowOpacity),
                     boxShadow: [
                       BoxShadow(
                         color: EpicordiaColors.blue600.withValues(alpha: glowOpacity),
-                        blurRadius: 30,
-                        spreadRadius: 8,
+                        blurRadius: 36,
+                        spreadRadius: 10,
                       ),
                     ],
                   ),
@@ -106,68 +106,104 @@ class _AnimatedProgressRingState extends State<AnimatedProgressRing>
               ),
 
               // Time & Label Text in Center
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.label.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: widget.timerState == TimerState.running
-                          ? EpicordiaColors.blue600
-                          : (isDark
-                              ? EpicordiaColors.textTertiaryDark
-                              : EpicordiaColors.textTertiaryLight),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.formattedTime,
-                    style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.0,
-                      color: isDark
-                          ? EpicordiaColors.textPrimaryDark
-                          : EpicordiaColors.textPrimaryLight,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: widget.timerState == TimerState.running
-                          ? EpicordiaColors.blue600.withValues(alpha: 0.12)
-                          : (widget.timerState == TimerState.paused
-                              ? EpicordiaColors.warningLight.withValues(alpha: 0.12)
-                              : Colors.transparent),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      widget.timerState == TimerState.running
-                          ? 'Focusing'
-                          : (widget.timerState == TimerState.paused
-                              ? 'Paused'
-                              : (widget.timerState == TimerState.finished
-                                  ? 'Done! 🎉'
-                                  : 'Ready')),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.label.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.4,
                         color: widget.timerState == TimerState.running
                             ? EpicordiaColors.blue600
-                            : (widget.timerState == TimerState.paused
-                                ? EpicordiaColors.warningLight
-                                : (isDark
-                                    ? EpicordiaColors.textTertiaryDark
-                                    : EpicordiaColors.textTertiaryLight)),
+                            : (isDark
+                                ? EpicordiaColors.textTertiaryDark
+                                : EpicordiaColors.textTertiaryLight),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        widget.formattedTime,
+                        style: TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1.5,
+                          height: 1.0,
+                          color: isDark
+                              ? EpicordiaColors.textPrimaryDark
+                              : EpicordiaColors.textPrimaryLight,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: widget.timerState == TimerState.running
+                            ? EpicordiaColors.blue600.withValues(alpha: 0.12)
+                            : (widget.timerState == TimerState.paused
+                                ? EpicordiaColors.warningLight.withValues(alpha: 0.15)
+                                : (widget.timerState == TimerState.finished
+                                    ? EpicordiaColors.successLight.withValues(alpha: 0.15)
+                                    : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)))),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(
+                          color: widget.timerState == TimerState.running
+                              ? EpicordiaColors.blue600.withValues(alpha: 0.3)
+                              : (widget.timerState == TimerState.paused
+                                  ? EpicordiaColors.warningLight.withValues(alpha: 0.3)
+                                  : Colors.transparent),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.timerState == TimerState.running)
+                            Container(
+                              width: 6,
+                              height: 6,
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: EpicordiaColors.blue600,
+                              ),
+                            ),
+                          Text(
+                            widget.timerState == TimerState.running
+                                ? 'Focusing'
+                                : (widget.timerState == TimerState.paused
+                                    ? 'Paused'
+                                    : (widget.timerState == TimerState.finished
+                                        ? 'Done! 🎉'
+                                        : 'Ready')),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: widget.timerState == TimerState.running
+                                  ? EpicordiaColors.blue600
+                                  : (widget.timerState == TimerState.paused
+                                      ? EpicordiaColors.warningLight
+                                      : (isDark
+                                          ? EpicordiaColors.textSecondaryDark
+                                          : EpicordiaColors.textSecondaryLight)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

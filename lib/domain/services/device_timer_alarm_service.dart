@@ -25,7 +25,7 @@ class DeviceTimerAlarmService {
     String? title,
     String? taskId,
   }) async {
-    final useSystem = _ref?.read(alarmSettingsProvider) ?? false;
+    final useSystem = _ref?.read(alarmSettingsProvider) ?? true;
 
     if (useSystem) {
       if (defaultTargetPlatform == TargetPlatform.android) {
@@ -66,7 +66,7 @@ class DeviceTimerAlarmService {
     String? taskId,
     List<int> repeatDays = const [],
   }) async {
-    final useSystem = _ref?.read(alarmSettingsProvider) ?? false;
+    final useSystem = _ref?.read(alarmSettingsProvider) ?? true;
 
     if (useSystem) {
       if (defaultTargetPlatform == TargetPlatform.android) {

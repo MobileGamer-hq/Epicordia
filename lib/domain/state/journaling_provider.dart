@@ -239,7 +239,9 @@ class JournalingPlanNotifier extends Notifier<JournalingPlanState> {
     try {
       final db = ref.read(databaseProvider);
       db.pinDao.watchAllNotes().first.then((notes) {
-        updateStreakFromNotes(notes);
+        if (ref.mounted) {
+          updateStreakFromNotes(notes);
+        }
       });
     } catch (_) {}
   }
