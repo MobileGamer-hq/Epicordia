@@ -77,7 +77,7 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 -The markdown for notes formats on the notes screen but doesn't format on the notes tab screen with the notes list items so it just shows the raw text
 
 -the underline, number and bullet dont turn to a list so after i click enter the next line doesnt continue
--the link doesnt haev the option to show preview and to use a web view to go to the website when clicked
+-the link doesnt have the option to show preview and to use a web view to go to the website when clicked
 
 -Change the alarm system to make it in app so instead of setting up alamrs on the users device with the clock app there shoukd be  a screen with alarms and timers for the taka dnschedules in the app,
 -There should be an alaram and timer screen with nice animations and progress circle with n ice ui that matches the apps ui and theme.
@@ -95,3 +95,5 @@ IBM Skills Build
 Hubspot digital marketing
 
 
+dart run flutter_launcher_icons
+dart run flutter_native_splash:create
