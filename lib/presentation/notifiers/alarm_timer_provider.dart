@@ -87,11 +87,43 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         final sample = [
           const InAppAlarm(
             id: 'sample_1',
-            title: 'Morning Focus & Planning',
-            hour: 8,
-            minute: 0,
-            repeatDays: [1, 2, 3, 4, 5],
+            title: 'Wake Up',
+            hour: 6,
+            minute: 30,
+            repeatDays: [1, 2, 3, 4, 5, 6, 7],
             isEnabled: true,
+            ringtone: 'Zen Chimes',
+            vibrate: true,
+          ),
+          const InAppAlarm(
+            id: 'sample_2',
+            title: 'Deep Work Start',
+            hour: 9,
+            minute: 0,
+            repeatDays: [1, 2, 3, 4, 5, 6, 7],
+            isEnabled: false,
+            ringtone: 'Zen Chimes',
+            vibrate: true,
+          ),
+          const InAppAlarm(
+            id: 'sample_3',
+            title: 'Client Meeting Prep',
+            hour: 14,
+            minute: 15,
+            repeatDays: [],
+            isEnabled: true,
+            ringtone: 'Gentle Chime',
+            vibrate: true,
+          ),
+          const InAppAlarm(
+            id: 'sample_4',
+            title: 'Flight Check-in',
+            hour: 19,
+            minute: 0,
+            repeatDays: [],
+            isEnabled: true,
+            ringtone: 'Zen Chimes',
+            vibrate: true,
           ),
         ];
         state = state.copyWith(alarms: sample);
@@ -126,6 +158,26 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         id: alarm.id.hashCode,
         title: 'ALARM: ${alarm.title}',
         duration: nextDuration,
+      );
+    }
+  }
+
+  Future<void> updateAlarm(InAppAlarm updatedAlarm) async {
+    final updatedList = state.alarms.map((a) {
+      if (a.id == updatedAlarm.id) {
+        return updatedAlarm;
+      }
+      return a;
+    }).toList();
+
+    state = state.copyWith(alarms: updatedList);
+    await _saveAlarms(updatedList);
+
+    if (updatedAlarm.isEnabled) {
+      await _notificationService.scheduleTimerNotification(
+        id: updatedAlarm.id.hashCode,
+        title: 'ALARM: ${updatedAlarm.title}',
+        duration: updatedAlarm.timeUntilNextRing,
       );
     }
   }

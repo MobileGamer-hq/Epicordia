@@ -8,7 +8,8 @@ class InAppAlarm {
   final List<int> repeatDays; // 1 = Mon, 7 = Sun. Empty = One-time alarm
   final bool isEnabled;
   final String? taskId;
-  final String? ringtone;
+  final String ringtone;
+  final bool vibrate;
 
   const InAppAlarm({
     required this.id,
@@ -18,8 +19,12 @@ class InAppAlarm {
     this.repeatDays = const [],
     this.isEnabled = true,
     this.taskId,
-    this.ringtone,
+    this.ringtone = 'Zen Chimes',
+    this.vibrate = true,
   });
+
+  bool get isDaily => repeatDays.isNotEmpty;
+  bool get isOneTime => repeatDays.isEmpty;
 
   String get formattedTime {
     final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
@@ -28,8 +33,21 @@ class InAppAlarm {
     return '${h.toString().padLeft(2, '0')}:$m $period';
   }
 
+  String get hourString {
+    final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return h.toString().padLeft(2, '0');
+  }
+
+  String get minuteString {
+    return minute.toString().padLeft(2, '0');
+  }
+
+  String get periodString {
+    return hour >= 12 ? 'PM' : 'AM';
+  }
+
   String get repeatDaysSummary {
-    if (repeatDays.isEmpty) return 'Once';
+    if (repeatDays.isEmpty) return relativeDayText;
     if (repeatDays.length == 7) return 'Everyday';
     if (repeatDays.length == 5 && repeatDays.every((d) => d >= 1 && d <= 5)) {
       return 'Weekdays';
@@ -39,6 +57,16 @@ class InAppAlarm {
     }
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return repeatDays.map((d) => days[d - 1]).join(', ');
+  }
+
+  String get relativeDayText {
+    final now = DateTime.now();
+    final targetToday = DateTime(now.year, now.month, now.day, hour, minute);
+    if (targetToday.isAfter(now)) {
+      return 'Today';
+    } else {
+      return 'Tomorrow';
+    }
   }
 
   /// Calculates duration remaining until next ring time
@@ -82,6 +110,7 @@ class InAppAlarm {
     bool? isEnabled,
     String? taskId,
     String? ringtone,
+    bool? vibrate,
   }) {
     return InAppAlarm(
       id: id ?? this.id,
@@ -92,6 +121,7 @@ class InAppAlarm {
       isEnabled: isEnabled ?? this.isEnabled,
       taskId: taskId ?? this.taskId,
       ringtone: ringtone ?? this.ringtone,
+      vibrate: vibrate ?? this.vibrate,
     );
   }
 
@@ -105,6 +135,7 @@ class InAppAlarm {
       'isEnabled': isEnabled,
       'taskId': taskId,
       'ringtone': ringtone,
+      'vibrate': vibrate,
     };
   }
 
@@ -117,7 +148,8 @@ class InAppAlarm {
       repeatDays: List<int>.from(map['repeatDays'] ?? []),
       isEnabled: map['isEnabled'] as bool? ?? true,
       taskId: map['taskId'] as String?,
-      ringtone: map['ringtone'] as String?,
+      ringtone: map['ringtone'] as String? ?? 'Zen Chimes',
+      vibrate: map['vibrate'] as bool? ?? true,
     );
   }
 

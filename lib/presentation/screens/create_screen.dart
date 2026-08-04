@@ -23,7 +23,7 @@ class CreateScreen extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
         // title: const EpicordiaLogo(),
-        centerTitle: false,
+        // centerTitle: false,
       ),
       body: SafeArea(
         child: Padding(

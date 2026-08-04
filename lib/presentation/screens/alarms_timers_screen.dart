@@ -230,7 +230,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                           ctx,
                           icon: Icons.volume_up_outlined,
                           label: 'Preview',
-                          color: Colors.amber.shade800,
+                          color: EpicordiaColors.blue600,
                           onTap: () {
                             SystemSound.play(SystemSoundType.alert);
                             HapticFeedback.heavyImpact();
@@ -247,7 +247,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                           ctx,
                           icon: alarm.isEnabled ? Icons.alarm_off_outlined : Icons.alarm_on_outlined,
                           label: alarm.isEnabled ? 'Disable' : 'Enable',
-                          color: alarm.isEnabled ? Colors.orange.shade700 : Colors.green.shade700,
+                          color: alarm.isEnabled ? EpicordiaColors.errorLight : EpicordiaColors.blue600,
                           onTap: () {
                             ref.read(alarmTimerProvider.notifier).toggleAlarm(alarm.id);
                             Navigator.of(ctx).pop();
@@ -335,7 +335,6 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
-    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
 
     final timerAlarmState = ref.watch(alarmTimerProvider);
     final activeTimer = timerAlarmState.activeTimer;
@@ -352,33 +351,18 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
       appBar: AppBar(
         backgroundColor: bgApp,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Icon(Icons.grid_view_rounded, color: EpicordiaColors.blue600, size: 26),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Epicordia',
+        title:Text(
+          "Alarms and Timers",
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: EpicordiaColors.blue600,
-            letterSpacing: -0.3,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            // color: textPrimary,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              'Search',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: EpicordiaColors.blue600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Column(
         children: [
@@ -531,10 +515,8 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
   // Alarms View (Reference 1 Design)
   // ─────────────────────────────────────────────────────────────
   Widget _buildActiveAlarmsTab(BuildContext context, List<InAppAlarm> alarms, bool isDark) {
-    final bgCard = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
-    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 
     final dailyAlarms = alarms.where((a) => a.isDaily).toList();
     final oneTimeAlarms = alarms.where((a) => a.isOneTime).toList();
@@ -777,7 +759,6 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
     final presetDurations = [5, 10, 15, 25, 30, 45, 60];
     final isTimerActive = activeTimer.state == TimerState.running || activeTimer.state == TimerState.paused;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final bgCard = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
     final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 

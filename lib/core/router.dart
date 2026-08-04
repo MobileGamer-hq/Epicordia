@@ -20,6 +20,9 @@ import '../presentation/screens/report_screen.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/models/in_app_alarm_model.dart';
+import '../presentation/screens/create_alarm_screen.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
@@ -63,6 +66,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/create/note',  builder: (context, state) => const CreateNoteScreen()),
       GoRoute(path: '/create/task',  builder: (context, state) => const CreateTaskScreen()),
       GoRoute(path: '/create/board', builder: (context, state) => const CreateBoardScreen()),
+      GoRoute(
+        path: '/create/alarm',
+        builder: (context, state) => CreateAlarmScreen(
+          alarmToEdit: state.extra is InAppAlarm ? state.extra as InAppAlarm : null,
+        ),
+      ),
     ],
   );
 });
