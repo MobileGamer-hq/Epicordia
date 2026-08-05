@@ -83,6 +83,8 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
         final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
         final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 
+
+
         final nextRing = alarm.timeUntilNextRing;
         final hrs = nextRing.inHours;
         final mins = nextRing.inMinutes.remainder(60);
@@ -756,7 +758,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
   // Timers View
   // ─────────────────────────────────────────────────────────────
   Widget _buildTimersTab(BuildContext context, InAppTimer activeTimer, bool isDark) {
-    final presetDurations = [5, 10, 15, 25, 30, 45, 60];
+    final presetDurations = [5, 30, 60];
     final isTimerActive = activeTimer.state == TimerState.running || activeTimer.state == TimerState.paused;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final bgCard = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;

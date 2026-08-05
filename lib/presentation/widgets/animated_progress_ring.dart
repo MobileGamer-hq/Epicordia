@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
 import '../../core/theme.dart';
 import '../../domain/models/in_app_timer_model.dart';
 
@@ -83,10 +85,14 @@ class _AnimatedProgressRingState extends State<AnimatedProgressRing>
                   height: widget.size * 0.90,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: EpicordiaColors.blue500.withValues(alpha: glowOpacity),
+                    color: EpicordiaColors.blue500.withValues(
+                      alpha: glowOpacity,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: EpicordiaColors.blue600.withValues(alpha: glowOpacity),
+                        color: EpicordiaColors.blue600.withValues(
+                          alpha: glowOpacity,
+                        ),
                         blurRadius: 36,
                         spreadRadius: 10,
                       ),
@@ -124,8 +130,8 @@ class _AnimatedProgressRingState extends State<AnimatedProgressRing>
                         color: widget.timerState == TimerState.running
                             ? EpicordiaColors.blue600
                             : (isDark
-                                ? EpicordiaColors.textTertiaryDark
-                                : EpicordiaColors.textTertiaryLight),
+                                  ? EpicordiaColors.textTertiaryDark
+                                  : EpicordiaColors.textTertiaryLight),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -147,22 +153,36 @@ class _AnimatedProgressRingState extends State<AnimatedProgressRing>
                     ),
                     const SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: widget.timerState == TimerState.running
                             ? EpicordiaColors.blue600.withValues(alpha: 0.12)
                             : (widget.timerState == TimerState.paused
-                                ? EpicordiaColors.warningLight.withValues(alpha: 0.15)
-                                : (widget.timerState == TimerState.finished
-                                    ? EpicordiaColors.successLight.withValues(alpha: 0.15)
-                                    : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)))),
+                                  ? EpicordiaColors.warningLight.withValues(
+                                      alpha: 0.15,
+                                    )
+                                  : (widget.timerState == TimerState.finished
+                                        ? EpicordiaColors.successLight
+                                              .withValues(alpha: 0.15)
+                                        : (isDark
+                                              ? Colors.white.withValues(
+                                                  alpha: 0.06,
+                                                )
+                                              : Colors.black.withValues(
+                                                  alpha: 0.04,
+                                                )))),
                         borderRadius: BorderRadius.circular(99),
                         border: Border.all(
                           color: widget.timerState == TimerState.running
                               ? EpicordiaColors.blue600.withValues(alpha: 0.3)
                               : (widget.timerState == TimerState.paused
-                                  ? EpicordiaColors.warningLight.withValues(alpha: 0.3)
-                                  : Colors.transparent),
+                                    ? EpicordiaColors.warningLight.withValues(
+                                        alpha: 0.3,
+                                      )
+                                    : Colors.transparent),
                           width: 1,
                         ),
                       ),
@@ -183,20 +203,23 @@ class _AnimatedProgressRingState extends State<AnimatedProgressRing>
                             widget.timerState == TimerState.running
                                 ? 'Focusing'
                                 : (widget.timerState == TimerState.paused
-                                    ? 'Paused'
-                                    : (widget.timerState == TimerState.finished
-                                        ? 'Done! 🎉'
-                                        : 'Ready')),
+                                      ? 'Paused'
+                                      : (widget.timerState ==
+                                                TimerState.finished
+                                            ? 'Done!'
+                                            : 'Ready')),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: widget.timerState == TimerState.running
                                   ? EpicordiaColors.blue600
                                   : (widget.timerState == TimerState.paused
-                                      ? EpicordiaColors.warningLight
-                                      : (isDark
-                                          ? EpicordiaColors.textSecondaryDark
-                                          : EpicordiaColors.textSecondaryLight)),
+                                        ? EpicordiaColors.warningLight
+                                        : (isDark
+                                              ? EpicordiaColors
+                                                    .textSecondaryDark
+                                              : EpicordiaColors
+                                                    .textSecondaryLight)),
                             ),
                           ),
                         ],
@@ -251,15 +274,17 @@ class _ProgressRingPainter extends CustomPainter {
       startAngle: startAngle,
       endAngle: startAngle + sweepAngle,
       colors: const [
-        EpicordiaColors.blue400,
-        EpicordiaColors.blue600,
-        EpicordiaColors.blue700,
+        // EpicordiaColors.blue100,
+        // EpicordiaColors.blue200,
+        EpicordiaColors.blue300,EpicordiaColors.blue300,EpicordiaColors.blue300,
+        // EpicordiaColors.blue400,
       ],
     );
 
     final progressPaint = Paint()
       ..shader = progressGradient.createShader(
-          Rect.fromCircle(center: center, radius: radius))
+        Rect.fromCircle(center: center, radius: radius),
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;

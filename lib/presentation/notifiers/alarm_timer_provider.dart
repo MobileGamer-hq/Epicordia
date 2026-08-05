@@ -258,7 +258,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         state = state.copyWith(activeTimer: finishedTimer);
         triggerRinging(
           RingingEvent(
-            title: 'Timer Complete! 🎉',
+            title: 'Timer Complete!',
             subtitle: current.label ?? 'Focus session finished',
             isAlarm: false,
             taskId: current.linkedTaskId,
@@ -300,7 +300,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         );
         triggerRinging(
           RingingEvent(
-            title: 'Timer Complete! 🎉',
+            title: 'Timer Complete!',
             subtitle: active.label ?? 'Focus session finished',
             isAlarm: false,
             taskId: active.linkedTaskId,
