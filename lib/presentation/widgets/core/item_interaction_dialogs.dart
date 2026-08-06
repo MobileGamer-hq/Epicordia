@@ -9,6 +9,7 @@ import '../../../data/database/database.dart';
 import '../../../data/repository/task_repository.dart';
 import '../../../data/repository/pin_repository.dart';
 import '../../../data/providers.dart';
+import '../../../domain/models/task_subitem.dart';
 import '../edit_timetable_slot_dialog.dart';
 import 'link_preview_dialog.dart';
 
@@ -412,35 +413,108 @@ class ItemInteractionDialogs {
                       ),
                       const Divider(height: 24),
 
-                      // Notes / Description
+                      // Notes & Subtask Checklist
                       Flexible(
                         child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'DESCRIPTION / NOTES',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: textTertiary,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              SelectionArea(
-                                child: Text(
-                                  (task.notes != null && task.notes!.trim().isNotEmpty)
-                                      ? task.notes!
-                                      : 'No additional notes provided for this task.',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    height: 1.5,
-                                    color: textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Builder(
+                            builder: (ctx) {
+                              final notesPayload = TaskSubitem.decodeNotes(task.notes);
+                              final hasNotes = notesPayload.userNotes != null && notesPayload.userNotes!.trim().isNotEmpty;
+                              final hasSubitems = notesPayload.hasSubitems;
+
+                              if (!hasNotes && !hasSubitems) {
+                                return Text(
+                                  'No additional notes or subtasks provided.',
+                                  style: TextStyle(fontSize: 14, color: textTertiary, fontStyle: FontStyle.italic),
+                                );
+                              }
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (hasNotes) ...[
+                                    Text(
+                                      'DESCRIPTION / NOTES',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: textTertiary,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    SelectionArea(
+                                      child: Text(
+                                        notesPayload.userNotes!,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          height: 1.5,
+                                          color: textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                  if (hasSubitems) ...[
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'SUBTASKS (${notesPayload.completedCount}/${notesPayload.totalCount})',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: textTertiary,
+                                            letterSpacing: 0.8,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: LinearProgressIndicator(
+                                              value: notesPayload.progress,
+                                              minHeight: 5,
+                                              backgroundColor: borderClr,
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                notesPayload.allCompleted ? successClr : activeBlue,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ...notesPayload.subitems.asMap().entries.map((entry) {
+                                      final idx = entry.key;
+                                      final sub = entry.value;
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 3),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              sub.isDone ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                              size: 18,
+                                              color: sub.isDone ? successClr : textTertiary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                sub.title,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: sub.isDone ? textTertiary : textPrimary,
+                                                  decoration: sub.isDone ? TextDecoration.lineThrough : null,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -472,7 +546,12 @@ class ItemInteractionDialogs {
                               label: 'Copy',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                copyToClipboard(context, 'Task: ${task.title}\nStatus: $statusLabel\nNotes: ${task.notes ?? ''}');
+                                final decoded = TaskSubitem.decodeNotes(task.notes);
+                                final subStr = decoded.hasSubitems
+                                    ? '\nSubtasks:\n' + decoded.subitems.map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}').join('\n')
+                                    : '';
+                                final notesStr = decoded.userNotes != null ? '\nNotes: ${decoded.userNotes}' : '';
+                                copyToClipboard(context, 'Task: ${task.title}\nStatus: $statusLabel$notesStr$subStr');
                               },
                             ),
                             _ActionButton(
@@ -480,7 +559,12 @@ class ItemInteractionDialogs {
                               label: 'Share',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                shareContent(context, 'Task: ${task.title}\nStatus: $statusLabel\nNotes: ${task.notes ?? ''}');
+                                final decoded = TaskSubitem.decodeNotes(task.notes);
+                                final subStr = decoded.hasSubitems
+                                    ? '\nSubtasks:\n' + decoded.subitems.map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}').join('\n')
+                                    : '';
+                                final notesStr = decoded.userNotes != null ? '\nNotes: ${decoded.userNotes}' : '';
+                                shareContent(context, 'Task: ${task.title}\nStatus: $statusLabel$notesStr$subStr');
                               },
                             ),
                             _ActionButton(
