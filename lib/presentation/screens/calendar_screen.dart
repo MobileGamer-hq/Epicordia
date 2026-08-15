@@ -280,122 +280,93 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: _activeViewIndex == 1
                   ? const TimetableKanbanView()
                   : SelectionArea(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        children: [
-                          // Heatmap inside Hero (scrolls with list)
-                          Hero(
-                            tag: 'heatmap-hero',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: cardBg,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: borderClr),
-                                ),
-                                child: ActivityHeatmap(
-                                  selectedDate: _selectedDate,
-                                  selectedMonth: _selectedDate,
-                                  onTapDate: (date) {
-                                    setState(() {
-                                      _selectedDate = date;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          // Date header
-                          Text(
-                            _formatDateHeader(_selectedDate),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          if (dayTasks.isEmpty && dayNotes.isEmpty) ...[
-                            const SizedBox(height: 32),
-                            Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today_outlined,
-                                    size: 48,
-                                    color: textTertiary.withValues(alpha: 0.5),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No tasks or notes for this date',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: textSecondary,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth >= 600;
+
+                          if (isWide) {
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Left Column (55%): Heatmap Calendar
+                                Expanded(
+                                  flex: 55,
+                                  child: ListView(
+                                    padding: const EdgeInsets.only(
+                                      left: 20,
+                                      right: 12,
+                                      top: 8,
+                                      bottom: 40,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ] else ...[
-                            if (dayTasks.isNotEmpty) ...[
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: Text(
-                                  'Tasks',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: textTertiary,
-                                    letterSpacing: 0.5,
+                                    children: [
+                                      _buildHeatmapHero(cardBg: cardBg, borderClr: borderClr),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              ...dayTasks.map((task) {
-                                final boardTitle = boardsMap[task.boardId]?.title ?? 'Inbox';
-                                final boardColor = _getBoardColor(task.boardId);
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: InteractiveTaskCard(
-                                    task: task,
-                                    boardTitle: boardTitle,
-                                    boardColor: boardColor,
+                                // Right Column (45%): Tasks & Notes for Selected Day
+                                Expanded(
+                                  flex: 45,
+                                  child: ListView(
+                                    padding: const EdgeInsets.only(
+                                      left: 12,
+                                      right: 20,
+                                      top: 8,
+                                      bottom: 40,
+                                    ),
+                                    children: [
+                                      Text(
+                                        _formatDateHeader(_selectedDate),
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      ..._buildDayContent(
+                                        dayTasks: dayTasks,
+                                        dayNotes: dayNotes,
+                                        boardsMap: boardsMap,
+                                        textPrimary: textPrimary,
+                                        textSecondary: textSecondary,
+                                        textTertiary: textTertiary,
+                                      ),
+                                    ],
                                   ),
-                                );
-                              }),
+                                ),
+                              ],
+                            );
+                          }
+
+                          // Compact Mobile Layout (< 600px)
+                          return ListView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            children: [
+                              // Heatmap inside Hero (scrolls with list)
+                              _buildHeatmapHero(cardBg: cardBg, borderClr: borderClr),
+                              const SizedBox(height: 24),
+                              // Date header
+                              Text(
+                                _formatDateHeader(_selectedDate),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: textPrimary,
+                                ),
+                              ),
                               const SizedBox(height: 12),
-                            ],
-                            if (dayNotes.isNotEmpty) ...[
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: Text(
-                                  'Notes',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: textTertiary,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
+                              ..._buildDayContent(
+                                dayTasks: dayTasks,
+                                dayNotes: dayNotes,
+                                boardsMap: boardsMap,
+                                textPrimary: textPrimary,
+                                textSecondary: textSecondary,
+                                textTertiary: textTertiary,
                               ),
-                              ...dayNotes.map((note) {
-                                final boardTitle = boardsMap[note.boardId]?.title ?? 'Inbox';
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: InteractiveNoteCard(
-                                    note: note,
-                                    boardTitle: boardTitle,
-                                  ),
-                                );
-                              }),
+                              const SizedBox(height: 40),
                             ],
-                          ],
-                          const SizedBox(height: 40),
-                        ],
+                          );
+                        },
                       ),
                     ),
             ),
@@ -403,6 +374,132 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildHeatmapHero({
+    required Color cardBg,
+    required Color borderClr,
+  }) {
+    return Hero(
+      tag: 'heatmap-hero',
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderClr),
+          ),
+          child: ActivityHeatmap(
+            selectedDate: _selectedDate,
+            selectedMonth: _selectedDate,
+            onTapDate: (date) {
+              setState(() {
+                _selectedDate = date;
+              });
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDayContent({
+    required List<TaskEntity> dayTasks,
+    required List<PinEntity> dayNotes,
+    required Map<String, BoardEntity> boardsMap,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color textTertiary,
+  }) {
+    if (dayTasks.isEmpty && dayNotes.isEmpty) {
+      return [
+        const SizedBox(height: 32),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 48,
+                color: textTertiary.withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No tasks or notes for this date',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ];
+    }
+
+    final widgets = <Widget>[];
+
+    if (dayTasks.isNotEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Tasks',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: textTertiary,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      );
+      widgets.addAll(dayTasks.map((task) {
+        final boardTitle = boardsMap[task.boardId]?.title ?? 'Inbox';
+        final boardColor = _getBoardColor(task.boardId);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: InteractiveTaskCard(
+            task: task,
+            boardTitle: boardTitle,
+            boardColor: boardColor,
+          ),
+        );
+      }));
+      widgets.add(const SizedBox(height: 12));
+    }
+
+    if (dayNotes.isNotEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Notes',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: textTertiary,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      );
+      widgets.addAll(dayNotes.map((note) {
+        final boardTitle = boardsMap[note.boardId]?.title ?? 'Inbox';
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: InteractiveNoteCard(
+            note: note,
+            boardTitle: boardTitle,
+          ),
+        );
+      }));
+    }
+
+    return widgets;
   }
 
   Widget _buildTabItem({
