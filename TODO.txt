@@ -89,7 +89,9 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 
 -Chnage the checkbox on the task and task tab screens items to be circuar custom
 -Remove the icons from the create task screen, make the top bar used for navigation tight
--Fix the colors for the dark mode background and
+-Fix the colors for the dark mode background and cards it doenst look nice, but the light mode is nice
+
+-add picture in picture mode for notes and task so people can see them when they arent on the app and also task and notes widgets to see a certain taks or notes content as a widget
 
 
 

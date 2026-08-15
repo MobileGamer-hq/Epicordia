@@ -12,6 +12,7 @@ import '../../../data/providers.dart';
 import '../../../domain/models/task_subitem.dart';
 import '../edit_timetable_slot_dialog.dart';
 import 'link_preview_dialog.dart';
+import 'custom_circular_checkbox.dart';
 
 class ItemInteractionDialogs {
   /// Displays a floating detail popup for a Note over a blurred background.
@@ -484,17 +485,16 @@ class ItemInteractionDialogs {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    ...notesPayload.subitems.asMap().entries.map((entry) {
-                                      final idx = entry.key;
-                                      final sub = entry.value;
+                                    ...notesPayload.subitems.map((sub) {
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(vertical: 3),
                                         child: Row(
                                           children: [
-                                            Icon(
-                                              sub.isDone ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                            CustomCircularCheckbox(
+                                              isChecked: sub.isDone,
                                               size: 18,
-                                              color: sub.isDone ? successClr : textTertiary,
+                                              activeColor: successClr,
+                                              borderColor: textTertiary,
                                             ),
                                             const SizedBox(width: 8),
                                             Expanded(

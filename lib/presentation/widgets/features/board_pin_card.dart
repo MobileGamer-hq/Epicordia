@@ -2285,18 +2285,19 @@ class _PlainCheckbox extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onToggle,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         width: 16,
         height: 16,
         decoration: BoxDecoration(
+          shape: BoxShape.circle,
           color: isDone ? EpicordiaColors.blue600 : Colors.transparent,
           border: Border.all(
             color: isDone ? EpicordiaColors.blue600 : (isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight),
             width: 1.8,
           ),
-          borderRadius: BorderRadius.circular(3),
         ),
-        child: isDone ? const Icon(Icons.check, size: 11, color: Colors.white) : null,
+        child: isDone ? const Icon(Icons.check_rounded, size: 10, color: Colors.white) : null,
       ),
     );
   }

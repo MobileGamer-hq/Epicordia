@@ -37,15 +37,15 @@ class EpicordiaColors {
   static const Color textSecondaryLight = Color(0xFF5A5A72);
   static const Color textTertiaryLight  = Color(0xFF9090A8);
 
-  // Neutrals - Dark
-  static const Color surfaceAppDark    = Color(0xFF101216);
-  static const Color surfaceCardDark   = Color(0xFF1A1D22);
-  static const Color surfaceSunkenDark = Color(0xFF0B0D10);
-  static const Color borderSubtleDark  = Color(0xFF16191C);
-  static const Color borderStrongDark  = Color(0xFF3B3F47);
-  static const Color textPrimaryDark   = Color(0xFFF3F4F6);
-  static const Color textSecondaryDark = Color(0xFFA6ABB4);
-  static const Color textTertiaryDark  = Color(0xFF6E737C);
+  // Neutrals - Dark (Rich Dark Navy / Slate theme from design)
+  static const Color surfaceAppDark    = Color(0xFF0F1420); // Dark navy slate app background
+  static const Color surfaceCardDark   = Color(0xFF1E283A); // Sleek slate blue card background
+  static const Color surfaceSunkenDark = Color(0xFF141A26); // Dark sunken sidebar / canvas background
+  static const Color borderSubtleDark  = Color(0xFF273349); // Subtle slate border
+  static const Color borderStrongDark  = Color(0xFF3A4B68); // Strong slate border
+  static const Color textPrimaryDark   = Color(0xFFF1F5F9); // Crisp white primary text
+  static const Color textSecondaryDark = Color(0xFF94A3B8); // Muted slate secondary text
+  static const Color textTertiaryDark  = Color(0xFF64748B); // Muted slate tertiary text
 }
 
 class EpicordiaTheme {
@@ -200,6 +200,19 @@ class EpicordiaTheme {
         foregroundColor: EpicordiaColors.textPrimaryDark,
         elevation: 0,
         scrolledUnderElevation: 0,
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: EpicordiaColors.blue500,
+        selectionColor: Color(0xFF2A3A5E),
+        selectionHandleColor: EpicordiaColors.blue500,
+      ),
+      checkboxTheme: CheckboxThemeData(
+        shape: const CircleBorder(),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return EpicordiaColors.blue500;
+          return Colors.transparent;
+        }),
+        side: const BorderSide(color: EpicordiaColors.borderStrongDark, width: 1.5),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

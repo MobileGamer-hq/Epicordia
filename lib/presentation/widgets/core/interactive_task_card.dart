@@ -8,6 +8,7 @@ import '../../../data/repository/task_repository.dart';
 import '../../../domain/models/task_subitem.dart';
 import 'epicordia_card.dart';
 import 'item_interaction_dialogs.dart';
+import 'custom_circular_checkbox.dart';
 
 class InteractiveTaskCard extends ConsumerStatefulWidget {
   final TaskEntity task;
@@ -364,13 +365,20 @@ class _InteractiveTaskCardState extends ConsumerState<InteractiveTaskCard> {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: notesPayload.progress,
-                              minHeight: 5,
-                              backgroundColor: borderSubtle,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                notesPayload.allCompleted ? successClr : activeBlue,
-                              ),
+                            child: TweenAnimationBuilder<double>(
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeOutCubic,
+                              tween: Tween<double>(begin: 0.0, end: notesPayload.progress),
+                              builder: (context, animValue, child) {
+                                return LinearProgressIndicator(
+                                  value: animValue,
+                                  minHeight: 5,
+                                  backgroundColor: borderSubtle,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    notesPayload.allCompleted ? successClr : activeBlue,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -389,10 +397,11 @@ class _InteractiveTaskCardState extends ConsumerState<InteractiveTaskCard> {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
                             children: [
-                              Icon(
-                                subitem.isDone ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                              CustomCircularCheckbox(
+                                isChecked: subitem.isDone,
                                 size: 18,
-                                color: subitem.isDone ? successClr : textTertiary,
+                                activeColor: successClr,
+                                borderColor: textTertiary,
                               ),
                               const SizedBox(width: 8),
                               Expanded(

@@ -41,13 +41,6 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
     }
   }
 
-  String _formatTime(DateTime date) {
-    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-    final ampm = date.hour >= 12 ? 'PM' : 'AM';
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$hour:$minute $ampm';
-  }
-
 
   void _showSearchScreen(BuildContext context) {
     Navigator.of(context).push(

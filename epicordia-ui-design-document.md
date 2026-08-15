@@ -44,14 +44,14 @@ A clean, slightly cool royal blue — trustworthy without being corporate-flat, 
 ### 1.3 Neutrals — Dark mode
 | Token | Hex | Use |
 |---|---|---|
-| `surface-app` | `#101216` | App background (near-black, not pure black) |
-| `surface-card` | `#1A1D22` | Cards, panels, top bar |
-| `surface-sunken` | `#0B0D10` | Canvas background |
-| `border-subtle` | `#2B2E34` | Card borders, dividers |
-| `border-strong` | `#3B3F47` | Input borders |
-| `text-primary` | `#F3F4F6` | Headings, primary body text (off-white, not pure white) |
-| `text-secondary` | `#A6ABB4` | Secondary text |
-| `text-tertiary` | `#6E737C` | Placeholders, disabled text |
+| `surface-app` | `#0F1420` | App background (dark navy slate) |
+| `surface-card` | `#1E283A` | Cards, panels, top bar |
+| `surface-sunken` | `#141A26` | Canvas / sidebar background |
+| `border-subtle` | `#273349` | Card borders, dividers |
+| `border-strong` | `#3A4B68` | Input borders |
+| `text-primary` | `#F1F5F9` | Headings, primary body text (crisp off-white) |
+| `text-secondary` | `#94A3B8` | Secondary text (slate gray) |
+| `text-tertiary` | `#64748B` | Placeholders, disabled text |
 
 ### 1.4 Semantic colors (same role, light/dark variants)
 | Role | Light | Dark | Use |

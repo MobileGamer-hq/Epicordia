@@ -123,14 +123,6 @@ class _ExpandableSidebar extends StatelessWidget {
     final textTertiary = isDark
         ? EpicordiaColors.textTertiaryDark
         : EpicordiaColors.textTertiaryLight;
-    final textPrimary = isDark
-        ? EpicordiaColors.textPrimaryDark
-        : EpicordiaColors.textPrimaryLight;
-    final userCardBg = isDark
-        ? EpicordiaColors.surfaceSunkenDark
-        : EpicordiaColors.surfaceSunkenLight;
-    final userAvatarBg = isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100;
-    final userAvatarIcon = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -799,7 +791,6 @@ class _QuickAccessItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
-    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
     final textSecondary = isDark
         ? EpicordiaColors.textSecondaryDark
         : EpicordiaColors.textSecondaryLight;

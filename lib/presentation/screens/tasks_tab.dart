@@ -5,7 +5,6 @@ import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../widgets/layout/responsive_scaffold.dart';
-import '../widgets/core/epicordia_card.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../../core/theme.dart';
 

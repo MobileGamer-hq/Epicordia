@@ -182,42 +182,52 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
     return Scaffold(
       backgroundColor: bgApp,
-      appBar: AppBar(
-        backgroundColor: bgApp,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: textPrimary),
-          onPressed: () => context.go('/tasks'),
-        ),
-        title: Text(
-          'Create New Task',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textPrimary,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(44),
+        child: AppBar(
+          backgroundColor: bgApp,
+          elevation: 0,
+          toolbarHeight: 44,
+          titleSpacing: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_rounded, size: 20, color: textPrimary),
+            onPressed: () => context.go('/tasks'),
           ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: ElevatedButton(
-              onPressed: _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: activeBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              ),
-              child: const Text(
-                'Save',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-              ),
+          title: Text(
+            'Create New Task',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: textPrimary,
             ),
           ),
-        ],
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: SizedBox(
+                  height: 32,
+                  child: ElevatedButton(
+                    onPressed: _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: activeBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       body: SafeArea(
         child: ListView(
@@ -236,7 +246,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   Expanded(
                     child: _ModeSegmentButton(
                       label: 'Single',
-                      icon: Icons.check_circle_outline_rounded,
                       isSelected: _mode == TaskTypeMode.single,
                       onTap: () => setState(() => _mode = TaskTypeMode.single),
                     ),
@@ -244,7 +253,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   Expanded(
                     child: _ModeSegmentButton(
                       label: 'Checklist',
-                      icon: Icons.checklist_rounded,
                       isSelected: _mode == TaskTypeMode.checklist,
                       onTap: () => setState(() => _mode = TaskTypeMode.checklist),
                     ),
@@ -252,7 +260,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   Expanded(
                     child: _ModeSegmentButton(
                       label: 'Schedule',
-                      icon: Icons.event_repeat_rounded,
                       isSelected: _mode == TaskTypeMode.scheduled,
                       onTap: () => setState(() => _mode = TaskTypeMode.scheduled),
                     ),
@@ -266,28 +273,20 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: activeBlue.withOpacity(0.08),
+                color: activeBlue.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline_rounded, size: 18, color: activeBlue),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _mode == TaskTypeMode.single
-                          ? 'Create a simple single-action task (e.g. "Upload app" or "Call John").'
-                          : (_mode == TaskTypeMode.checklist
-                              ? 'Create a task with multiple sub-items (e.g. "Grocery Shopping List").'
-                              : 'Create a task scheduled to occur on specific days of the week.'),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                _mode == TaskTypeMode.single
+                    ? 'Create a simple single-action task (e.g. "Upload app" or "Call John").'
+                    : (_mode == TaskTypeMode.checklist
+                        ? 'Create a task with multiple sub-items (e.g. "Grocery Shopping List").'
+                        : 'Create a task scheduled to occur on specific days of the week.'),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
 
@@ -455,13 +454,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(Icons.access_time, size: 18, color: activeBlue),
-                              const SizedBox(width: 8),
-                              Text('Start Time', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary)),
-                            ],
-                          ),
+                          Text('Start Time', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary)),
                           Text(
                             _scheduleStartTime.format(context),
                             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: activeBlue),
@@ -483,13 +476,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(Icons.more_time, size: 18, color: textSecondary),
-                              const SizedBox(width: 8),
-                              Text('End Time', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary)),
-                            ],
-                          ),
+                          Text('End Time', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary)),
                           Text(
                             _scheduleEndTime.format(context),
                             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textSecondary),
@@ -659,14 +646,12 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
             // Options: Board, Due Date & Time, Recurrence Schedule
             _OptionRow(
-              icon: Icons.space_dashboard_outlined,
               label: _selectedBoardId == null
                   ? 'Assign to Board'
                   : 'Board: ${boardsMap[_selectedBoardId]?.title ?? 'Inbox'}',
               onTap: () => _showBoardSelectionBottomSheet(context, boards),
             ),
             _OptionRow(
-              icon: Icons.calendar_today_outlined,
               label: _formatDateTime(_dueDate),
               trailing: _dueDate != null
                   ? IconButton(
@@ -710,7 +695,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               },
             ),
             _OptionRow(
-              icon: Icons.update_rounded,
               label: _recurrenceRule == null
                   ? 'Schedule Frequency (Does not repeat)'
                   : 'Repeats: ${_recurrenceLabel(_recurrenceRule)}',
@@ -829,7 +813,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               ),
               const Divider(),
               ListTile(
-                leading: Icon(Icons.inbox_outlined, color: textPrimary),
                 title: Text('None (Inbox)', style: TextStyle(color: textPrimary)),
                 trailing: _selectedBoardId == null ? Icon(Icons.check, color: activeBlue) : null,
                 onTap: () {
@@ -840,7 +823,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               ...boards.map((board) {
                 final isSelected = _selectedBoardId == board.id;
                 return ListTile(
-                  leading: Icon(Icons.dashboard_outlined, color: activeBlue),
                   title: Text(board.title, style: TextStyle(color: textPrimary)),
                   trailing: isSelected ? Icon(Icons.check, color: activeBlue) : null,
                   onTap: () {
@@ -859,13 +841,11 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
 class _ModeSegmentButton extends StatelessWidget {
   final String label;
-  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _ModeSegmentButton({
     required this.label,
-    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
@@ -879,29 +859,20 @@ class _ModeSegmentButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? activeColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected ? Colors.white : (isDark ? Colors.grey[400] : Colors.grey[700]),
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? Colors.white : (isDark ? Colors.grey[400] : Colors.grey[700]),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -909,13 +880,11 @@ class _ModeSegmentButton extends StatelessWidget {
 }
 
 class _OptionRow extends StatelessWidget {
-  final IconData icon;
   final String label;
   final VoidCallback onTap;
   final Widget? trailing;
 
   const _OptionRow({
-    required this.icon,
     required this.label,
     required this.onTap,
     this.trailing,
@@ -930,11 +899,9 @@ class _OptionRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: textSecondary),
-            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,

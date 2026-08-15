@@ -40,25 +40,6 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
     super.dispose();
   }
 
-  void _showSearchScreen(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const EpicordiaSearchScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final tween = Tween(begin: const Offset(0.0, -1.0), end: Offset.zero)
-              .chain(CurveTween(curve: Curves.fastOutSlowIn));
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final boardsAsync = ref.watch(boardRepositoryProvider).watchAllBoards();

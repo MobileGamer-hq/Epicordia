@@ -13,6 +13,7 @@ import '../../domain/models/task_subitem.dart';
 import '../../domain/services/device_reminder_service.dart';
 import '../../domain/services/notification_service.dart';
 import '../widgets/timer_picker_popover.dart';
+import '../widgets/core/custom_circular_checkbox.dart';
 
 class EditTaskScreen extends ConsumerStatefulWidget {
   final String taskId;
@@ -391,13 +392,12 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Row(
                             children: [
-                              GestureDetector(
+                              CustomCircularCheckbox(
+                                isChecked: isDone,
                                 onTap: () => _toggleSubitem(i),
-                                child: Icon(
-                                  isDone ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                                  color: isDone ? successClr : textTertiary,
-                                  size: 22,
-                                ),
+                                size: 20,
+                                activeColor: successClr,
+                                borderColor: textTertiary,
                               ),
                               const SizedBox(width: 10),
                               Expanded(
