@@ -73,11 +73,11 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 -The cards on the boards list view should also be collapsable so you can see more info mation of that particular cards
 -make the notes and task auto save and not just save on the click of that save button
 
--The toolbar on the notes screen should show the current tool beiog used so the color of the icon should chnage, when it in use and the user can turn it off by deselcting it
+-The toolbar on the notes screen should show the current tool belong used so the color of the icon should chnage, when it in use and the user can turn it off by deselcting it
 -The markdown for notes formats on the notes screen but doesn't format on the notes tab screen with the notes list items so it just shows the raw text
 
--the underline, number and bullet dont turn to a list so after i click enter the next line doesnt continue
--the link doesnt have the option to show preview and to use a web view to go to the website when clicked
+-the underline, number and bullet don't turn to a list so after i click enter the next line doesnt continue
+-the link doesn't have the option to show preview and to use a web view to go to the website when clicked
 
 -Change the alarm system to make it in app so instead of setting up alamrs on the users device with the clock app there shoukd be  a screen with alarms and timers for the taka dnschedules in the app,
 -There should be an alaram and timer screen with nice animations and progress circle with n ice ui that matches the apps ui and theme.
@@ -85,7 +85,25 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 -When onboarding and also in the setting sthe user shoud be able to say if they want to creatr a journalling plan, and setup what is the frequency of the journaling.
 -The journaling will be done in the notes part of the app and will have its own filter too, so notes should have tags, if an idea, journal, etc, also notes hsould be able to be locked and if the user should be able to say if they want to lock all journals in the settings
 -Add report screen which shows progress made per week, per day, based on calculations of missed task, if the user sets a goal to journal more how much, wheter they have a journal streak and kept to it etc
--This reort shoud come withgrapsh and charts and each weeks events and tasks houd be able to bee seen so the stuff should be clickable which will open menues and other screens that shows insights
+-This report should come with graph and charts and each weeks events and tasks houd be able to bee seen so the stuff should be clickable which will open menues and other screens that shows insights
+
+-Chnage the checkbox on the task and task tab screens items to be circuar custom
+-Remove the icons from the create task screen, make the top bar used for navigation tight
+-Fix the colors for the dark mode background and
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Claude certified Architect

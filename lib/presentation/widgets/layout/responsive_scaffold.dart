@@ -310,16 +310,52 @@ class _ExpandableSidebar extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: isExpanded ? 10 : 8),
                 child: ListView(
                   padding: EdgeInsets.zero,
-                  children: appNavItems.map((item) {
-                    final isActive = location == item.route ||
-                        (item.route != '/' &&
-                            location.startsWith('${item.route}/'));
-                    return _SidebarItem(
-                      item: item,
-                      isActive: isActive,
-                      isExpanded: isExpanded,
-                    );
-                  }).toList(),
+                  children: [
+                    ...appNavItems.map((item) {
+                      final isActive = location == item.route ||
+                          (item.route != '/' &&
+                              location.startsWith('${item.route}/'));
+                      return _SidebarItem(
+                        item: item,
+                        isActive: isActive,
+                        isExpanded: isExpanded,
+                      );
+                    }),
+                    const SizedBox(height: 16),
+                    if (isExpanded) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        child: Text(
+                          'QUICK ACCESS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: textTertiary,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ] else ...[
+                      Divider(
+                        indent: 8,
+                        endIndent: 8,
+                        height: 1,
+                        color: borderClr,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    ...quickAccessNavItems.map((item) {
+                      final isActive = location == item.route ||
+                          (item.route != '/' &&
+                              location.startsWith('${item.route}/'));
+                      return _QuickAccessItem(
+                        item: item,
+                        isActive: isActive,
+                        isExpanded: isExpanded,
+                      );
+                    }),
+                  ],
                 ),
               ),
             ),
@@ -746,3 +782,99 @@ class _SidebarItem extends StatelessWidget {
     );
   }
 }
+
+// ── Quick Access Item Widget (Distinct non-tab styling for Popup Menu items) ─
+class _QuickAccessItem extends StatelessWidget {
+  final NavigationItem item;
+  final bool isActive;
+  final bool isExpanded;
+
+  const _QuickAccessItem({
+    required this.item,
+    required this.isActive,
+    required this.isExpanded,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textSecondary = isDark
+        ? EpicordiaColors.textSecondaryDark
+        : EpicordiaColors.textSecondaryLight;
+    final chipBg = isDark
+        ? (isActive ? EpicordiaColors.surfaceSunkenDark : Colors.transparent)
+        : (isActive ? EpicordiaColors.blue50.withValues(alpha: 0.6) : Colors.transparent);
+
+    if (!isExpanded) {
+      return Tooltip(
+        message: item.label,
+        child: InkWell(
+          onTap: () => context.go(item.route),
+          borderRadius: BorderRadius.circular(10),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            margin: const EdgeInsets.symmetric(vertical: 3),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: chipBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              item.icon,
+              size: 20,
+              color: isActive ? activeColor : textSecondary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: () => context.go(item.route),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: chipBg,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              item.icon,
+              size: 18,
+              color: isActive ? activeColor : textSecondary,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive ? activeColor : textSecondary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isActive) ...[
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: activeColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+

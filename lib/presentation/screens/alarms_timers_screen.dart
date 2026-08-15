@@ -15,7 +15,8 @@ import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 
 class AlarmsTimersScreen extends ConsumerStatefulWidget {
-  const AlarmsTimersScreen({super.key});
+  final int initialIndex;
+  const AlarmsTimersScreen({super.key, this.initialIndex = 1});
 
   @override
   ConsumerState<AlarmsTimersScreen> createState() => _AlarmsTimersScreenState();
@@ -24,14 +25,19 @@ class AlarmsTimersScreen extends ConsumerStatefulWidget {
 class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _currentIndex = 0;
+  int _currentIndex = 1;
   final TextEditingController _customMinutesController = TextEditingController();
   int _selectedPresetMinutes = 25;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _currentIndex = widget.initialIndex;
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialIndex,
+    );
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {

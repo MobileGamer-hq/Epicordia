@@ -29,3 +29,12 @@ const List<NavigationItem> sidebarNavItems = [
   NavigationItem(label: 'Tasks',   icon: Icons.check_circle_outline,     route: '/tasks'),
 ];
 
+/// Popup Menu / Quick Access items for sidebar (Progress, Alarms, Activity, Calendar)
+const List<NavigationItem> quickAccessNavItems = [
+  NavigationItem(label: 'Progress & Reports',   icon: Icons.bar_chart_rounded,      route: '/report'),
+  NavigationItem(label: 'Alarms & Timers',      icon: Icons.alarm_outlined,         route: '/alarms'),
+  NavigationItem(label: 'Activity & Inbox',     icon: Icons.notifications_outlined, route: '/inbox'),
+  NavigationItem(label: 'Calendar',             icon: Icons.calendar_today_outlined,route: '/calendar'),
+];
+
+

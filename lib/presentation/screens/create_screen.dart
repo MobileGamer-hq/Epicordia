@@ -48,7 +48,7 @@ class CreateScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               Expanded(
-                child: Column(
+                child: ListView(
                   children: [
                     _CreateTypeCard(
                       icon: Icons.check_box_outlined,
@@ -78,6 +78,16 @@ class CreateScreen extends StatelessWidget {
                       description: 'A visual, infinite canvas for spatial organization. Best for moodboarding, complex projects, and brainstorming.',
                       previewWidget: const _BoardPreview(),
                       onTap: () => context.push('/create/board'),
+                    ),
+                    const SizedBox(height: 16),
+                    _CreateTypeCard(
+                      icon: Icons.alarm_outlined,
+                      iconColor: isDark ? const Color(0xFFB388FF) : const Color(0xFF673AB7),
+                      iconBg: isDark ? const Color(0xFF311B92).withValues(alpha: 0.5) : const Color(0xFFEDE7F6),
+                      title: 'Alarm & Timer',
+                      description: 'Set wake-up alerts, task alarms, and timers. Easily view and manage your active alarms.',
+                      previewWidget: const _AlarmPreview(),
+                      onTap: () => context.push('/alarms?tab=alarms'),
                     ),
                   ],
                 ),
@@ -319,3 +329,35 @@ class _MiniCard extends StatelessWidget {
     );
   }
 }
+
+class _AlarmPreview extends StatelessWidget {
+  const _AlarmPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
+    final activeColor = isDark ? const Color(0xFFB388FF) : const Color(0xFF673AB7);
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(color: sunkenBg, borderRadius: BorderRadius.circular(10)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.alarm, size: 22, color: activeColor),
+          const SizedBox(height: 4),
+          Text(
+            '07:00 AM',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: activeColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
