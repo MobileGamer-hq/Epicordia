@@ -215,7 +215,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'What should we call you? Your name will be used to personalize your dashboard greeting.',
+              'What should we call you?',
               style: TextStyle(
                 fontSize: 14,
                 color: textSecondary,
@@ -270,7 +270,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Select the purposes that match your workflow. This helps customize your productivity experience.',
+              'Select the purposes that match your workflow.',
               style: TextStyle(
                 fontSize: 14,
                 color: textSecondary,
@@ -341,7 +341,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Set your journaling frequency and reminder schedule. Epicordia will automatically remind you on schedule.',
+              'Set your journaling frequency and reminder schedule.',
               style: TextStyle(
                 fontSize: 14,
                 color: textSecondary,

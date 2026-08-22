@@ -479,7 +479,7 @@ class NotificationService {
       try {
         await _safeZonedSchedule(
           id: safeId,
-          title: 'Time to Journal 📝',
+          title: 'Time to Journal',
           body: 'Take a moment to reflect and write down your thoughts in Epicordia.',
           scheduledDate: tz.TZDateTime.from(nextOccurrence, tz.local),
           notificationDetails: details,

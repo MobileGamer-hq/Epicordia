@@ -1798,7 +1798,7 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _hexCtrl,
-            decoration: _inputDeco('e.g. #3D68EE', context).copyWith(
+            decoration: _inputDeco('#3D68EE', context).copyWith(
               prefixIcon: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Container(
@@ -1819,7 +1819,7 @@ class _ColorSwatchEditorState extends ConsumerState<_ColorSwatchEditor> {
           const SizedBox(height: 6),
           TextField(
             controller: _labelCtrl,
-            decoration: _inputDeco('e.g. Primary Accent Blue', context),
+            decoration: _inputDeco('Color label', context),
             style: TextStyle(fontSize: 14, color: textPrimary),
           ),
           const SizedBox(height: 20),
@@ -1953,7 +1953,7 @@ class _TaskListEditorState extends ConsumerState<_TaskListEditor> {
             controller: _titleCtrl,
             onChanged: (_) => _saveTitle(),
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
-            decoration: _inputDeco('e.g. Packing list, Sprint tasks…', context),
+            decoration: _inputDeco('List title…', context),
           ),
           const SizedBox(height: 16),
           const _SectionLabel('SUB-TASKS'),
@@ -2109,7 +2109,7 @@ class _FrameEditorState extends ConsumerState<_FrameEditor> {
           TextField(
             controller: _titleCtrl,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
-            decoration: _inputDeco('e.g. To Do, In Progress, Ideas…', context),
+            decoration: _inputDeco('Column title…', context),
           ),
           const SizedBox(height: 20),
           Container(

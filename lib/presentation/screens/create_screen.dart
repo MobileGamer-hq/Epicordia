@@ -11,7 +11,6 @@ class CreateScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
 
     return Scaffold(
       backgroundColor: bgApp,
@@ -32,7 +31,7 @@ class CreateScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'What would you\nlike to create?',
+                'Create New',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -41,12 +40,7 @@ class CreateScreen extends StatelessWidget {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Choose a type to get started.',
-                style: TextStyle(fontSize: 14, color: textSecondary),
-              ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               Expanded(
                 child: ListView(
                   children: [
@@ -55,7 +49,7 @@ class CreateScreen extends StatelessWidget {
                       iconColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
                       iconBg: isDark ? EpicordiaColors.blue900.withValues(alpha: 0.4) : EpicordiaColors.blue50,
                       title: 'To-do List',
-                      description: 'A structured list of tasks. Best for planning work, tracking checklists, and managing daily to-dos.',
+                      description: 'Tasks, checklists, and scheduled to-dos.',
                       previewWidget: const _TaskPreview(),
                       onTap: () => context.push('/create/task'),
                     ),
@@ -65,7 +59,7 @@ class CreateScreen extends StatelessWidget {
                       iconColor: isDark ? const Color(0xFFFFD54F) : const Color(0xFF785A00),
                       iconBg: isDark ? const Color(0xFF423300) : const Color(0xFFFFF3CD),
                       title: 'Note',
-                      description: 'Rich text notes and quick captures. Best for journaling, ideas, and meeting notes.',
+                      description: 'Rich text notes and quick ideas.',
                       previewWidget: const _NotePreview(),
                       onTap: () => context.push('/create/note'),
                     ),
@@ -75,7 +69,7 @@ class CreateScreen extends StatelessWidget {
                       iconColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
                       iconBg: isDark ? EpicordiaColors.blue800.withValues(alpha: 0.4) : EpicordiaColors.blue100,
                       title: 'Board',
-                      description: 'A visual, infinite canvas for spatial organization. Best for moodboarding, complex projects, and brainstorming.',
+                      description: 'Canvas for visual workspace cards.',
                       previewWidget: const _BoardPreview(),
                       onTap: () => context.push('/create/board'),
                     ),
@@ -85,7 +79,7 @@ class CreateScreen extends StatelessWidget {
                       iconColor: isDark ? const Color(0xFFB388FF) : const Color(0xFF673AB7),
                       iconBg: isDark ? const Color(0xFF311B92).withValues(alpha: 0.5) : const Color(0xFFEDE7F6),
                       title: 'Alarm & Timer',
-                      description: 'Set wake-up alerts, task alarms, and timers. Easily view and manage your active alarms.',
+                      description: 'Wake-up alerts and countdown timers.',
                       previewWidget: const _AlarmPreview(),
                       onTap: () => context.push('/alarms?tab=alarms'),
                     ),

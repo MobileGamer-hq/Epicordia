@@ -501,7 +501,7 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
                       color: textPrimary,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Morning Wakeup',
+                      hintText: 'Alarm label',
                       hintStyle: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w400,

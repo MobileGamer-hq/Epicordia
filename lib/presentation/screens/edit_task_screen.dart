@@ -346,7 +346,7 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                         color: textPrimary,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Add description / notes...',
+                        hintText: 'Notes',
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -409,7 +409,7 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                                     decoration: isDone ? TextDecoration.lineThrough : null,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: 'Subtask item...',
+                                    hintText: 'Item ${i + 1}',
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                     border: OutlineInputBorder(

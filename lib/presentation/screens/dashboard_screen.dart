@@ -54,11 +54,11 @@ class DashboardScreen extends StatelessWidget {
           Text('Inputs', style: theme.textTheme.titleLarge),
           const SizedBox(height: 16),
           TextField(
-            decoration: const InputDecoration(labelText: 'STANDARD INPUT', hintText: 'Enter some text...'),
+            decoration: const InputDecoration(labelText: 'Single-line input', hintText: 'Enter text'),
           ),
           const SizedBox(height: 16),
           TextField(
-            decoration: const InputDecoration(labelText: 'MULTILINE INPUT', hintText: 'Type a longer description here...'),
+            decoration: const InputDecoration(labelText: 'Multi-line input', hintText: 'Enter description'),
             maxLines: 3,
           ),
           const Divider(height: 48),

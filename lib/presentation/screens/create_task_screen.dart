@@ -267,30 +267,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Mode helper description
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: activeBlue.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                _mode == TaskTypeMode.single
-                    ? 'Create a simple single-action task (e.g. "Upload app" or "Call John").'
-                    : (_mode == TaskTypeMode.checklist
-                        ? 'Create a task with multiple sub-items (e.g. "Grocery Shopping List").'
-                        : 'Create a task scheduled to occur on specific days of the week.'),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
 
             // Main Title Input
             TextField(
@@ -301,7 +279,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 color: textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: _mode == TaskTypeMode.single ? 'Task title (e.g. Upload App)' : 'List title (e.g. Shopping List)',
+                hintText: _mode == TaskTypeMode.single ? 'Task title' : 'List title',
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -323,7 +301,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 maxLines: 4,
                 style: TextStyle(fontSize: 14, color: textPrimary),
                 decoration: InputDecoration(
-                  hintText: 'Add description or notes (optional)...',
+                  hintText: 'Notes',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: borderClr),
@@ -494,7 +472,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 maxLines: 2,
                 style: TextStyle(fontSize: 14, color: textPrimary),
                 decoration: InputDecoration(
-                  hintText: 'Schedule details or notes (optional)...',
+                  hintText: 'Notes',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: borderClr),
@@ -513,16 +491,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 ),
               ),
             ] else ...[
-              // Checklist Subitems
-              Text(
-                'Things to do in this task:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: textSecondary,
-                ),
-              ),
-              const SizedBox(height: 10),
+
               ..._itemControllers.asMap().entries.map((entry) {
                 final i = entry.key;
                 final controller = entry.value;
@@ -556,7 +525,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                           onSubmitted: (_) => _addItemField(),
                           style: TextStyle(color: textPrimary, fontSize: 15),
                           decoration: InputDecoration(
-                            hintText: 'Add item ${i + 1}...',
+                            hintText: 'Item ${i + 1}',
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             border: OutlineInputBorder(
@@ -620,7 +589,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 maxLines: 2,
                 style: TextStyle(fontSize: 14, color: textPrimary),
                 decoration: InputDecoration(
-                  hintText: 'Additional notes or summary (optional)...',
+                  hintText: 'Notes',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: borderClr),
@@ -696,7 +665,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             ),
             _OptionRow(
               label: _recurrenceRule == null
-                  ? 'Schedule Frequency (Does not repeat)'
+                  ? 'Repeat: Does not repeat'
                   : 'Repeats: ${_recurrenceLabel(_recurrenceRule)}',
               trailing: _recurrenceRule != null
                   ? IconButton(

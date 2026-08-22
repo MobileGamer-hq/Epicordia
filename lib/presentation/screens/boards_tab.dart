@@ -10,7 +10,6 @@ import '../../data/repository/task_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/theme.dart';
 
-import 'search_screen.dart';
 
 class BoardsTab extends ConsumerStatefulWidget {
   const BoardsTab({super.key});
