@@ -44,12 +44,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/inbox',    builder: (context, state) => const InboxScreen()),
       GoRoute(path: '/calendar', builder: (context, state) => const CalendarScreen()),
       GoRoute(
+        path: '/sessions',
+        builder: (context, state) {
+          final tab = state.uri.queryParameters['tab'];
+          int idx = 1; // Default to Alarms tab
+          if (tab == 'timers') idx = 0;
+          if (tab == 'scheduled' || tab == 'schedule') idx = 2;
+          if (state.extra is int) idx = state.extra as int;
+          return AlarmsTimersScreen(initialIndex: idx);
+        },
+      ),
+      GoRoute(
         path: '/alarms',
         builder: (context, state) {
           final tab = state.uri.queryParameters['tab'];
           int idx = 1; // Default to Alarms tab
           if (tab == 'timers') idx = 0;
-          if (tab == 'scheduled') idx = 2;
+          if (tab == 'scheduled' || tab == 'schedule') idx = 2;
           if (state.extra is int) idx = state.extra as int;
           return AlarmsTimersScreen(initialIndex: idx);
         },

@@ -8,6 +8,8 @@ import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/interactive_note_card.dart';
 import '../../core/theme.dart';
 
+enum NoteViewMode { list, grid, detailed }
+
 class NotesTab extends ConsumerStatefulWidget {
   const NotesTab({super.key});
 
@@ -17,6 +19,7 @@ class NotesTab extends ConsumerStatefulWidget {
 
 class _NotesTabState extends ConsumerState<NotesTab> {
   String _selectedFilter = 'All';
+  NoteViewMode _viewMode = NoteViewMode.list;
   final _searchController = TextEditingController();
 
   final List<String> _filters = ['All', 'Journal', 'Ideas', 'Locked', 'Recent', 'Pinned'];
@@ -76,7 +79,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               children: [
                 Expanded(
@@ -103,19 +106,47 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     ],
                   ),
                 ),
+                // View Mode Switcher (Single toggle icon matching Boards tab)
+                IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: borderStrong.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  icon: Icon(
+                    _viewMode == NoteViewMode.list
+                        ? Icons.view_list
+                        : (_viewMode == NoteViewMode.grid ? Icons.grid_view : Icons.view_headline),
+                    color: activeBlue,
+                    size: 20,
+                  ),
+                  tooltip: 'Toggle View Mode',
+                  onPressed: () {
+                    setState(() {
+                      if (_viewMode == NoteViewMode.list) {
+                        _viewMode = NoteViewMode.grid;
+                      } else if (_viewMode == NoteViewMode.grid) {
+                        _viewMode = NoteViewMode.detailed;
+                      } else {
+                        _viewMode = NoteViewMode.list;
+                      }
+                    });
+                  },
+                ),
               ],
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           // Search + filters
           Container(
             color: bgApp,
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
             child: Column(
               children: [
                 TextField(
-
                   controller: _searchController,
                   style: TextStyle(color: textPrimary),
                   decoration: InputDecoration(
@@ -127,7 +158,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -140,8 +171,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                              horizontal: 14,
+                              vertical: 6,
                             ),
                             decoration: BoxDecoration(
                               color: selected
@@ -157,7 +188,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                             child: Text(
                               f,
                               style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                   color: selected
                                       ? Colors.white
@@ -169,11 +200,11 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     }).toList(),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
               ],
             ),
           ),
-          // Notes list
+          // Notes list / grid / detailed
           Expanded(
             child: SelectionArea(
               child: notesAsync.when(
@@ -209,8 +240,40 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     filtered = filtered.where((n) => n.isLocked).toList();
                   }
 
+                  if (_viewMode == NoteViewMode.grid) {
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                      children: [
+                        if (filtered.isNotEmpty)
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 0.95,
+                            ),
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final note = filtered[index];
+                              final boardTitle = nBoardTitle(note.boardId, boardsMap);
+                              return InteractiveNoteCard(
+                                note: note,
+                                boardTitle: boardTitle,
+                                timeFormatted: _formatModified(note.modifiedAt),
+                              );
+                            },
+                          ),
+                        _CreateNoteButton(
+                          onTap: () => context.push('/create/note'),
+                        ),
+                      ],
+                    );
+                  }
+
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                     itemCount: filtered.length + 1,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
@@ -226,6 +289,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                         note: note,
                         boardTitle: boardTitle,
                         timeFormatted: _formatModified(note.modifiedAt),
+                        isExpanded: _viewMode == NoteViewMode.detailed,
                       );
                     },
                   );
@@ -237,6 +301,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
       ),
     );
   }
+
+
 
   String nBoardTitle(String? boardId, Map<String, BoardEntity> boardsMap) {
     if (boardId == null) return 'Inbox';

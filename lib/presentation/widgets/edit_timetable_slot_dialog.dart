@@ -22,8 +22,10 @@ class EditTimetableSlotDialog extends ConsumerStatefulWidget {
     TimetableSlotEntity? slot,
     int? defaultDayOfWeek,
   }) {
-    return showDialog(
+    return showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => EditTimetableSlotDialog(
         slot: slot,
         defaultDayOfWeek: defaultDayOfWeek,
@@ -193,18 +195,33 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final borderClr = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderSubtleLight;
     final isEditing = widget.slot != null;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      backgroundColor: cardBg,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomInset),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -399,7 +416,7 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
                       foregroundColor: textPrimary,
                       side: BorderSide(color: borderClr),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       minimumSize: const Size.fromHeight(44),
                     ),
@@ -414,7 +431,7 @@ class _EditTimetableSlotDialogState extends ConsumerState<EditTimetableSlotDialo
                       backgroundColor: EpicordiaColors.blue600,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       minimumSize: const Size.fromHeight(44),
                     ),

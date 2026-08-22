@@ -75,7 +75,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
   @override
   Widget build(BuildContext context) {
     final unsortedNotesAsync = ref.watch(unsortedNotesProvider);
-    final todayTasksAsync = ref.watch(tasksDueTodayProvider);
+    final weekTasksAsync = ref.watch(tasksDueThisWeekProvider);
     final boardsAsync = ref.watch(allBoardsProvider);
     final boardsMap = boardsAsync.value?.fold<Map<String, BoardEntity>>(
           {},
@@ -106,7 +106,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
       ),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -127,7 +127,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Here's your workspace overview for today.",
+                      "Here's your workspace overview for this week.",
                       style: TextStyle(
                         fontSize: 14,
                         color: isDark ? EpicordiaColors.textTertiaryLight : EpicordiaColors.textTertiaryLight,
@@ -204,18 +204,18 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
 
               const SizedBox(height: 28),
 
-              // Today Tasks
-              _SectionHeader(title: 'Today', actionLabel: 'View All', onAction: () => context.push('/tasks')),
+              // Weekly Tasks
+              _SectionHeader(title: 'Tasks for the Week', actionLabel: 'View All', onAction: () => context.push('/tasks')),
               const SizedBox(height: 12),
-              todayTasksAsync.when(
+              weekTasksAsync.when(
                 loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
                 error: (err, stack) => Text('Error: $err'),
                 data: (tasks) {
                   if (tasks.isEmpty) {
                     return _SectionEmptyState(
                       icon: Icons.check_box_outlined,
-                      title: 'No tasks for today',
-                      subtitle: 'There are no tasks to put there. You can get started creating with the button below.',
+                      title: 'No tasks for this week',
+                      subtitle: 'There are no tasks scheduled for this week. Get started by creating a new task.',
                       createLabel: 'Add Task',
                       onCreate: () => context.push('/create/task'),
                     );
@@ -887,6 +887,9 @@ class _QuickCaptureCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final body = note.content ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
 
     return GestureDetector(
       onTap: () => context.push('/note/${note.id}'),
@@ -945,12 +948,12 @@ class _QuickCaptureCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(category, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: EpicordiaColors.textTertiaryLight, letterSpacing: 0.8)),
+              Text(category, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: textTertiary, letterSpacing: 0.8)),
               const SizedBox(height: 6),
               Text.rich(
                 MarkdownFormatter.formatToTextSpan(
                   title,
-                  baseStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.3),
+                  baseStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary, height: 1.3),
                   isTitle: true,
                   onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
                 ),
@@ -962,7 +965,7 @@ class _QuickCaptureCard extends ConsumerWidget {
                 Text.rich(
                   MarkdownFormatter.formatToTextSpan(
                     preview!,
-                    baseStyle: const TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight, height: 1.4),
+                    baseStyle: TextStyle(fontSize: 11, color: textTertiary, height: 1.4),
                     onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
                   ),
                   maxLines: 2,
@@ -973,9 +976,9 @@ class _QuickCaptureCard extends ConsumerWidget {
                 const Spacer(),
                 Row(
                   children: [
-                    const Icon(Icons.access_time, size: 11, color: EpicordiaColors.textTertiaryLight),
+                    Icon(Icons.access_time, size: 11, color: textTertiary),
                     const SizedBox(width: 4),
-                    Text(time!, style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight)),
+                    Text(time!, style: TextStyle(fontSize: 10, color: textTertiary)),
                   ],
                 ),
               ],

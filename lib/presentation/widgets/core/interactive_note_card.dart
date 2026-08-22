@@ -16,6 +16,7 @@ class InteractiveNoteCard extends ConsumerWidget {
   final PinEntity note;
   final String boardTitle;
   final String? timeFormatted;
+  final bool isExpanded;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onDoubleTap;
@@ -25,6 +26,7 @@ class InteractiveNoteCard extends ConsumerWidget {
     required this.note,
     required this.boardTitle,
     this.timeFormatted,
+    this.isExpanded = false,
     this.onTap,
     this.onLongPress,
     this.onDoubleTap,
@@ -98,8 +100,6 @@ class InteractiveNoteCard extends ConsumerWidget {
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     final formattedTime = timeFormatted ?? _formatModified(note.modifiedAt);
-    final entryDate = note.entryDate ?? note.createdAt;
-    final entryDateStr = '${entryDate.year}-${entryDate.month.toString().padLeft(2, '0')}-${entryDate.day.toString().padLeft(2, '0')}';
 
     return GestureDetector(
       onTap: () => _handleTap(context, ref),
@@ -235,31 +235,26 @@ class InteractiveNoteCard extends ConsumerWidget {
                 activeBlue: activeBlue,
                 onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+              maxLines: isExpanded ? null : 3,
+              overflow: isExpanded ? TextOverflow.clip : TextOverflow.ellipsis,
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.calendar_today_outlined, size: 12, color: textTertiary),
+                Icon(Icons.access_time, size: 12, color: textTertiary),
                 const SizedBox(width: 4),
-                Text(
-                  'Log: $entryDateStr',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: textTertiary,
+                Expanded(
+                  child: Text(
+                    formattedTime,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: textTertiary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  formattedTime,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: textTertiary,
-                  ),
-                ),
-                const Spacer(),
+                const SizedBox(width: 6),
                 Icon(
                   Icons.more_horiz,
                   size: 16,

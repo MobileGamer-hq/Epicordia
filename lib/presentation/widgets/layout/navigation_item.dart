@@ -32,7 +32,7 @@ const List<NavigationItem> sidebarNavItems = [
 /// Popup Menu / Quick Access items for sidebar (Progress, Alarms, Activity, Calendar)
 const List<NavigationItem> quickAccessNavItems = [
   NavigationItem(label: 'Progress & Reports',   icon: Icons.bar_chart_rounded,      route: '/report'),
-  NavigationItem(label: 'Alarms & Timers',      icon: Icons.alarm_outlined,         route: '/alarms'),
+  NavigationItem(label: 'Sessions',             icon: Icons.timer_outlined,         route: '/sessions'),
   NavigationItem(label: 'Activity & Inbox',     icon: Icons.notifications_outlined, route: '/inbox'),
   NavigationItem(label: 'Calendar',             icon: Icons.calendar_today_outlined,route: '/calendar'),
 ];

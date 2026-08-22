@@ -91,7 +91,7 @@ class PermissionExplanationDialog extends StatelessWidget {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999), // pill
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       minimumSize: const Size.fromHeight(44),
                     ),
@@ -106,7 +106,7 @@ class PermissionExplanationDialog extends StatelessWidget {
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999), // pill
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       minimumSize: const Size.fromHeight(44),
                     ),

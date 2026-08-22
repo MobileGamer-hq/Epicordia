@@ -6,7 +6,6 @@ import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/theme.dart';
-import '../../domain/services/device_calendar_service.dart';
 import '../../domain/services/data_export_service.dart';
 import '../../data/providers.dart';
 import '../widgets/permission_explanation_dialog.dart';
@@ -14,6 +13,8 @@ import '../widgets/timetable_kanban_view.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../widgets/core/interactive_note_card.dart';
 import 'today_dashboard.dart';
+
+import '../widgets/device_sync_review_sheet.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -149,57 +150,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.sync),
-            tooltip: 'Sync Device Calendar',
+            tooltip: 'Sync Device Calendar & Alarms',
             onPressed: () async {
               final proceed = await PermissionExplanationDialog.show(
                 context: context,
-                title: 'Sync Device Calendar',
+                title: 'Sync Device Calendar & Alarms',
                 description:
-                    'Epicordia will sync your tasks with your native device calendar.',
+                    'Epicordia will fetch device calendar events and alarms so you can review and select items to import.',
                 icon: Icons.calendar_month_outlined,
               );
               if (!proceed || !context.mounted) return;
-
-              final calendarService = DeviceCalendarService();
-              final calendars = await calendarService.getWritableCalendars();
-              if (!context.mounted) return;
-
-              if (calendars.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('No writable device calendars found or permission denied.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-
-              final primaryCalendar = calendars.first;
-              int syncedCount = 0;
-              final tasks = tasksAsync.value ?? [];
-
-              for (final task in tasks) {
-                if (task.dueDate != null) {
-                  final eventId = await calendarService.syncTaskToCalendar(
-                    calendarId: primaryCalendar.id,
-                    title: task.title,
-                    notes: task.notes,
-                    startDate: task.dueDate!,
-                    existingEventId: task.calendarEventId,
-                    rruleString: task.recurrenceRule,
-                  );
-                  if (eventId != null) syncedCount++;
-                }
-              }
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Synced $syncedCount tasks to calendar "${primaryCalendar.name}"'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
+              DeviceSyncReviewSheet.show(context);
             },
           ),
           PopupMenuButton<String>(

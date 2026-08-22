@@ -38,6 +38,19 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         .watch();
   }
 
+  Stream<List<TaskEntity>> watchTasksDueThisWeek() {
+    final now = DateTime.now();
+    final startOfWeek = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+    final endOfWeek = DateTime(now.year, now.month, now.day + (7 - now.weekday), 23, 59, 59, 999);
+
+    return (select(tasks)
+          ..where((t) =>
+              t.dueDate.isNotNull() &
+              t.dueDate.isBetweenValues(startOfWeek, endOfWeek)))
+        .watch();
+  }
+
+
   // Returns tasks that do NOT have any unresolved dependencies
   // Meaning there is no entry in TaskDependencies where this task is 'taskId'
   // Or if there is, we'd have to check if the 'dependsOnTaskId' is completed.

@@ -29,7 +29,7 @@ class EpicordiaButton extends StatelessWidget {
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -42,7 +42,7 @@ class EpicordiaButton extends StatelessWidget {
             foregroundColor: theme.textTheme.bodyLarge?.color,
             side: BorderSide(color: theme.dividerColor, width: 1.5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -54,7 +54,7 @@ class EpicordiaButton extends StatelessWidget {
           style: TextButton.styleFrom(
             foregroundColor: theme.textTheme.bodySmall?.color,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -67,7 +67,7 @@ class EpicordiaButton extends StatelessWidget {
             foregroundColor: theme.colorScheme.error,
             side: BorderSide(color: theme.colorScheme.error, width: 1.5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),

@@ -191,13 +191,29 @@ class TimetableKanbanView extends ConsumerWidget {
                                 alignment: Alignment.centerLeft,
                                 child: OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
+                                    foregroundColor: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                                    side: BorderSide(
+                                      color: isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight,
+                                      width: 1.5,
                                     ),
-                                    minimumSize: const Size(120, 36),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    minimumSize: const Size(120, 38),
                                   ),
-                                  icon: const Icon(Icons.add, size: 16),
-                                  label: Text('Add Event for $dayName'),
+                                  icon: Icon(
+                                    Icons.add,
+                                    size: 16,
+                                    color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                                  ),
+                                  label: Text(
+                                    'Add Event for $dayName',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                                    ),
+                                  ),
                                   onPressed: () {
                                     EditTimetableSlotDialog.show(
                                       context,
@@ -350,14 +366,29 @@ class TimetableKanbanView extends ConsumerWidget {
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(999),
+                                    foregroundColor: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                                    side: BorderSide(
+                                      color: isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight,
+                                      width: 1.5,
                                     ),
-                                    minimumSize: const Size.fromHeight(36),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    minimumSize: const Size.fromHeight(38),
                                   ),
-                                  icon: const Icon(Icons.add, size: 16),
-                                  label: const Text('Add Event'),
+                                  icon: Icon(
+                                    Icons.add,
+                                    size: 16,
+                                    color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                                  ),
+                                  label: Text(
+                                    'Add Event',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                                    ),
+                                  ),
                                   onPressed: () {
                                     EditTimetableSlotDialog.show(
                                       context,

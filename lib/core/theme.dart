@@ -59,8 +59,15 @@ class EpicordiaTheme {
       colorScheme: base.colorScheme.copyWith(
         primary: EpicordiaColors.blue500,
         onPrimary: Colors.white,
+        primaryContainer: EpicordiaColors.blue100,
+        onPrimaryContainer: EpicordiaColors.blue700,
         secondary: EpicordiaColors.blue700,
         onSecondary: Colors.white,
+        secondaryContainer: EpicordiaColors.blue100,
+        onSecondaryContainer: EpicordiaColors.blue700,
+        tertiary: EpicordiaColors.blue600,
+        tertiaryContainer: EpicordiaColors.blue100,
+        onTertiaryContainer: EpicordiaColors.blue700,
         surface: EpicordiaColors.surfaceCardLight,
         onSurface: EpicordiaColors.textPrimaryLight,
         error: EpicordiaColors.errorLight,
@@ -80,14 +87,40 @@ class EpicordiaTheme {
         headerForegroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
       ),
-      timePickerTheme: const TimePickerThemeData(
+      timePickerTheme: TimePickerThemeData(
         backgroundColor: EpicordiaColors.surfaceCardLight,
+        hourMinuteColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return EpicordiaColors.blue600;
+          return EpicordiaColors.blue50;
+        }),
+        hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return EpicordiaColors.textPrimaryLight;
+        }),
+        dayPeriodColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return EpicordiaColors.blue600;
+          return EpicordiaColors.blue50;
+        }),
+        dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return EpicordiaColors.textPrimaryLight;
+        }),
+        dialHandColor: EpicordiaColors.blue600,
+        dialBackgroundColor: EpicordiaColors.blue50,
+        dialTextColor: EpicordiaColors.textPrimaryLight,
+        entryModeIconColor: EpicordiaColors.blue600,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: EpicordiaColors.blue500,
           foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
       textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
@@ -152,8 +185,15 @@ class EpicordiaTheme {
       colorScheme: base.colorScheme.copyWith(
         primary: EpicordiaColors.primary,
         onPrimary: Colors.white,
+        primaryContainer: const Color(0xFF273349),
+        onPrimaryContainer: EpicordiaColors.blue300,
         secondary: EpicordiaColors.blue300,
         onSecondary: Colors.white,
+        secondaryContainer: const Color(0xFF273349),
+        onSecondaryContainer: EpicordiaColors.blue300,
+        tertiary: EpicordiaColors.blue500,
+        tertiaryContainer: const Color(0xFF273349),
+        onTertiaryContainer: EpicordiaColors.blue300,
         surface: EpicordiaColors.surfaceCardDark,
         onSurface: EpicordiaColors.textPrimaryDark,
         error: EpicordiaColors.errorDark,
@@ -173,14 +213,40 @@ class EpicordiaTheme {
         headerForegroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
       ),
-      timePickerTheme: const TimePickerThemeData(
+      timePickerTheme: TimePickerThemeData(
         backgroundColor: EpicordiaColors.surfaceCardDark,
+        hourMinuteColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return EpicordiaColors.blue600;
+          return const Color(0xFF273349);
+        }),
+        hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return EpicordiaColors.textPrimaryDark;
+        }),
+        dayPeriodColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return EpicordiaColors.blue600;
+          return const Color(0xFF273349);
+        }),
+        dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return EpicordiaColors.textPrimaryDark;
+        }),
+        dialHandColor: EpicordiaColors.blue600,
+        dialBackgroundColor: const Color(0xFF141A26),
+        dialTextColor: EpicordiaColors.textPrimaryDark,
+        entryModeIconColor: EpicordiaColors.blue300,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: EpicordiaColors.blue500,
           foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
       textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(

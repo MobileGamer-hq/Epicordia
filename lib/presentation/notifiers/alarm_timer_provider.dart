@@ -84,50 +84,8 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         final alarms = listJson.map((e) => InAppAlarm.fromJson(e)).toList();
         state = state.copyWith(alarms: alarms);
       } else {
-        final sample = [
-          const InAppAlarm(
-            id: 'sample_1',
-            title: 'Wake Up',
-            hour: 6,
-            minute: 30,
-            repeatDays: [1, 2, 3, 4, 5, 6, 7],
-            isEnabled: true,
-            ringtone: 'Zen Chimes',
-            vibrate: true,
-          ),
-          const InAppAlarm(
-            id: 'sample_2',
-            title: 'Deep Work Start',
-            hour: 9,
-            minute: 0,
-            repeatDays: [1, 2, 3, 4, 5, 6, 7],
-            isEnabled: false,
-            ringtone: 'Zen Chimes',
-            vibrate: true,
-          ),
-          const InAppAlarm(
-            id: 'sample_3',
-            title: 'Client Meeting Prep',
-            hour: 14,
-            minute: 15,
-            repeatDays: [],
-            isEnabled: true,
-            ringtone: 'Gentle Chime',
-            vibrate: true,
-          ),
-          const InAppAlarm(
-            id: 'sample_4',
-            title: 'Flight Check-in',
-            hour: 19,
-            minute: 0,
-            repeatDays: [],
-            isEnabled: true,
-            ringtone: 'Zen Chimes',
-            vibrate: true,
-          ),
-        ];
-        state = state.copyWith(alarms: sample);
-        _saveAlarms(sample);
+        state = state.copyWith(alarms: []);
+        _saveAlarms([]);
       }
     } catch (e) {
       debugPrint('Error loading saved alarms: $e');

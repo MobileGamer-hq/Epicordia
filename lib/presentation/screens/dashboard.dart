@@ -23,7 +23,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final boardsStream = ref.watch(boardRepositoryProvider).watchAllBoards();
-    final todayTasksStream = ref.watch(taskRepositoryProvider).watchTasksDueToday();
+    final weekTasksStream = ref.watch(taskRepositoryProvider).watchTasksDueThisWeek();
     final unsortedTasksStream = ref.watch(taskRepositoryProvider).watchUnsortedTasks();
     final unsortedNotesStream = ref.watch(pinRepositoryProvider).watchUnsortedNotes();
 
@@ -35,9 +35,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           final boards = boardsSnapshot.data ?? [];
 
           return StreamBuilder(
-            stream: todayTasksStream,
+            stream: weekTasksStream,
             builder: (context, tasksSnapshot) {
-              final todayTasks = tasksSnapshot.data ?? [];
+              final weekTasks = tasksSnapshot.data ?? [];
 
               return StreamBuilder(
                 stream: unsortedTasksStream,
@@ -50,12 +50,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       final unsortedNotes = unsortedNotesSnapshot.data ?? [];
 
                       // If there is absolutely no data in the database (no boards, no tasks, no unsorted items)
-                      if (boards.isEmpty && todayTasks.isEmpty && unsortedTasks.isEmpty && unsortedNotes.isEmpty) {
+                      if (boards.isEmpty && weekTasks.isEmpty && unsortedTasks.isEmpty && unsortedNotes.isEmpty) {
                         return _EmptyDashboardState();
                       }
 
                       return ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         children: [
                           // ── Activity Heatmap ─────────────────────────────────
                           const ActivityHeatmap(),
@@ -94,10 +94,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             const SizedBox(height: 28),
                           ],
 
-                          // ── Today Tasks ─────────────────────────────────────
-                          _SectionHeader(title: 'Today\'s Checklist', actionLabel: 'View All', onAction: () => context.go('/tasks')),
+                          // ── Tasks for the Week ──────────────────────────────
+                          _SectionHeader(title: 'Tasks for the Week', actionLabel: 'View All', onAction: () => context.go('/tasks')),
                           const SizedBox(height: 12),
-                          if (todayTasks.isEmpty)
+                          if (weekTasks.isEmpty)
                             Container(
                               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                               decoration: BoxDecoration(
@@ -110,18 +110,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   children: [
                                     const Icon(Icons.done_all_outlined, size: 24, color: EpicordiaColors.textTertiaryLight),
                                     const SizedBox(height: 8),
-                                    const Text('All caught up for today!', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EpicordiaColors.textSecondaryLight)),
+                                    const Text('No tasks due this week!', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EpicordiaColors.textSecondaryLight)),
                                     const SizedBox(height: 4),
                                     GestureDetector(
                                       onTap: () => context.go('/create/task'),
-                                      child: const Text('Add a task to schedule today', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
+                                      child: const Text('Add a task for this week', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
                                     ),
                                   ],
                                 ),
                               ),
                             )
                           else
-                            ...todayTasks.map((task) => Padding(
+                            ...weekTasks.map((task) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: _TodayTaskItem(
                                 task: task,
@@ -290,6 +290,10 @@ class _QuickCaptureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     return SizedBox(
       width: 150,
       child: EpicordiaCard(
@@ -301,14 +305,14 @@ class _QuickCaptureCard extends StatelessWidget {
             Text(category, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: EpicordiaColors.blue600, letterSpacing: 0.6)),
             const SizedBox(height: 6),
             Expanded(
-              child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
+              child: Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
             ),
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.access_time, size: 10, color: EpicordiaColors.textTertiaryLight),
+                Icon(Icons.access_time, size: 10, color: textTertiary),
                 const SizedBox(width: 4),
-                Text(time, style: const TextStyle(fontSize: 10, color: EpicordiaColors.textTertiaryLight)),
+                Text(time, style: TextStyle(fontSize: 10, color: textTertiary)),
               ],
             ),
           ],
@@ -330,6 +334,10 @@ class _TodayTaskItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = task.status == 'Done';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
 
     return EpicordiaCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -344,7 +352,7 @@ class _TodayTaskItem extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isCompleted ? EpicordiaColors.blue600 : Colors.transparent,
                 border: Border.all(
-                  color: isCompleted ? EpicordiaColors.blue600 : EpicordiaColors.borderStrongLight,
+                  color: isCompleted ? EpicordiaColors.blue600 : borderStrong,
                   width: 1.5,
                 ),
               ),
@@ -361,14 +369,14 @@ class _TodayTaskItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: EpicordiaColors.textPrimaryLight,
+                    color: textPrimary,
                     decoration: isCompleted ? TextDecoration.lineThrough : null,
-                    decorationColor: EpicordiaColors.textTertiaryLight,
+                    decorationColor: textTertiary,
                   ),
                 ),
                 if (task.dueDate != null) ...[
                   const SizedBox(height: 2),
-                  Text('Due ${task.dueDate!.month}/${task.dueDate!.day}', style: const TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight)),
+                  Text('Due ${task.dueDate!.month}/${task.dueDate!.day}', style: TextStyle(fontSize: 11, color: textTertiary)),
                 ],
               ],
             ),
@@ -390,6 +398,10 @@ class _BoardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
     return EpicordiaCard(
       onTap: onTap,
       padding: EdgeInsets.zero,
@@ -411,9 +423,9 @@ class _BoardCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(board.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: EpicordiaColors.textPrimaryLight)),
+                Text(board.title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textPrimary)),
                 const SizedBox(height: 2),
-                const Text('View workspace', style: TextStyle(fontSize: 11, color: EpicordiaColors.textTertiaryLight)),
+                Text('View workspace', style: TextStyle(fontSize: 11, color: textTertiary)),
               ],
             ),
           ),

@@ -363,20 +363,20 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
           icon: Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title:Text(
-          "Alarms and Timers",
+        title: Text(
+          "Sessions",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            // color: textPrimary,
+            color: isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight,
           ),
         ),
       ),
       body: Column(
         children: [
-          // Sub-Tab Segment Switcher (Timers / Alarms / Scheduled)
+          // Sub-Tab Segment Switcher (Timers / Alarms / Schedule)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
@@ -386,7 +386,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
               children: [
                 _buildSegmentTab(0, 'Timers'),
                 _buildSegmentTab(1, 'Alarms'),
-                _buildSegmentTab(2, 'Scheduled'),
+                _buildSegmentTab(2, 'Schedule'),
               ],
             ),
           ),

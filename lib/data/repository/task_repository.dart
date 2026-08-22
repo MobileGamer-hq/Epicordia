@@ -14,6 +14,10 @@ final tasksDueTodayProvider = StreamProvider<List<TaskEntity>>((ref) {
   return ref.watch(taskRepositoryProvider).watchTasksDueToday();
 });
 
+final tasksDueThisWeekProvider = StreamProvider<List<TaskEntity>>((ref) {
+  return ref.watch(taskRepositoryProvider).watchTasksDueThisWeek();
+});
+
 class TaskRepository {
   final Ref ref;
   final NotificationService _notificationService = NotificationService();
@@ -31,6 +35,11 @@ class TaskRepository {
   Stream<List<TaskEntity>> watchTasksDueToday() {
     return ref.watch(taskDaoProvider).watchTasksDueToday();
   }
+
+  Stream<List<TaskEntity>> watchTasksDueThisWeek() {
+    return ref.watch(taskDaoProvider).watchTasksDueThisWeek();
+  }
+
 
   Stream<List<TaskEntity>> watchAllTasks() {
     final taskDao = ref.watch(taskDaoProvider);

@@ -134,7 +134,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: _isNextEnabled() ? EpicordiaColors.blue600 : EpicordiaColors.textTertiaryLight.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         _currentStep == 3 ? 'Get Started' : 'Continue',
@@ -297,7 +297,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                   backgroundColor: surfaceCard,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
                       color: isSelected ? EpicordiaColors.blue600 : borderSubtle,
                     ),
