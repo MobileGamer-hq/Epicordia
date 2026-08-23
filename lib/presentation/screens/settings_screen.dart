@@ -451,6 +451,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 24),
 
+            // ── Home Screen Widgets ──────────────────────────────
+            const _SectionHeader(
+                icon: Icons.widgets_outlined, label: 'Home & Lock Screen Widgets'),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => context.push('/widgets'),
+              child: _Card(
+                child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: EpicordiaColors.blue600.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.widgets_outlined, color: EpicordiaColors.blue600, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Customize Widgets',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Pin specific notes, tasks, schedule & session countdowns.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight),
+                ],
+              ),
+            ),
+          ),
+
+            const SizedBox(height: 24),
+
             // ── Alarms & Timers Engine ────────────────────────────
             const _SectionHeader(
                 icon: Icons.alarm_outlined, label: 'Alarms & Timers Engine'),

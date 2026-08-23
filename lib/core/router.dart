@@ -17,6 +17,7 @@ import '../presentation/screens/calendar_screen.dart';
 import '../presentation/screens/alarms_timers_screen.dart';
 import '../presentation/screens/inbox_screen.dart';
 import '../presentation/screens/report_screen.dart';
+import '../presentation/screens/widgets_center_screen.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,6 +37,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       return null;
     },
+
     routes: [
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/',       builder: (context, state) => const TodayDashboard()),
@@ -43,6 +45,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/activity', builder: (context, state) => const InboxScreen()),
       GoRoute(path: '/inbox',    builder: (context, state) => const InboxScreen()),
       GoRoute(path: '/calendar', builder: (context, state) => const CalendarScreen()),
+      GoRoute(path: '/widgets',  builder: (context, state) => const WidgetsCenterScreen()),
       GoRoute(
         path: '/sessions',
         builder: (context, state) {

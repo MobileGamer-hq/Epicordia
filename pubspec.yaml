@@ -88,6 +88,7 @@ flutter_native_splash:
   color_dark: "#101216"
   image: assets/Logo.png
   image_dark: assets/Logo.png
+  ios_content_mode: scaleAspectFit # <-- Add this line
   android_12:
     image: assets/Logo.png
     color: "#F8F7F4"

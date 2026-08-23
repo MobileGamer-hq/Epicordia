@@ -35,6 +35,7 @@ const List<NavigationItem> quickAccessNavItems = [
   NavigationItem(label: 'Sessions',             icon: Icons.timer_outlined,         route: '/sessions'),
   NavigationItem(label: 'Activity & Inbox',     icon: Icons.notifications_outlined, route: '/inbox'),
   NavigationItem(label: 'Calendar',             icon: Icons.calendar_today_outlined,route: '/calendar'),
+  NavigationItem(label: 'Home Widgets',         icon: Icons.widgets_outlined,       route: '/widgets'),
 ];
 
 

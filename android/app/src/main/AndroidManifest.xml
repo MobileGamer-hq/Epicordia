@@ -49,32 +49,39 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name="com.epicordia.live.widgets.TodayAppWidget" android:exported="true">
+        <receiver android:name="com.epicordia.live.widgets.TodayAppWidget" android:exported="true" android:label="Today Tasks">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_app_widget_info" />
         </receiver>
 
-        <receiver android:name="com.epicordia.live.widgets.QuickCaptureAppWidget" android:exported="true">
+        <receiver android:name="com.epicordia.live.widgets.QuickCaptureAppWidget" android:exported="true" android:label="Create">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_capture_app_widget_info" />
         </receiver>
 
-        <receiver android:name="com.epicordia.live.widgets.UnsortedTrayAppWidget" android:exported="true">
+        <receiver android:name="com.epicordia.live.widgets.UnsortedTrayAppWidget" android:exported="true" android:label="Unsorted Tray">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/unsorted_tray_app_widget_info" />
         </receiver>
 
-        <receiver android:name="com.epicordia.live.widgets.CalendarHeatmapAppWidget" android:exported="true">
+        <receiver android:name="com.epicordia.live.widgets.CalendarHeatmapAppWidget" android:exported="true" android:label="Focus Heatmap">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/calendar_heatmap_app_widget_info" />
+        </receiver>
+
+        <receiver android:name="com.epicordia.live.widgets.TaskSubtasksAppWidget" android:exported="true" android:label="Task &amp; Subtasks">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/task_subtasks_app_widget_info" />
         </receiver>
 
         <meta-data

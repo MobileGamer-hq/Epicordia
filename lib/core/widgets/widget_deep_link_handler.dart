@@ -37,7 +37,7 @@ class WidgetDeepLinkHandler {
           break;
         case 'capture':
         case 'create':
-          router.go('/create/task');
+          router.go('/create');
           break;
         case 'unsorted':
           router.go('/tasks'); // Or unsorted filter view

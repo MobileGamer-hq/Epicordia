@@ -20,9 +20,10 @@ class QuickCaptureAppWidget : HomeWidgetProvider() {
                 val pendingIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     com.epicordia.live.MainActivity::class.java,
-                    android.net.Uri.parse("epicordia://capture")
+                    android.net.Uri.parse("epicordia://create")
                 )
                 setOnClickPendingIntent(R.id.widget_quick_capture_container, pendingIntent)
+                setOnClickPendingIntent(R.id.widget_capture_btn, pendingIntent)
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }

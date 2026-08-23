@@ -10,14 +10,13 @@
 
     <TextView
         android:id="@+id/widget_capture_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:background="@drawable/widget_button_bg"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="12dp"
-        android:text="+ Capture"
+        android:gravity="center"
+        android:text="+"
         android:textColor="#FFFFFF"
-        android:textSize="15sp"
+        android:textSize="26sp"
         android:textStyle="bold" />
 
 </LinearLayout>
