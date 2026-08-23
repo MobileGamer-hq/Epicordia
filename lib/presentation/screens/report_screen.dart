@@ -257,7 +257,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: textPrimary),
-            onPressed: () => context.pop(),
+            onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
           ),
           title: Text(
             'Progress & Insights',

@@ -191,7 +191,13 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
           titleSpacing: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back_rounded, size: 20, color: textPrimary),
-            onPressed: () => context.go('/tasks'),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/tasks');
+              }
+            },
           ),
           title: Text(
             'Create New Task',

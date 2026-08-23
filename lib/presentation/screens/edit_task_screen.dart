@@ -254,7 +254,13 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
             ),
             onPressed: () async {
               await _autoSave();
-              if (context.mounted) context.go('/tasks');
+              if (context.mounted) {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/tasks');
+                }
+              }
             },
           ),
           title: Row(

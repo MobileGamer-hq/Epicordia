@@ -113,7 +113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     const Text('No tasks due this week!', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EpicordiaColors.textSecondaryLight)),
                                     const SizedBox(height: 4),
                                     GestureDetector(
-                                      onTap: () => context.go('/create/task'),
+                                      onTap: () => context.push('/create/task'),
                                       child: const Text('Add a task for this week', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
                                     ),
                                   ],
@@ -155,7 +155,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     const Text('No boards created yet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EpicordiaColors.textSecondaryLight)),
                                     const SizedBox(height: 4),
                                     GestureDetector(
-                                      onTap: () => context.go('/create/board'),
+                                      onTap: () => context.push('/create/board'),
                                       child: const Text('Create your first visual board', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
                                     ),
                                   ],
@@ -167,7 +167,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _BoardCard(
                                 board: board,
-                                onTap: () => context.go('/board/${board.id}'),
+                                onTap: () => context.push('/board/${board.id}'),
                               ),
                             )),
                           const SizedBox(height: 32),
@@ -222,7 +222,7 @@ class _EmptyDashboardState extends StatelessWidget {
             const SizedBox(height: 32),
             // CTA Button for Board
             ElevatedButton.icon(
-              onPressed: () => context.go('/create/board'),
+              onPressed: () => context.push('/create/board'),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Create a Board', style: TextStyle(fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
@@ -235,7 +235,7 @@ class _EmptyDashboardState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () => context.go('/create/note'),
+              onPressed: () => context.push('/create/note'),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: EpicordiaColors.borderStrongLight),
                 foregroundColor: EpicordiaColors.textPrimaryLight,

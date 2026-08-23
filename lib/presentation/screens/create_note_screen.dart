@@ -685,7 +685,13 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
             icon: Icon(Icons.arrow_back, color: textPrimary),
             onPressed: () async {
               await _autoSave();
-              if (context.mounted) context.go('/notes');
+              if (context.mounted) {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/notes');
+                }
+              }
             },
           ),
           title: Row(

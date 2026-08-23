@@ -137,7 +137,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             Icons.arrow_back,
             color: textPrimary,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
         title: Text(
           'Interactive Calendar',

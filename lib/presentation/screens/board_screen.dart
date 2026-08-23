@@ -230,7 +230,13 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   children: [
                     IconButton(
                       tooltip: 'Back to boards',
-                      onPressed: () => context.go('/boards'),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/boards');
+                        }
+                      },
                       icon: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,

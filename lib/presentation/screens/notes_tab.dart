@@ -106,21 +106,14 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                     ],
                   ),
                 ),
-                // View Mode Switcher (Single toggle icon matching Boards tab)
+                // View Mode Switcher (Bare toggle icon matching Boards tab)
                 IconButton(
-                  style: IconButton.styleFrom(
-                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: borderStrong.withValues(alpha: 0.3)),
-                    ),
-                  ),
                   icon: Icon(
                     _viewMode == NoteViewMode.list
                         ? Icons.view_list
                         : (_viewMode == NoteViewMode.grid ? Icons.grid_view : Icons.view_headline),
-                    color: activeBlue,
-                    size: 20,
+                    color: textPrimary,
+                    size: 22,
                   ),
                   tooltip: 'Toggle View Mode',
                   onPressed: () {

@@ -361,7 +361,13 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
         title: Text(
           "Sessions",

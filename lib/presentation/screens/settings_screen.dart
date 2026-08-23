@@ -249,7 +249,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Icons.arrow_back,
             color: textPrimary,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
 
         // leadingWidth: 160,

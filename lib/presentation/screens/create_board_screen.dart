@@ -55,7 +55,13 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
             Icons.arrow_back,
             color: textPrimary,
           ),
-          onPressed: () => context.go('/boards'),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/boards');
+            }
+          },
         ),
         title: Text(
           'New Board',
