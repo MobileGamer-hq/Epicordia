@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
+import '../../../core/theme_provider.dart';
 
-/// The Epicordia brand logo widget: logo image + "Epicordia" in bold blue
-class EpicordiaLogo extends StatelessWidget {
+/// The Epicordia brand logo widget: logo image + "Epicordia" in bold primary accent
+class EpicordiaLogo extends ConsumerWidget {
   final double size;
   const EpicordiaLogo({super.key, this.size = 20});
 
   @override
-  Widget build(BuildContext context) {
-    final logoColor = EpicordiaColors.blue500;
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appPrimaryColorProvider);
+    final logoColor = EpicordiaColors.blue600;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Image.asset(
-          'assets/Logo.png',
-          width: size,
-          height: size,
-          fit: BoxFit.contain,
-        ),
-        const SizedBox(width: 8),
+        // Image.asset(
+        //   'assets/Logo.png',
+        //   width: size,
+        //   height: size,
+        //   fit: BoxFit.contain,
+        // ),
+        // const SizedBox(width: 8),
         Text(
           'Epicordia',
           style: TextStyle(
@@ -69,7 +72,7 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: bg,
       elevation: 0,
       titleSpacing: 20,
-      title: const EpicordiaLogo(),
+      title: EpicordiaLogo(),
       actions: [
         if (showSearch)
           IconButton(
@@ -172,7 +175,8 @@ class EpicordiaSimpleAppBar extends StatelessWidget implements PreferredSizeWidg
       backgroundColor: bg,
       elevation: 0,
       titleSpacing: 20,
-      title: const EpicordiaLogo(),
+      title: EpicordiaLogo(),
     );
   }
 }
+

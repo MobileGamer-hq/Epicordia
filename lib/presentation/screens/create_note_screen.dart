@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../data/database/database.dart';
 import '../../data/repository/pin_repository.dart';
+import '../../data/repository/board_repository.dart';
 import '../../domain/models/note_model.dart';
 import '../../core/theme.dart';
 import '../widgets/core/block_note_editor.dart';
@@ -43,6 +44,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   DateTime _entryDate = DateTime.now();
   String _selectedTag = 'Journal';
   bool _isLocked = false;
+  String? _selectedBoardId;
+  String? _selectedBoardTitle;
 
   @override
   void initState() {
@@ -134,6 +137,12 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         loadedBlocks = [NoteBlock(type: BlockType.paragraph, text: '')];
       }
 
+      String? boardTitle;
+      if (note.boardId != null) {
+        final board = await ref.read(boardDaoProvider).getBoard(note.boardId!);
+        boardTitle = board?.title;
+      }
+
       setState(() {
         _existingNote = note;
         _titleController.text = title;
@@ -142,10 +151,145 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         _selectedTag = note.tags ?? 'Journal';
         _isLocked = note.isLocked;
         _entryDate = note.entryDate ?? note.createdAt;
+        _selectedBoardId = note.boardId;
+        _selectedBoardTitle = boardTitle;
         _saveStatus = 'Saved';
       });
     }
     _isLoadingNote = false;
+  }
+
+  void _showBoardPickerModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+        final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+        final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+        final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+        final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
+        final boardsAsync = ref.watch(allBoardsProvider);
+        final boards = boardsAsync.value ?? [];
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: borderClr, width: 1.5),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: borderClr,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.push_pin_rounded, color: activeBlue, size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Pin Note to Board',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Select a board to pin this note for quick access on your workspace canvas.',
+                style: TextStyle(fontSize: 12, color: textSecondary),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                tileColor: _selectedBoardId == null ? activeBlue.withValues(alpha: 0.12) : null,
+                leading: Icon(
+                  Icons.inbox_rounded,
+                  color: _selectedBoardId == null ? activeBlue : textSecondary,
+                ),
+                title: Text(
+                  'Inbox (Unpinned)',
+                  style: TextStyle(
+                    fontWeight: _selectedBoardId == null ? FontWeight.bold : FontWeight.normal,
+                    color: _selectedBoardId == null ? activeBlue : textPrimary,
+                  ),
+                ),
+                trailing: _selectedBoardId == null
+                    ? Icon(Icons.check_circle, color: activeBlue, size: 20)
+                    : null,
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  setState(() {
+                    _selectedBoardId = null;
+                    _selectedBoardTitle = null;
+                    _saveStatus = 'Saving...';
+                  });
+                  _triggerAutoSave();
+                },
+              ),
+              const Divider(height: 16),
+              if (boards.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text('No boards created yet.', style: TextStyle(color: textSecondary, fontSize: 13)),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: boards.length,
+                    itemBuilder: (context, index) {
+                      final board = boards[index];
+                      final isSelected = _selectedBoardId == board.id;
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        tileColor: isSelected ? activeBlue.withValues(alpha: 0.12) : null,
+                        leading: Icon(
+                          Icons.dashboard_customize_outlined,
+                          color: isSelected ? activeBlue : textSecondary,
+                        ),
+                        title: Text(
+                          board.title,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? activeBlue : textPrimary,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle, color: activeBlue, size: 20)
+                            : null,
+                        onTap: () {
+                          Navigator.of(ctx).pop();
+                          setState(() {
+                            _selectedBoardId = board.id;
+                            _selectedBoardTitle = board.title;
+                            _saveStatus = 'Saving...';
+                          });
+                          _triggerAutoSave();
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _autoSave() async {
@@ -170,6 +314,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         tags: drift.Value(_selectedTag),
         isLocked: _isLocked,
         entryDate: drift.Value(_entryDate),
+        boardId: drift.Value(_selectedBoardId),
         modifiedAt: DateTime.now(),
       );
       await ref.read(pinRepositoryProvider).updatePin(updatedPin);
@@ -179,7 +324,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
       _currentNoteId = newId;
       final companion = PinsCompanion.insert(
         id: newId,
-        boardId: const drift.Value(null),
+        boardId: drift.Value(_selectedBoardId),
         type: 'note',
         content: drift.Value(contentJson),
         tags: drift.Value(_selectedTag),
@@ -425,6 +570,41 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Board Pin Chip
+                          InkWell(
+                            onTap: _showBoardPickerModal,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _selectedBoardId != null
+                                    ? activeBlue.withValues(alpha: 0.15)
+                                    : (isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: _selectedBoardId != null ? activeBlue : borderClr),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _selectedBoardId != null ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                                    size: 13,
+                                    color: activeBlue,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _selectedBoardTitle ?? 'Pin to Board',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _selectedBoardId != null ? activeBlue : textPrimary,
                                     ),
                                   ),
                                 ],

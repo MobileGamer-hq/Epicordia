@@ -5,6 +5,7 @@ import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
+import '../../domain/models/note_model.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../widgets/core/interactive_note_card.dart';
 import '../../core/theme.dart';
@@ -71,7 +72,10 @@ class _EpicordiaSearchScreenState extends ConsumerState<EpicordiaSearchScreen> {
     final filteredNotes = _query.isEmpty
         ? <PinEntity>[]
         : notes.where((n) {
-            return (n.content ?? '').toLowerCase().contains(_query.toLowerCase());
+            final q = _query.toLowerCase();
+            final title = NoteDocument.extractTitle(n.content ?? '').toLowerCase();
+            final text = NoteDocument.extractPlainText(n.content ?? '').toLowerCase();
+            return title.contains(q) || text.contains(q);
           }).toList();
 
     final hasResults = filteredBoards.isNotEmpty || filteredTasks.isNotEmpty || filteredNotes.isNotEmpty;

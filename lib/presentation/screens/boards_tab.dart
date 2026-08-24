@@ -8,6 +8,7 @@ import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/database/database.dart';
+import '../../domain/models/note_model.dart';
 import '../../core/theme.dart';
 
 
@@ -367,10 +368,19 @@ class _CollapsibleBoardListCardState extends ConsumerState<_CollapsibleBoardList
 
   String _titleForPin(PinEntity pin) {
     if (pin.content == null || pin.content!.isEmpty) return 'Untitled item';
+    if (NoteDocument.isJsonBlocks(pin.content!)) {
+      return NoteDocument.extractTitle(pin.content!);
+    }
     if (pin.content!.startsWith('{') && pin.content!.endsWith('}')) {
       try {
         final map = jsonDecode(pin.content!) as Map<String, dynamic>;
-        return map['title'] as String? ?? map['label'] as String? ?? map['text'] as String? ?? 'Untitled item';
+        final title = map['title'] as String? ?? map['label'] as String? ?? map['text'] as String?;
+        if (title != null && title.isNotEmpty) {
+          if (NoteDocument.isJsonBlocks(title)) {
+            return NoteDocument.extractTitle(title);
+          }
+          return title.split('\n').first;
+        }
       } catch (_) {}
     }
     return pin.content!.split('\n').first;

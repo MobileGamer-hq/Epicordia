@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/database/database.dart';
+import '../../domain/models/note_model.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
 
 class InboxScreen extends ConsumerWidget {
@@ -176,7 +177,7 @@ class InboxScreen extends ConsumerWidget {
               Text('No activity yet.', style: TextStyle(color: textSecondary))
             else
               ...notes.take(5).map((n) {
-                final title = (n.content ?? '').split('\n').first.trim();
+                final title = NoteDocument.extractTitle(n.content ?? '');
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
@@ -191,8 +192,10 @@ class InboxScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          title.isEmpty ? 'Untitled note updated' : 'Note updated: $title',
+                          'Note updated: $title',
                           style: TextStyle(fontSize: 13, color: textPrimary, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

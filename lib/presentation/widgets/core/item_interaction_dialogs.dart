@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:drift/drift.dart' show Value;
 import '../../../core/theme.dart';
 import '../../../core/utils/markdown_formatter.dart';
 import '../../../domain/models/note_model.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/task_repository.dart';
 import '../../../data/repository/pin_repository.dart';
+import '../../../data/repository/board_repository.dart';
 import '../../../data/providers.dart';
 import '../../../domain/models/task_subitem.dart';
 import '../edit_timetable_slot_dialog.dart';
@@ -196,6 +198,15 @@ class ItemInteractionDialogs {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
+                            _ActionButton(
+                              icon: note.boardId != null ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                              label: note.boardId != null ? 'Pinned' : 'Pin',
+                              color: note.boardId != null ? activeBlue : null,
+                              onTap: () {
+                                Navigator.of(ctx).pop();
+                                showPinToBoardModal(context: context, ref: ref, note: note);
+                              },
+                            ),
                             _ActionButton(
                               icon: Icons.copy_rounded,
                               label: 'Copy',
@@ -1035,6 +1046,153 @@ class ItemInteractionDialogs {
           ),
         ],
       ),
+    );
+  }
+
+  /// Displays a modal sheet to pin a note/item to a board or move it to Inbox (Unpinned).
+  static void showPinToBoardModal({
+    required BuildContext context,
+    required WidgetRef ref,
+    required PinEntity note,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+        final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+        final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+        final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+        final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
+        final boardsAsync = ref.watch(allBoardsProvider);
+        final boards = boardsAsync.value ?? [];
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: borderClr, width: 1.5),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: borderClr,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.push_pin_rounded, color: activeBlue, size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Pin Note to Board',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Select a board to pin this note for quick access on your workspace canvas.',
+                style: TextStyle(fontSize: 12, color: textSecondary),
+              ),
+              const SizedBox(height: 16),
+              // Option 1: Inbox (Unpinned)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                tileColor: note.boardId == null ? activeBlue.withValues(alpha: 0.12) : null,
+                leading: Icon(
+                  Icons.inbox_rounded,
+                  color: note.boardId == null ? activeBlue : textSecondary,
+                ),
+                title: Text(
+                  'Inbox (Unpinned)',
+                  style: TextStyle(
+                    fontWeight: note.boardId == null ? FontWeight.bold : FontWeight.normal,
+                    color: note.boardId == null ? activeBlue : textPrimary,
+                  ),
+                ),
+                trailing: note.boardId == null
+                    ? Icon(Icons.check_circle, color: activeBlue, size: 20)
+                    : null,
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  final updated = note.copyWith(boardId: const Value(null));
+                  await ref.read(pinRepositoryProvider).updatePin(updated);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Note unpinned (moved to Inbox)'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+              ),
+              const Divider(height: 16),
+              if (boards.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text('No boards created yet.', style: TextStyle(color: textSecondary, fontSize: 13)),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: boards.length,
+                    itemBuilder: (context, index) {
+                      final board = boards[index];
+                      final isSelected = note.boardId == board.id;
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        tileColor: isSelected ? activeBlue.withValues(alpha: 0.12) : null,
+                        leading: Icon(
+                          Icons.dashboard_customize_outlined,
+                          color: isSelected ? activeBlue : textSecondary,
+                        ),
+                        title: Text(
+                          board.title,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? activeBlue : textPrimary,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle, color: activeBlue, size: 20)
+                            : null,
+                        onTap: () async {
+                          Navigator.of(ctx).pop();
+                          final updated = note.copyWith(boardId: Value(board.id));
+                          await ref.read(pinRepositoryProvider).updatePin(updated);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Pinned to "${board.title}"'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

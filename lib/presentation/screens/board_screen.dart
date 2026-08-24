@@ -9,6 +9,7 @@ import '../../data/database/database.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/task_repository.dart';
+import '../../domain/models/note_model.dart';
 import '../../core/board_settings_provider.dart';
 import '../widgets/features/board_canvas.dart';
 import '../widgets/features/pin_editor_panel.dart';
@@ -573,6 +574,12 @@ class _BoardListView extends ConsumerWidget {
       return _fallbackTypeTitle(pin.type);
     }
     final raw = pin.content!.trim();
+
+    if (pin.type == 'note' || NoteDocument.isJsonBlocks(raw)) {
+      final title = NoteDocument.extractTitle(raw);
+      if (title.isNotEmpty && title != 'Untitled Note') return title;
+    }
+
     if (raw.startsWith('{')) {
       try {
         final Map<String, dynamic> data = jsonDecode(raw);
@@ -600,7 +607,7 @@ class _BoardListView extends ConsumerWidget {
             final title = data['title'] as String? ?? data['text'] as String? ?? '';
             return title.isNotEmpty ? title : _fallbackTypeTitle(pin.type);
           default:
-            final title = data['title'] as String? ?? data['name'] as String? ?? '';
+            final title = data['title'] as String? ?? data['text'] as String? ?? data['name'] as String? ?? '';
             return title.isNotEmpty ? title : _fallbackTypeTitle(pin.type);
         }
       } catch (_) {

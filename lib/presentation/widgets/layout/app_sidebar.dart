@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
+import '../../../core/theme_provider.dart';
 import 'navigation_item.dart';
 
-class AppSidebar extends StatelessWidget {
+class AppSidebar extends ConsumerWidget {
   final bool isTablet;
   const AppSidebar({super.key, required this.isTablet});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appPrimaryColorProvider);
     final location = GoRouterState.of(context).uri.path;
 
     return Container(
@@ -28,14 +31,14 @@ class AppSidebar extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: EpicordiaColors.blue700,
+                      color: EpicordiaColors.blue600,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.space_dashboard, color: Colors.white, size: 20),
                   )
                 : Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Epicordia', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: EpicordiaColors.blue700)),
+                    child: Text('Epicordia', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: EpicordiaColors.blue600)),
                   ),
           ),
           const SizedBox(height: 24),

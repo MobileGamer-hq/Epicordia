@@ -109,7 +109,6 @@ class InteractiveNoteCard extends ConsumerWidget {
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
     final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     final formattedTime = timeFormatted ?? _formatModified(note.modifiedAt);
@@ -135,6 +134,18 @@ class InteractiveNoteCard extends ConsumerWidget {
                     title: title,
                     subtitle: 'Note in $boardTitle',
                     items: [
+                      DoubleTapMenuItem(
+                        icon: isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                        label: isPinned ? 'Change Board / Unpin' : 'Pin to Board',
+                        color: activeBlue,
+                        onTap: () {
+                          ItemInteractionDialogs.showPinToBoardModal(
+                            context: context,
+                            ref: ref,
+                            note: note,
+                          );
+                        },
+                      ),
                       DoubleTapMenuItem(
                         icon: Icons.copy_rounded,
                         label: 'Copy Note',
@@ -226,18 +237,26 @@ class InteractiveNoteCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isPinned ? activeBlue : Colors.transparent,
-                    border: Border.all(
-                      color: isPinned ? activeBlue : borderStrong,
-                      width: 1.5,
+                Tooltip(
+                  message: isPinned ? 'Pinned to $boardTitle — Tap to move or unpin' : 'Pin note to board',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      ItemInteractionDialogs.showPinToBoardModal(
+                        context: context,
+                        ref: ref,
+                        note: note,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(3.0),
+                      child: Icon(
+                        isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                        size: 18,
+                        color: isPinned ? activeBlue : textTertiary,
+                      ),
                     ),
                   ),
-                  child: isPinned ? const Icon(Icons.check, size: 10, color: Colors.white) : null,
                 ),
               ],
             ),

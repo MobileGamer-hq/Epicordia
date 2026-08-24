@@ -9,6 +9,7 @@ import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../data/providers.dart';
+import '../../domain/models/note_model.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../widgets/core/interactive_schedule_card.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
@@ -16,6 +17,7 @@ import '../widgets/core/link_preview_dialog.dart';
 import '../../core/utils/markdown_formatter.dart';
 
 import '../../core/theme.dart';
+import '../../core/theme_provider.dart';
 import 'search_screen.dart';
 
 class TodayDashboard extends ConsumerStatefulWidget {
@@ -263,9 +265,8 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                       itemCount: notes.length,
                       itemBuilder: (context, index) {
                         final note = notes[index];
-                        final lines = (note.content ?? '').split('\n');
-                        final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-                        final preview = lines.length > 1 ? lines.sublist(1).join('\n').trim() : null;
+                        final title = NoteDocument.extractTitle(note.content ?? '');
+                        final preview = NoteDocument.extractPlainText(note.content ?? '');
 
                         final boardTitle = boardsMap[note.boardId]?.title ?? 'Inbox';
                         return Padding(
@@ -789,11 +790,12 @@ class _ActivityHeatmapState extends ConsumerState<ActivityHeatmap> {
   }
 }
 
-class _HeatmapLegend extends StatelessWidget {
+class _HeatmapLegend extends ConsumerWidget {
   const _HeatmapLegend();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appPrimaryColorProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textTertiary = isDark
         ? EpicordiaColors.textTertiaryDark
@@ -801,11 +803,11 @@ class _HeatmapLegend extends StatelessWidget {
 
     final colors = isDark
         ? [
-            EpicordiaColors.surfaceSunkenDark,
-            const Color(0xFF1B3A60),
-            const Color(0xFF1D5A94),
-            const Color(0xFF0096C7),
-            EpicordiaColors.Primary,
+            EpicordiaColors.borderSubtleDark,
+            EpicordiaColors.blue300,
+            EpicordiaColors.blue400,
+            EpicordiaColors.blue500,
+            EpicordiaColors.blue600,
           ]
         : [
             EpicordiaColors.borderSubtleLight,

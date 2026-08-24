@@ -8,6 +8,7 @@ import '../../data/repository/pin_repository.dart';
 import '../../data/database/database.dart';
 import '../../domain/models/in_app_alarm_model.dart';
 import '../../domain/models/task_subitem.dart';
+import '../../domain/models/note_model.dart';
 
 const String kAppGroupId = 'group.com.epicordia.app';
 const String kAndroidWidgetProviderPrefix = 'com.epicordia.app.widgets';
@@ -192,9 +193,8 @@ class WidgetService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('pinned_note_id', note.id);
 
-      final lines = (note.content ?? '').split('\n');
-      final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-      final body = lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No content';
+      final title = NoteDocument.extractTitle(note.content ?? '');
+      final body = NoteDocument.extractPlainText(note.content ?? '');
 
       final payload = {
         'id': note.id,

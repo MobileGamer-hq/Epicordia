@@ -245,6 +245,31 @@ class NoteDocumentPayload {
 }
 
 class NoteDocument {
+  /// Extract a clean title string from note content (whether structured JSON or markdown).
+  static String extractTitle(String content) {
+    if (content.trim().isEmpty) return 'Untitled Note';
+    final payload = decode(content);
+    if (payload.blocks.isNotEmpty) {
+      final first = payload.blocks.first;
+      if (first.text.trim().isNotEmpty) {
+        return first.text.trim();
+      }
+      for (final b in payload.blocks.sublist(1)) {
+        if (b.text.trim().isNotEmpty) {
+          return b.text.trim();
+        }
+      }
+    }
+    return 'Untitled Note';
+  }
+
+  /// Extract clean plain text from note blocks for search and activity logging.
+  static String extractPlainText(String content) {
+    if (content.trim().isEmpty) return '';
+    final payload = decode(content);
+    return payload.blocks.map((b) => b.text).where((t) => t.trim().isNotEmpty).join(' ');
+  }
+
   /// Check if stored text content is in structured JSON format (`blocks_v1` or `v2_payload`).
   static bool isJsonBlocks(String content) {
     final trimmed = content.trim();

@@ -151,7 +151,7 @@ class _ExpandableSidebar extends StatelessWidget {
               child: isExpanded
                   ? Row(
                       children: [
-                        const EpicordiaLogo(size: 20),
+                        EpicordiaLogo(size: 20),
                         const Spacer(),
                         IconButton(
                           icon: Icon(

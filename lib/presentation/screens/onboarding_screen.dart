@@ -201,7 +201,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           key: const ValueKey(0),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const EpicordiaLogo(size: 20),
+            EpicordiaLogo(size: 20),
             const SizedBox(height: 32),
             Text(
               'Welcome to\nEpicordia',
@@ -256,7 +256,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           key: const ValueKey(1),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const EpicordiaLogo(size: 20),
+            EpicordiaLogo(size: 20),
             const SizedBox(height: 32),
             Text(
               'What will you\nuse it for?',
@@ -327,7 +327,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           key: const ValueKey(2),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const EpicordiaLogo(size: 20),
+            EpicordiaLogo(size: 20),
             const SizedBox(height: 32),
             Text(
               'Build a Journaling\nHabit Plan',
@@ -485,7 +485,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           key: const ValueKey(3),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const EpicordiaLogo(size: 20),
+            EpicordiaLogo(size: 20),
             const SizedBox(height: 32),
             Text(
               'How would you\nlike to start?',

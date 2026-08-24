@@ -472,23 +472,56 @@ class _NoteCardBody extends ConsumerWidget {
 
   Map<String, String> _parseContent(String text) {
     if (text.trim().isEmpty) return {'title': '', 'body': ''};
-    String rawText = text;
-    if (text.startsWith('{') && text.endsWith('}')) {
+
+    // 1. Check if structured NoteDocument JSON
+    if (NoteDocument.isJsonBlocks(text)) {
+      final payload = NoteDocument.decode(text);
+      if (payload.blocks.isEmpty) return {'title': '', 'body': ''};
+
+      String title = '';
+      List<NoteBlock> bodyBlocks = payload.blocks;
+
+      if (payload.blocks.first.type == BlockType.heading) {
+        title = payload.blocks.first.text;
+        bodyBlocks = payload.blocks.sublist(1);
+      }
+
+      final bodyMarkdown = NoteDocument.exportToMarkdown(bodyBlocks);
+      return {'title': title, 'body': bodyMarkdown};
+    }
+
+    // 2. Check generic JSON map (e.g. {"text": "This is an example note", "collapsed": false})
+    final trimmed = text.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
-        final map = jsonDecode(text) as Map<String, dynamic>;
+        final map = jsonDecode(trimmed) as Map<String, dynamic>;
         if (map.containsKey('text')) {
-          rawText = map['text'] as String? ?? '';
+          final rawText = map['text'] as String? ?? '';
+          if (NoteDocument.isJsonBlocks(rawText)) {
+            return _parseContent(rawText);
+          }
+          final lines = rawText.trim().split('\n');
+          if (lines.first.startsWith('#')) {
+            return {
+              'title': lines.first.replaceAll(RegExp(r'^#+\s*'), ''),
+              'body': lines.skip(1).join('\n').trim(),
+            };
+          }
+          return {'title': '', 'body': rawText};
         } else if (map.containsKey('body')) {
           return {'title': map['title'] as String? ?? '', 'body': map['body'] as String? ?? ''};
         }
       } catch (_) {}
     }
-    final lines = rawText.trim().split('\n');
+
+    // 3. Raw markdown text
+    final lines = text.trim().split('\n');
     if (lines.first.startsWith('#')) {
       final title = lines.first.replaceAll(RegExp(r'^#+\s*'), '');
       final body = lines.skip(1).join('\n').trim();
       return {'title': title, 'body': body};
     }
+
     return {'title': '', 'body': text};
   }
 }

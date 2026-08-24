@@ -9,6 +9,7 @@ import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/widgets/widget_service.dart';
 import '../../domain/models/task_subitem.dart';
+import '../../domain/models/note_model.dart';
 import '../notifiers/alarm_timer_provider.dart';
 
 class WidgetsCenterScreen extends ConsumerStatefulWidget {
@@ -412,19 +413,15 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      note != null
-                          ? ((note.content ?? '').split('\n').first.isNotEmpty
-                              ? (note.content ?? '').split('\n').first
-                              : 'Untitled Note')
-                          : 'No Note Selected',
+                      note != null ? NoteDocument.extractTitle(note.content ?? '') : 'No Note Selected',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      note != null && (note.content ?? '').split('\n').length > 1
-                          ? (note.content ?? '').split('\n').sublist(1).join('\n')
+                      note != null
+                          ? NoteDocument.extractPlainText(note.content ?? '')
                           : 'Tap below to select a note to pin on your home screen.',
                       style: TextStyle(fontSize: 11, color: textSecondary),
                       maxLines: 2,

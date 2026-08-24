@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
+import '../../domain/models/note_model.dart';
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/interactive_note_card.dart';
 import '../../core/theme.dart';
@@ -208,8 +209,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                   final query = _searchController.text.trim().toLowerCase();
                   var filtered = notes.where((note) {
                     if (query.isEmpty) return true;
-                    final title = (note.content ?? '').split('\n').first.toLowerCase();
-                    final body = (note.content ?? '').toLowerCase();
+                    final title = NoteDocument.extractTitle(note.content ?? '').toLowerCase();
+                    final body = NoteDocument.extractPlainText(note.content ?? '').toLowerCase();
                     return title.contains(query) || body.contains(query);
                   }).toList();
 
