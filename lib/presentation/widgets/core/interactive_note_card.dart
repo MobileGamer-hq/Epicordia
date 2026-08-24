@@ -9,6 +9,7 @@ import '../../../domain/models/note_model.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/pin_repository.dart';
 import '../../screens/pin_lock_screen.dart';
+import '../features/pen_drawing_overlay.dart';
 import 'epicordia_card.dart';
 import 'item_interaction_dialogs.dart';
 import 'link_preview_dialog.dart';
@@ -85,7 +86,9 @@ class InteractiveNoteCard extends ConsumerWidget {
     final isLocked = note.isLocked || (lockAll && isJournal);
 
     final rawContent = note.content ?? '';
-    final blocks = NoteDocument.decodeBlocks(rawContent);
+    final payload = NoteDocument.decode(rawContent);
+    final blocks = payload.blocks;
+    final drawing = payload.drawing;
 
     String rawTitle = 'Untitled Note';
     List<NoteBlock> bodyBlocks = blocks;
@@ -203,6 +206,10 @@ class InteractiveNoteCard extends ConsumerWidget {
                   Icon(Icons.lock, size: 16, color: EpicordiaColors.blue600),
                   const SizedBox(width: 6),
                 ],
+                if (drawing.isNotEmpty) ...[
+                  Icon(Icons.gesture, size: 14, color: activeBlue),
+                  const SizedBox(width: 4),
+                ],
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -245,30 +252,48 @@ class InteractiveNoteCard extends ConsumerWidget {
                   height: 1.45,
                 ),
               )
-            else if (bodyBlocks.isEmpty || bodyBlocks.every((b) => b.text.trim().isEmpty))
-              Text(
-                'No additional content',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: textTertiary,
-                  fontStyle: FontStyle.italic,
-                  height: 1.45,
-                ),
-              )
             else
-              Text.rich(
-                MarkdownFormatter.formatBlocksToTextSpan(
-                  bodyBlocks,
-                  baseStyle: TextStyle(
-                    fontSize: 13,
-                    color: textSecondary,
-                    height: 1.45,
-                  ),
-                  activeBlue: activeBlue,
-                  onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
-                ),
-                maxLines: isExpanded ? null : 3,
-                overflow: isExpanded ? TextOverflow.clip : TextOverflow.ellipsis,
+              Stack(
+                children: [
+                  if (bodyBlocks.isEmpty || bodyBlocks.every((b) => b.text.trim().isEmpty))
+                    Text(
+                      'No additional content',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textTertiary,
+                        fontStyle: FontStyle.italic,
+                        height: 1.45,
+                      ),
+                    )
+                  else
+                    Text.rich(
+                      MarkdownFormatter.formatBlocksToTextSpan(
+                        bodyBlocks,
+                        baseStyle: TextStyle(
+                          fontSize: 13,
+                          color: textSecondary,
+                          height: 1.45,
+                        ),
+                        activeBlue: activeBlue,
+                        onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
+                      ),
+                      maxLines: isExpanded ? null : 3,
+                      overflow: isExpanded ? TextOverflow.clip : TextOverflow.ellipsis,
+                    ),
+                  if (drawing.isNotEmpty)
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: PenDrawingCanvasPainter(
+                          strokes: drawing.strokes,
+                          currentPoints: const [],
+                          currentColor: '#16181C',
+                          currentWidth: 3.0,
+                          currentTool: PenTool.pen,
+                          isDark: isDark,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             const SizedBox(height: 10),
             Row(

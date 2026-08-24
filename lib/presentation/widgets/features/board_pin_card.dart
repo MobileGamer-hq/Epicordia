@@ -13,7 +13,9 @@ import '../../../data/database/database.dart';
 import '../../../data/providers.dart';
 import '../../../data/repository/pin_repository.dart';
 import '../../../data/repository/task_repository.dart';
+import '../../../domain/models/note_model.dart';
 import '../core/epicordia_card.dart';
+import 'pen_drawing_overlay.dart';
 
 /// Callback type for opening the pin editor panel.
 typedef OnEditPin = void Function(String pinId);
@@ -419,26 +421,49 @@ class _NoteCardBody extends ConsumerWidget {
         ],
         const SizedBox(height: 6),
         Expanded(
-          child: ClipRect(
-            child: ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.black, Colors.transparent],
-                stops: [0.75, 1.0],
-              ).createShader(bounds),
-              blendMode: BlendMode.dstIn,
-              child: MarkdownBody(
-                data: body.isEmpty ? '_Empty note — tap to edit_' : body,
-                styleSheet: MarkdownStyleSheet(
-                  p: TextStyle(fontSize: 12, color: textSecondary, height: 1.45),
-                  h1: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
-                  h2: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
-                  listBullet: TextStyle(fontSize: 12, color: textSecondary),
-                  blockquote: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: textSecondary),
+          child: Stack(
+            children: [
+              ClipRect(
+                child: ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black, Colors.transparent],
+                    stops: [0.75, 1.0],
+                  ).createShader(bounds),
+                  blendMode: BlendMode.dstIn,
+                  child: MarkdownBody(
+                    data: body.isEmpty ? '_Empty note — tap to edit_' : body,
+                    styleSheet: MarkdownStyleSheet(
+                      p: TextStyle(fontSize: 12, color: textSecondary, height: 1.45),
+                      h1: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                      h2: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
+                      listBullet: TextStyle(fontSize: 12, color: textSecondary),
+                      blockquote: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: textSecondary),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              if (NoteDocument.isJsonBlocks(content))
+                Builder(
+                  builder: (ctx) {
+                    final payload = NoteDocument.decode(content);
+                    if (payload.drawing.isEmpty) return const SizedBox.shrink();
+                    return Positioned.fill(
+                      child: CustomPaint(
+                        painter: PenDrawingCanvasPainter(
+                          strokes: payload.drawing.strokes,
+                          currentPoints: const [],
+                          currentColor: '#16181C',
+                          currentWidth: 3.0,
+                          currentTool: PenTool.pen,
+                          isDark: isDark,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
         ),
       ],

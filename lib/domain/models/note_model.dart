@@ -151,41 +151,184 @@ class NoteBlock {
   }
 }
 
+enum PenTool {
+  pen,
+  highlighter,
+  pencil,
+  eraser,
+}
+
+class PenPoint {
+  final double x;
+  final double y;
+  final double pressure;
+
+  const PenPoint(this.x, this.y, [this.pressure = 1.0]);
+
+  List<dynamic> toJson() => [x, y, pressure];
+
+  factory PenPoint.fromJson(List<dynamic> json) {
+    return PenPoint(
+      (json[0] as num).toDouble(),
+      (json[1] as num).toDouble(),
+      json.length > 2 ? (json[2] as num).toDouble() : 1.0,
+    );
+  }
+}
+
+class PenStroke {
+  final List<PenPoint> points;
+  final String color;
+  final double widthPx;
+  final double opacity;
+  final PenTool tool;
+
+  const PenStroke({
+    required this.points,
+    required this.color,
+    required this.widthPx,
+    this.opacity = 1.0,
+    this.tool = PenTool.pen,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'points': points.map((p) => p.toJson()).toList(),
+        'color': color,
+        'widthPx': widthPx,
+        'opacity': opacity,
+        'tool': tool.name,
+      };
+
+  factory PenStroke.fromJson(Map<String, dynamic> json) {
+    final rawPoints = (json['points'] as List<dynamic>? ?? []);
+    return PenStroke(
+      points: rawPoints.map((p) => PenPoint.fromJson(p as List<dynamic>)).toList(),
+      color: json['color'] as String? ?? '#16181C',
+      widthPx: (json['widthPx'] as num?)?.toDouble() ?? 3.0,
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      tool: PenTool.values.firstWhere(
+        (e) => e.name == json['tool'],
+        orElse: () => PenTool.pen,
+      ),
+    );
+  }
+}
+
+class NoteDrawingData {
+  final List<PenStroke> strokes;
+
+  const NoteDrawingData({this.strokes = const []});
+
+  bool get isEmpty => strokes.isEmpty;
+  bool get isNotEmpty => strokes.isNotEmpty;
+
+  Map<String, dynamic> toJson() => {
+        'strokes': strokes.map((s) => s.toJson()).toList(),
+      };
+
+  factory NoteDrawingData.fromJson(Map<String, dynamic> json) {
+    final rawStrokes = json['strokes'] as List<dynamic>? ?? [];
+    return NoteDrawingData(
+      strokes: rawStrokes.map((s) => PenStroke.fromJson(s as Map<String, dynamic>)).toList(),
+    );
+  }
+}
+
+class NoteDocumentPayload {
+  final List<NoteBlock> blocks;
+  final NoteDrawingData drawing;
+
+  const NoteDocumentPayload({
+    required this.blocks,
+    this.drawing = const NoteDrawingData(),
+  });
+}
+
 class NoteDocument {
-  /// Check if stored text content is in structured JSON format (`blocks_v1`).
+  /// Check if stored text content is in structured JSON format (`blocks_v1` or `v2_payload`).
   static bool isJsonBlocks(String content) {
     final trimmed = content.trim();
-    if (!trimmed.startsWith('[')) return false;
-    try {
-      final decoded = jsonDecode(trimmed);
-      if (decoded is List) {
-        if (decoded.isEmpty) return true;
-        if (decoded.first is Map && (decoded.first as Map).containsKey('type')) {
+    if (trimmed.startsWith('[')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is List) {
+          if (decoded.isEmpty) return true;
+          if (decoded.first is Map && (decoded.first as Map).containsKey('type')) {
+            return true;
+          }
+        }
+      } catch (_) {}
+    } else if (trimmed.startsWith('{')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is Map && decoded.containsKey('blocks')) {
           return true;
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
     return false;
+  }
+
+  /// Decode text content into a complete `NoteDocumentPayload` (blocks + pen drawing overlay).
+  static NoteDocumentPayload decode(String content) {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) {
+      return NoteDocumentPayload(
+        blocks: [NoteBlock(type: BlockType.paragraph, text: '')],
+        drawing: const NoteDrawingData(),
+      );
+    }
+
+    if (isJsonBlocks(trimmed)) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is Map<String, dynamic>) {
+          final rawBlocks = decoded['blocks'] as List<dynamic>? ?? [];
+          final blocks = rawBlocks
+              .map((b) => NoteBlock.fromJson(b as Map<String, dynamic>))
+              .toList();
+          final drawingJson = decoded['drawing'] as Map<String, dynamic>?;
+          final drawing = drawingJson != null
+              ? NoteDrawingData.fromJson(drawingJson)
+              : const NoteDrawingData();
+          return NoteDocumentPayload(
+            blocks: blocks.isNotEmpty ? blocks : [NoteBlock(type: BlockType.paragraph, text: '')],
+            drawing: drawing,
+          );
+        } else if (decoded is List<dynamic>) {
+          final blocks = decoded
+              .map((b) => NoteBlock.fromJson(b as Map<String, dynamic>))
+              .toList();
+          return NoteDocumentPayload(
+            blocks: blocks.isNotEmpty ? blocks : [NoteBlock(type: BlockType.paragraph, text: '')],
+            drawing: const NoteDrawingData(),
+          );
+        }
+      } catch (_) {}
+    }
+
+    return NoteDocumentPayload(
+      blocks: parseLegacyMarkdown(content),
+      drawing: const NoteDrawingData(),
+    );
+  }
+
+  /// Encode full `NoteDocumentPayload` into JSON.
+  static String encode(NoteDocumentPayload payload) {
+    if (payload.drawing.isEmpty) {
+      return jsonEncode(payload.blocks.map((b) => b.toJson()).toList());
+    }
+    return jsonEncode({
+      'version': 2,
+      'blocks': payload.blocks.map((b) => b.toJson()).toList(),
+      'drawing': payload.drawing.toJson(),
+    });
   }
 
   /// Decode text content into `List<NoteBlock>`.
   /// Automatically parses legacy markdown strings into `NoteBlock` objects.
   static List<NoteBlock> decodeBlocks(String content) {
-    if (content.trim().isEmpty) {
-      return [NoteBlock(type: BlockType.paragraph, text: '')];
-    }
-
-    if (isJsonBlocks(content)) {
-      try {
-        final decoded = jsonDecode(content) as List<dynamic>;
-        final blocks = decoded
-            .map((b) => NoteBlock.fromJson(b as Map<String, dynamic>))
-            .toList();
-        if (blocks.isNotEmpty) return blocks;
-      } catch (_) {}
-    }
-
-    return parseLegacyMarkdown(content);
+    return decode(content).blocks;
   }
 
   /// Serialize `List<NoteBlock>` into a JSON string.

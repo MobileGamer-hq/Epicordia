@@ -234,6 +234,11 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                   }
 
                   if (_viewMode == NoteViewMode.grid) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final gridCrossAxisCount = screenWidth >= 1000
+                        ? 4
+                        : (screenWidth >= 600 ? 3 : 2);
+
                     return ListView(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                       children: [
@@ -241,8 +246,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: gridCrossAxisCount,
                               crossAxisSpacing: 10,
                               mainAxisSpacing: 10,
                               childAspectRatio: 0.95,

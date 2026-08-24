@@ -81,6 +81,45 @@ void main() {
       expect(decodedBlocks[1].marks[0].type, MarkType.bold);
     });
 
+    test('Pen drawing overlay serialization & deserialization roundtrip', () {
+      final payload = NoteDocumentPayload(
+        blocks: [
+          NoteBlock(type: BlockType.heading, text: 'Note with drawing'),
+          NoteBlock(type: BlockType.paragraph, text: 'Text content below drawing'),
+        ],
+        drawing: NoteDrawingData(
+          strokes: [
+            PenStroke(
+              points: const [PenPoint(10.0, 20.0, 0.8), PenPoint(15.0, 25.0, 1.0)],
+              color: '#5FA8F5',
+              widthPx: 4.0,
+              opacity: 1.0,
+              tool: PenTool.pen,
+            ),
+            PenStroke(
+              points: const [PenPoint(30.0, 40.0, 0.5), PenPoint(50.0, 60.0, 0.5)],
+              color: '#F4C453',
+              widthPx: 14.0,
+              opacity: 0.38,
+              tool: PenTool.highlighter,
+            ),
+          ],
+        ),
+      );
+
+      final encodedStr = NoteDocument.encode(payload);
+      expect(NoteDocument.isJsonBlocks(encodedStr), isTrue);
+
+      final decoded = NoteDocument.decode(encodedStr);
+      expect(decoded.blocks.length, 2);
+      expect(decoded.blocks[0].text, 'Note with drawing');
+      expect(decoded.drawing.strokes.length, 2);
+      expect(decoded.drawing.strokes[0].tool, PenTool.pen);
+      expect(decoded.drawing.strokes[0].color, '#5FA8F5');
+      expect(decoded.drawing.strokes[1].tool, PenTool.highlighter);
+      expect(decoded.drawing.strokes[1].opacity, 0.38);
+    });
+
     test('MarkdownFormatter produces valid TextSpan trees without crashing', () {
       final blocks = [
         NoteBlock(type: BlockType.bulletListItem, text: 'Bullet item', marks: [

@@ -8,6 +8,7 @@ import '../../data/repository/pin_repository.dart';
 import '../../domain/models/note_model.dart';
 import '../../core/theme.dart';
 import '../widgets/core/block_note_editor.dart';
+import '../widgets/features/pen_drawing_overlay.dart';
 import '../../data/providers.dart';
 
 class CreateNoteScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,15 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   final GlobalKey<BlockNoteEditorStateController> _editorKey = GlobalKey();
 
   List<NoteBlock> _blocks = [NoteBlock(type: BlockType.paragraph, text: '')];
+  NoteDrawingData _drawingData = const NoteDrawingData();
+  bool _isPenModeActive = false;
+  bool _isStylusOnlyMode = false;
+
+  PenTool _selectedPenTool = PenTool.pen;
+  String _selectedPenColor = '#16181C';
+  double _selectedPenWidth = 3.0;
+  final List<List<PenStroke>> _penUndoStack = [];
+  final List<List<PenStroke>> _penRedoStack = [];
 
   PinEntity? _existingNote;
   String? _currentNoteId;
@@ -53,6 +63,47 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     _triggerAutoSave();
   }
 
+  void _onPenStrokesChanged(List<PenStroke> newStrokes) {
+    _penUndoStack.add(List.from(_drawingData.strokes));
+    if (_penUndoStack.length > 30) _penUndoStack.removeAt(0);
+    _penRedoStack.clear();
+
+    setState(() {
+      _drawingData = NoteDrawingData(strokes: newStrokes);
+    });
+    _triggerAutoSave();
+  }
+
+  void _undoPenStroke() {
+    if (_drawingData.strokes.isEmpty) return;
+    setState(() {
+      _penRedoStack.add(List.from(_drawingData.strokes));
+      final prev = _penUndoStack.isNotEmpty ? _penUndoStack.removeLast() : <PenStroke>[];
+      _drawingData = NoteDrawingData(strokes: prev);
+    });
+    _triggerAutoSave();
+  }
+
+  void _redoPenStroke() {
+    if (_penRedoStack.isEmpty) return;
+    setState(() {
+      _penUndoStack.add(List.from(_drawingData.strokes));
+      final next = _penRedoStack.removeLast();
+      _drawingData = NoteDrawingData(strokes: next);
+    });
+    _triggerAutoSave();
+  }
+
+  void _clearPenStrokes() {
+    if (_drawingData.strokes.isEmpty) return;
+    setState(() {
+      _penUndoStack.add(List.from(_drawingData.strokes));
+      _penRedoStack.clear();
+      _drawingData = const NoteDrawingData();
+    });
+    _triggerAutoSave();
+  }
+
   void _triggerAutoSave() {
     if (_isLoadingNote) return;
     if (mounted && _saveStatus != 'Saving...') {
@@ -69,24 +120,14 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     final note = await ref.read(pinDaoProvider).getPin(_currentNoteId!);
     if (note != null && mounted) {
       final rawContent = note.content ?? '';
-      String title = '';
-      List<NoteBlock> loadedBlocks = [];
+      final payload = NoteDocument.decode(rawContent);
 
-      if (NoteDocument.isJsonBlocks(rawContent)) {
-        loadedBlocks = NoteDocument.decodeBlocks(rawContent);
-        if (loadedBlocks.isNotEmpty && loadedBlocks.first.type == BlockType.heading) {
-          title = loadedBlocks.first.text;
-          loadedBlocks = loadedBlocks.sublist(1);
-        }
-      } else {
-        final lines = rawContent.split('\n');
-        if (lines.isNotEmpty) {
-          title = lines[0].replaceFirst(RegExp(r'^#+\s*'), '');
-          final bodyContent = lines.length > 1 ? lines.sublist(1).join('\n').trim() : '';
-          loadedBlocks = NoteDocument.parseLegacyMarkdown(bodyContent);
-        } else {
-          loadedBlocks = [NoteBlock(type: BlockType.paragraph, text: '')];
-        }
+      String title = '';
+      List<NoteBlock> loadedBlocks = payload.blocks;
+
+      if (loadedBlocks.isNotEmpty && loadedBlocks.first.type == BlockType.heading) {
+        title = loadedBlocks.first.text;
+        loadedBlocks = loadedBlocks.sublist(1);
       }
 
       if (loadedBlocks.isEmpty) {
@@ -97,6 +138,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         _existingNote = note;
         _titleController.text = title;
         _blocks = loadedBlocks;
+        _drawingData = payload.drawing;
         _selectedTag = note.tags ?? 'Journal';
         _isLocked = note.isLocked;
         _entryDate = note.entryDate ?? note.createdAt;
@@ -108,7 +150,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 
   Future<void> _autoSave() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty && _blocks.every((b) => b.text.trim().isEmpty)) return;
+    if (title.isEmpty && _blocks.every((b) => b.text.trim().isEmpty) && _drawingData.isEmpty) return;
 
     final allBlocks = <NoteBlock>[];
     if (title.isNotEmpty) {
@@ -116,7 +158,11 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     }
     allBlocks.addAll(_blocks);
 
-    final contentJson = NoteDocument.encodeBlocks(allBlocks);
+    final payload = NoteDocumentPayload(
+      blocks: allBlocks,
+      drawing: _drawingData,
+    );
+    final contentJson = NoteDocument.encode(payload);
 
     if (_currentNoteId != null && _existingNote != null) {
       final updatedPin = _existingNote!.copyWith(
@@ -278,6 +324,19 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
           actions: [
             IconButton(
               icon: Icon(
+                _isPenModeActive ? Icons.edit_note : Icons.gesture_outlined,
+                color: _isPenModeActive ? activeBlue : textTertiary,
+                size: 22,
+              ),
+              tooltip: _isPenModeActive ? 'Exit Pen Mode' : 'Pen / Stylus Drawing Mode',
+              onPressed: () {
+                setState(() {
+                  _isPenModeActive = !_isPenModeActive;
+                });
+              },
+            ),
+            IconButton(
+              icon: Icon(
                 _isLocked ? Icons.lock : Icons.lock_open_outlined,
                 color: _isLocked ? activeBlue : textTertiary,
                 size: 20,
@@ -321,6 +380,9 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  physics: (_isPenModeActive && !_isStylusOnlyMode)
+                      ? const NeverScrollableScrollPhysics()
+                      : const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,109 +497,183 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                       const SizedBox(height: 12),
                       Divider(color: borderClr.withValues(alpha: 0.5)),
                       const SizedBox(height: 12),
-                      // Block Editor
-                      BlockNoteEditor(
-                        key: _editorKey,
-                        initialBlocks: _blocks,
-                        onChanged: _onBlocksChanged,
+                      // Block Editor & Pen Overlay Drawing Layer Stack
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 550),
+                        child: Stack(
+                          children: [
+                            BlockNoteEditor(
+                              key: _editorKey,
+                              initialBlocks: _blocks,
+                              onChanged: _onBlocksChanged,
+                            ),
+                            Positioned.fill(
+                              child: PenDrawingOverlay(
+                                strokes: _drawingData.strokes,
+                                isPenActive: _isPenModeActive,
+                                isStylusOnlyMode: _isStylusOnlyMode,
+                                selectedTool: _selectedPenTool,
+                                selectedColor: _selectedPenColor,
+                                selectedWidth: _selectedPenWidth,
+                                onChanged: _onPenStrokesChanged,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 80),
                     ],
                   ),
                 ),
               ),
-              // Floating Bottom Formatting Toolbar
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: borderClr, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      // Block type controls
-                      _ToolBtn(
-                        icon: Icons.title,
-                        label: 'Heading',
-                        isActive: editorState?.isBlockTypeActive(BlockType.heading) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.heading),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.format_list_bulleted,
-                        label: 'Bullet List',
-                        isActive: editorState?.isBlockTypeActive(BlockType.bulletListItem) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.bulletListItem),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.format_list_numbered,
-                        label: 'Numbered List',
-                        isActive: editorState?.isBlockTypeActive(BlockType.numberedListItem) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.numberedListItem),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.check_box_outlined,
-                        label: 'Checklist',
-                        isActive: editorState?.isBlockTypeActive(BlockType.checklistItem) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.checklistItem),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.format_quote,
-                        label: 'Quote',
-                        isActive: editorState?.isBlockTypeActive(BlockType.quote) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.quote),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        height: 20,
-                        width: 1,
-                        color: borderClr,
-                      ),
-                      // Inline format controls
-                      _ToolBtn(
-                        icon: Icons.format_bold,
-                        label: 'Bold',
-                        isActive: editorState?.isMarkActive(MarkType.bold) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.bold),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.format_italic,
-                        label: 'Italic',
-                        isActive: editorState?.isMarkActive(MarkType.italic) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.italic),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.format_underline,
-                        label: 'Underline',
-                        isActive: editorState?.isMarkActive(MarkType.underline) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.underline),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.strikethrough_s,
-                        label: 'Strikethrough',
-                        isActive: editorState?.isMarkActive(MarkType.strikethrough) ?? false,
-                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.strikethrough),
-                      ),
-                      _ToolBtn(
-                        icon: Icons.link,
-                        label: 'Link',
-                        isActive: editorState?.isMarkActive(MarkType.link) ?? false,
-                        onTap: () => _editorKey.currentState?.insertLink(),
+              // Floating Bottom Toolbar: Pen Controls or Text Formatting Toolbar
+              if (_isPenModeActive)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: PenControlToolbar(
+                    activeTool: _selectedPenTool,
+                    activeColor: _selectedPenColor,
+                    activeWidth: _selectedPenWidth,
+                    isStylusOnlyMode: _isStylusOnlyMode,
+                    canUndo: _drawingData.strokes.isNotEmpty,
+                    canRedo: _penRedoStack.isNotEmpty,
+                    onToolSelected: (tool) {
+                      setState(() {
+                        _selectedPenTool = tool;
+                        if (tool == PenTool.highlighter && _selectedPenWidth < 12.0) {
+                          _selectedPenWidth = 14.0;
+                        } else if (tool == PenTool.pen && _selectedPenWidth > 10.0) {
+                          _selectedPenWidth = 3.0;
+                        }
+                      });
+                    },
+                    onColorSelected: (color) {
+                      setState(() {
+                        _selectedPenColor = color;
+                        if (_selectedPenTool == PenTool.eraser) {
+                          _selectedPenTool = PenTool.pen;
+                        }
+                      });
+                    },
+                    onWidthSelected: (width) {
+                      setState(() => _selectedPenWidth = width);
+                    },
+                    onStylusOnlyToggle: (val) {
+                      setState(() => _isStylusOnlyMode = val);
+                    },
+                    onUndo: _undoPenStroke,
+                    onRedo: _redoPenStroke,
+                    onClear: _clearPenStrokes,
+                    onClosePenMode: () {
+                      setState(() => _isPenModeActive = false);
+                    },
+                  ),
+                )
+              else
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderClr, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Pen Mode Quick Switch Button
+                        _ToolBtn(
+                          icon: Icons.gesture,
+                          label: 'Draw / Pen Mode',
+                          isActive: false,
+                          onTap: () => setState(() => _isPenModeActive = true),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          height: 20,
+                          width: 1,
+                          color: borderClr,
+                        ),
+                        // Block type controls
+                        _ToolBtn(
+                          icon: Icons.title,
+                          label: 'Heading',
+                          isActive: editorState?.isBlockTypeActive(BlockType.heading) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.heading),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.format_list_bulleted,
+                          label: 'Bullet List',
+                          isActive: editorState?.isBlockTypeActive(BlockType.bulletListItem) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.bulletListItem),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.format_list_numbered,
+                          label: 'Numbered List',
+                          isActive: editorState?.isBlockTypeActive(BlockType.numberedListItem) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.numberedListItem),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.check_box_outlined,
+                          label: 'Checklist',
+                          isActive: editorState?.isBlockTypeActive(BlockType.checklistItem) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.checklistItem),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.format_quote,
+                          label: 'Quote',
+                          isActive: editorState?.isBlockTypeActive(BlockType.quote) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.quote),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          height: 20,
+                          width: 1,
+                          color: borderClr,
+                        ),
+                        // Inline format controls
+                        _ToolBtn(
+                          icon: Icons.format_bold,
+                          label: 'Bold',
+                          isActive: editorState?.isMarkActive(MarkType.bold) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleMark(MarkType.bold),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.format_italic,
+                          label: 'Italic',
+                          isActive: editorState?.isMarkActive(MarkType.italic) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleMark(MarkType.italic),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.format_underline,
+                          label: 'Underline',
+                          isActive: editorState?.isMarkActive(MarkType.underline) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleMark(MarkType.underline),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.strikethrough_s,
+                          label: 'Strikethrough',
+                          isActive: editorState?.isMarkActive(MarkType.strikethrough) ?? false,
+                          onTap: () => _editorKey.currentState?.toggleMark(MarkType.strikethrough),
+                        ),
+                        _ToolBtn(
+                          icon: Icons.link,
+                          label: 'Link',
+                          isActive: editorState?.isMarkActive(MarkType.link) ?? false,
+                          onTap: () => _editorKey.currentState?.insertLink(),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
