@@ -194,7 +194,7 @@ class _AnimatedProgressRingState extends State<AnimatedProgressRing>
                               width: 6,
                               height: 6,
                               margin: const EdgeInsets.only(right: 6),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: EpicordiaColors.blue600,
                               ),
@@ -273,11 +273,8 @@ class _ProgressRingPainter extends CustomPainter {
     final progressGradient = SweepGradient(
       startAngle: startAngle,
       endAngle: startAngle + sweepAngle,
-      colors: const [
-        // EpicordiaColors.blue100,
-        // EpicordiaColors.blue200,
+      colors: [
         EpicordiaColors.blue300,EpicordiaColors.blue300,EpicordiaColors.blue300,
-        // EpicordiaColors.blue400,
       ],
     );
 

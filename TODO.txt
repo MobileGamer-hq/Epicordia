@@ -93,7 +93,8 @@ the dialog of the kandabn screen too the theme doesnt match for the set date but
 
 -add picture in picture mode for notes and task so people can see them when they arent on the app and also task and notes widgets to see a certain taks or notes content as a widget
 
-
+-Work on the notes part and its special features
+-Work on adding pen support on the notes part
 
 
 

@@ -34,7 +34,7 @@ class AppBottomNav extends StatelessWidget {
                     child: Container(
                       width: 40,
                       height: 40,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: EpicordiaColors.blue600,
                         shape: BoxShape.circle,
                       ),

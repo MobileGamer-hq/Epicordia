@@ -125,7 +125,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                   // 2. Completed Tasks
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, size: 18, color: EpicordiaColors.blue600),
+                      Icon(Icons.check_circle_outline, size: 18, color: EpicordiaColors.blue600),
                       const SizedBox(width: 6),
                       Text(
                         'Completed Tasks (${completedTasks.length})',
@@ -149,7 +149,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                   // 3. Journal Entries
                   Row(
                     children: [
-                      const Icon(Icons.edit_note_rounded, size: 18, color: EpicordiaColors.blue600),
+                      Icon(Icons.edit_note_rounded, size: 18, color: EpicordiaColors.blue600),
                       const SizedBox(width: 6),
                       Text(
                         'Journal Entries (${dayJournals.length})',

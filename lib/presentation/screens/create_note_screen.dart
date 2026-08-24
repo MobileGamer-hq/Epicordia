@@ -5,151 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../data/database/database.dart';
 import '../../data/repository/pin_repository.dart';
+import '../../domain/models/note_model.dart';
 import '../../core/theme.dart';
-import '../widgets/core/link_preview_dialog.dart';
-
+import '../widgets/core/block_note_editor.dart';
 import '../../data/providers.dart';
-
-/// A TextEditingController that renders basic markdown (bold, italic,
-/// underline, links) live as the user types, instead of showing the raw
-/// "**text**" characters as plain text. The raw markdown is still what's
-/// stored/saved - this only changes how it's *displayed* in the editor.
-///
-/// The literal syntax characters ("**", "*", "<u>", "[](") are always
-/// hidden - they're never rendered, even while the cursor is inside that
-/// token - but they stay in the underlying text, so saving/loading and
-/// re-toggling formatting still works off the raw markdown.
-class MarkdownController extends TextEditingController {
-  MarkdownController({super.text});
-
-  static final RegExp _pattern = RegExp(
-    r'(\*\*.*?\*\*)|(\*[^\*\n]+?\*)|(<u>.*?</u>)|(\[[^\]]*?\]\([^\)]*?\))',
-    dotAll: true,
-  );
-
-  @override
-  TextSpan buildTextSpan({
-    required BuildContext context,
-    TextStyle? style,
-    required bool withComposing,
-  }) {
-    final source = text;
-    if (source.isEmpty) {
-      return TextSpan(style: style, text: source);
-    }
-
-    final children = <TextSpan>[];
-    int pos = 0;
-
-    for (final match in _pattern.allMatches(source)) {
-      if (match.start > pos) {
-        children.add(
-          TextSpan(text: source.substring(pos, match.start), style: style),
-        );
-      }
-
-      final token = match.group(0)!;
-      // Markers are always hidden - never revealed, even while the cursor
-      // is inside the token. They still exist in the raw text (so saving
-      // and re-parsing works correctly), just never rendered visibly.
-      children.add(_styledSpan(token, style, showMarkers: false));
-      pos = match.end;
-    }
-
-    if (pos < source.length) {
-      children.add(TextSpan(text: source.substring(pos), style: style));
-    }
-
-    return TextSpan(style: style, children: children);
-  }
-
-  /// Style used for the literal syntax characters. When [show] is false we
-  /// don't just recolor them - we collapse their font size to near-zero and
-  /// make them transparent so they take up (almost) no visible space, while
-  /// the characters stay in the string so cursor/selection offsets still
-  /// line up correctly with the raw text.
-  TextStyle _markerStyle(TextStyle base, {required bool show}) {
-    if (show) {
-      return base.copyWith(color: EpicordiaColors.textTertiaryLight);
-    }
-    return base.copyWith(
-      color: Colors.transparent,
-      fontSize: (base.fontSize ?? 14) * 0.02,
-      decoration: TextDecoration.none,
-    );
-  }
-
-  TextSpan _styledSpan(
-      String token,
-      TextStyle? base, {
-        required bool showMarkers,
-      }) {
-    final baseStyle = base ?? const TextStyle();
-    final markerStyle = _markerStyle(baseStyle, show: showMarkers);
-
-    if (token.startsWith('**') && token.endsWith('**')) {
-      final inner = token.substring(2, token.length - 2);
-      return TextSpan(
-        children: [
-          TextSpan(text: '**', style: markerStyle),
-          TextSpan(
-            text: inner,
-            style: baseStyle.copyWith(fontWeight: FontWeight.w800),
-          ),
-          TextSpan(text: '**', style: markerStyle),
-        ],
-      );
-    }
-
-    if (token.startsWith('<u>') && token.endsWith('</u>')) {
-      final inner = token.substring(3, token.length - 4);
-      return TextSpan(
-        children: [
-          TextSpan(text: '<u>', style: markerStyle),
-          TextSpan(
-            text: inner,
-            style: baseStyle.copyWith(decoration: TextDecoration.underline),
-          ),
-          TextSpan(text: '</u>', style: markerStyle),
-        ],
-      );
-    }
-
-    if (token.startsWith('[') && token.contains('](')) {
-      final closeBracket = token.indexOf(']');
-      final label = token.substring(1, closeBracket);
-      final url = token.substring(closeBracket + 2, token.length - 1);
-      return TextSpan(
-        children: [
-          TextSpan(text: '[', style: markerStyle),
-          TextSpan(
-            text: label,
-            style: baseStyle.copyWith(
-              color: EpicordiaColors.blue600,
-              decoration: TextDecoration.underline,
-            ),
-          ),
-          TextSpan(text: '](', style: markerStyle),
-          TextSpan(text: url, style: markerStyle),
-          TextSpan(text: ')', style: markerStyle),
-        ],
-      );
-    }
-
-    // Italic: single leading/trailing '*'
-    final inner = token.substring(1, token.length - 1);
-    return TextSpan(
-      children: [
-        TextSpan(text: '*', style: markerStyle),
-        TextSpan(
-          text: inner,
-          style: baseStyle.copyWith(fontStyle: FontStyle.italic),
-        ),
-        TextSpan(text: '*', style: markerStyle),
-      ],
-    );
-  }
-}
 
 class CreateNoteScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -161,10 +20,9 @@ class CreateNoteScreen extends ConsumerStatefulWidget {
 
 class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   final _titleController = TextEditingController();
-  final _bodyController = MarkdownController();
-  final _bodyFocusNode = FocusNode();
+  final GlobalKey<BlockNoteEditorStateController> _editorKey = GlobalKey();
 
-  TextSelection _lastSelection = const TextSelection.collapsed(offset: 0);
+  List<NoteBlock> _blocks = [NoteBlock(type: BlockType.paragraph, text: '')];
 
   PinEntity? _existingNote;
   String? _currentNoteId;
@@ -180,24 +38,22 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   void initState() {
     super.initState();
     _currentNoteId = widget.noteId;
-    _bodyController.addListener(_onTextChanged);
-    _titleController.addListener(_onTextChanged);
+    _titleController.addListener(_onTitleChanged);
     if (widget.noteId != null) {
       _loadExistingNote();
     }
   }
 
-  String _previousText = '';
+  void _onTitleChanged() {
+    _triggerAutoSave();
+  }
 
-  void _onTextChanged() {
-    final currentText = _bodyController.text;
-    if (_bodyController.selection.isValid) {
-      _lastSelection = _bodyController.selection;
-    }
+  void _onBlocksChanged(List<NoteBlock> blocks) {
+    _blocks = blocks;
+    _triggerAutoSave();
+  }
 
-    _handleSmartListContinuation(currentText);
-    _previousText = currentText;
-
+  void _triggerAutoSave() {
     if (_isLoadingNote) return;
     if (mounted && _saveStatus != 'Saving...') {
       setState(() {
@@ -208,81 +64,39 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     _debounceTimer = Timer(const Duration(milliseconds: 500), _autoSave);
   }
 
-  void _handleSmartListContinuation(String currentText) {
-    if (currentText.length != _previousText.length + 1) return;
-    final selection = _bodyController.selection;
-    if (!selection.isCollapsed || selection.start <= 0) return;
-
-    final cursor = selection.start;
-    if (currentText[cursor - 1] != '\n') return;
-
-    int prevLineEnd = cursor - 1;
-    int prevLineStart = prevLineEnd;
-    while (prevLineStart > 0 && currentText[prevLineStart - 1] != '\n') {
-      prevLineStart--;
-    }
-
-    final prevLine = currentText.substring(prevLineStart, prevLineEnd);
-
-    // 1. Bullet list item with content
-    if (RegExp(r'^[\*\-\+]\s+(.+)$').hasMatch(prevLine)) {
-      final newText = '${currentText.substring(0, cursor)}- ${currentText.substring(cursor)}';
-      _bodyController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: cursor + 2),
-      );
-      _lastSelection = _bodyController.selection;
-      return;
-    }
-
-    // 2. Empty bullet list item -> turn OFF list mode
-    if (RegExp(r'^[\*\-\+]\s*$').hasMatch(prevLine)) {
-      final newText = '${currentText.substring(0, prevLineStart)}\n${currentText.substring(cursor)}';
-      _bodyController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: prevLineStart + 1),
-      );
-      _lastSelection = _bodyController.selection;
-      return;
-    }
-
-    // 3. Numbered list item with content
-    final numMatch = RegExp(r'^\s*(\d+)\.\s+(.+)$').firstMatch(prevLine);
-    if (numMatch != null) {
-      final numVal = int.tryParse(numMatch.group(1)!) ?? 1;
-      final nextPrefix = '${numVal + 1}. ';
-      final newText = '${currentText.substring(0, cursor)}$nextPrefix${currentText.substring(cursor)}';
-      _bodyController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: cursor + nextPrefix.length),
-      );
-      _lastSelection = _bodyController.selection;
-      return;
-    }
-
-    // 4. Empty numbered list item -> turn OFF list mode
-    if (RegExp(r'^\s*\d+\.\s*$').hasMatch(prevLine)) {
-      final newText = '${currentText.substring(0, prevLineStart)}\n${currentText.substring(cursor)}';
-      _bodyController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: prevLineStart + 1),
-      );
-      _lastSelection = _bodyController.selection;
-      return;
-    }
-  }
-
   Future<void> _loadExistingNote() async {
     _isLoadingNote = true;
     final note = await ref.read(pinDaoProvider).getPin(_currentNoteId!);
     if (note != null && mounted) {
+      final rawContent = note.content ?? '';
+      String title = '';
+      List<NoteBlock> loadedBlocks = [];
+
+      if (NoteDocument.isJsonBlocks(rawContent)) {
+        loadedBlocks = NoteDocument.decodeBlocks(rawContent);
+        if (loadedBlocks.isNotEmpty && loadedBlocks.first.type == BlockType.heading) {
+          title = loadedBlocks.first.text;
+          loadedBlocks = loadedBlocks.sublist(1);
+        }
+      } else {
+        final lines = rawContent.split('\n');
+        if (lines.isNotEmpty) {
+          title = lines[0].replaceFirst(RegExp(r'^#+\s*'), '');
+          final bodyContent = lines.length > 1 ? lines.sublist(1).join('\n').trim() : '';
+          loadedBlocks = NoteDocument.parseLegacyMarkdown(bodyContent);
+        } else {
+          loadedBlocks = [NoteBlock(type: BlockType.paragraph, text: '')];
+        }
+      }
+
+      if (loadedBlocks.isEmpty) {
+        loadedBlocks = [NoteBlock(type: BlockType.paragraph, text: '')];
+      }
+
       setState(() {
         _existingNote = note;
-        final lines = (note.content ?? '').split('\n');
-        _titleController.text = lines.isNotEmpty ? lines[0] : '';
-        _bodyController.text = lines.length > 1
-            ? lines.sublist(1).join('\n').trim()
-            : '';
+        _titleController.text = title;
+        _blocks = loadedBlocks;
         _selectedTag = note.tags ?? 'Journal';
         _isLocked = note.isLocked;
         _entryDate = note.entryDate ?? note.createdAt;
@@ -294,13 +108,19 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
 
   Future<void> _autoSave() async {
     final title = _titleController.text.trim();
-    final body = _bodyController.text.trim();
-    if (title.isEmpty && body.isEmpty) return;
+    if (title.isEmpty && _blocks.every((b) => b.text.trim().isEmpty)) return;
 
-    final content = title.isNotEmpty ? '$title\n\n$body' : body;
+    final allBlocks = <NoteBlock>[];
+    if (title.isNotEmpty) {
+      allBlocks.add(NoteBlock(type: BlockType.heading, text: title));
+    }
+    allBlocks.addAll(_blocks);
+
+    final contentJson = NoteDocument.encodeBlocks(allBlocks);
+
     if (_currentNoteId != null && _existingNote != null) {
       final updatedPin = _existingNote!.copyWith(
-        content: drift.Value(content),
+        content: drift.Value(contentJson),
         tags: drift.Value(_selectedTag),
         isLocked: _isLocked,
         entryDate: drift.Value(_entryDate),
@@ -315,7 +135,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         id: newId,
         boardId: const drift.Value(null),
         type: 'note',
-        content: drift.Value(content),
+        content: drift.Value(contentJson),
         tags: drift.Value(_selectedTag),
         isLocked: drift.Value(_isLocked),
         entryDate: drift.Value(_entryDate),
@@ -334,8 +154,6 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   void dispose() {
     _debounceTimer?.cancel();
     _titleController.dispose();
-    _bodyController.dispose();
-    _bodyFocusNode.dispose();
     super.dispose();
   }
 
@@ -373,303 +191,19 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     if (mounted) context.go('/notes');
   }
 
-  /// Selection to use for a formatting action. Falls back to the last known
-  /// good selection when the field has lost focus (e.g. tapping a toolbar
-  /// button), instead of bailing out on an invalid (-1,-1) selection.
-  TextSelection _currentSelection() {
-    final selection = _bodyController.selection;
-    return selection.isValid ? selection : _lastSelection;
-  }
-
-  bool _isPatternActive(RegExp regex) {
-    final selection = _currentSelection();
-    final text = _bodyController.text;
-    if (text.isEmpty) return false;
-    final start = selection.start.clamp(0, text.length);
-    final end = selection.end.clamp(0, text.length);
-
-    for (final match in regex.allMatches(text)) {
-      if (start >= match.start && end <= match.end && match.start < match.end) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool _isBoldActive() {
-    return _isPatternActive(RegExp(r'\*\*.*?\*\*', dotAll: true));
-  }
-
-  bool _isItalicActive() {
-    final selection = _currentSelection();
-    final text = _bodyController.text;
-    if (text.isEmpty) return false;
-    final start = selection.start.clamp(0, text.length);
-    final end = selection.end.clamp(0, text.length);
-
-    for (final match in RegExp(r'\*\*.*?\*\*', dotAll: true).allMatches(text)) {
-      if (start >= match.start && end <= match.end) {
-        return false;
-      }
-    }
-    return _isPatternActive(RegExp(r'\*[^\*\n]+?\*', dotAll: true));
-  }
-
-  bool _isUnderlineActive() {
-    return _isPatternActive(RegExp(r'<u>.*?</u>', dotAll: true));
-  }
-
-  bool _isBulletActive() {
-    final selection = _currentSelection();
-    final text = _bodyController.text;
-    if (text.isEmpty) return false;
-    final start = selection.start.clamp(0, text.length);
-    int lineStart = start;
-    while (lineStart > 0 && text[lineStart - 1] != '\n') {
-      lineStart--;
-    }
-    int lineEnd = start;
-    while (lineEnd < text.length && text[lineEnd] != '\n') {
-      lineEnd++;
-    }
-    final line = text.substring(lineStart, lineEnd);
-    return line.startsWith('- ') || line.startsWith('* ');
-  }
-
-  bool _isNumberedActive() {
-    final selection = _currentSelection();
-    final text = _bodyController.text;
-    if (text.isEmpty) return false;
-    final start = selection.start.clamp(0, text.length);
-    int lineStart = start;
-    while (lineStart > 0 && text[lineStart - 1] != '\n') {
-      lineStart--;
-    }
-    int lineEnd = start;
-    while (lineEnd < text.length && text[lineEnd] != '\n') {
-      lineEnd++;
-    }
-    final line = text.substring(lineStart, lineEnd);
-    return RegExp(r'^\d+\.\s').hasMatch(line);
-  }
-
-  bool _isLinkActive() {
-    return _isPatternActive(RegExp(r'\[[^\]]*?\]\([^\)]*?\)', dotAll: true));
-  }
-
-  void _applyFormat(String prefix, String suffix, {bool isLineStart = false}) {
-    final selection = _currentSelection();
-
-    final text = _bodyController.text;
-    final start = selection.start.clamp(0, text.length);
-    final end = selection.end.clamp(0, text.length);
-
-    if (isLineStart) {
-      int lineStart = start;
-      while (lineStart > 0 && text[lineStart - 1] != '\n') {
-        lineStart--;
-      }
-      int lineEnd = start;
-      while (lineEnd < text.length && text[lineEnd] != '\n') {
-        lineEnd++;
-      }
-      final line = text.substring(lineStart, lineEnd);
-
-      String newLine;
-      int cursorOffset;
-
-      if (prefix == '- ') {
-        if (line.startsWith('- ') || line.startsWith('* ')) {
-          newLine = line.replaceFirst(RegExp(r'^[\*\-]\s+'), '');
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        } else if (RegExp(r'^\d+\.\s+').hasMatch(line)) {
-          newLine = line.replaceFirst(RegExp(r'^\d+\.\s+'), '- ');
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        } else {
-          newLine = '- $line';
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        }
-      } else if (prefix == '1. ') {
-        if (RegExp(r'^\d+\.\s+').hasMatch(line)) {
-          newLine = line.replaceFirst(RegExp(r'^\d+\.\s+'), '');
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        } else if (line.startsWith('- ') || line.startsWith('* ')) {
-          newLine = line.replaceFirst(RegExp(r'^[\*\-]\s+'), '1. ');
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        } else {
-          newLine = '1. $line';
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        }
-      } else {
-        if (line.startsWith(prefix)) {
-          newLine = line.substring(prefix.length);
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        } else {
-          newLine = prefix + line;
-          cursorOffset = (lineStart + newLine.length).clamp(0, text.length);
-        }
-      }
-
-      final newText = text.replaceRange(lineStart, lineEnd, newLine);
-      _bodyController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: cursorOffset),
-      );
-      _lastSelection = _bodyController.selection;
-      _bodyFocusNode.requestFocus();
-      return;
-    }
-
-    final selectedText = text.substring(start, end);
-
-    final pattern = prefix == '**'
-        ? RegExp(r'\*\*.*?\*\*', dotAll: true)
-        : (prefix == '<u>'
-            ? RegExp(r'<u>.*?</u>', dotAll: true)
-            : RegExp(r'\*[^\*\n]+?\*', dotAll: true));
-
-    Match? enclosingMatch;
-    for (final m in pattern.allMatches(text)) {
-      if (start >= m.start && end <= m.end) {
-        enclosingMatch = m;
-        break;
-      }
-    }
-
-    if (enclosingMatch != null) {
-      final matchStr = text.substring(enclosingMatch.start, enclosingMatch.end);
-      final innerText = matchStr.substring(prefix.length, matchStr.length - suffix.length);
-      final newText = text.replaceRange(enclosingMatch.start, enclosingMatch.end, innerText);
-      final newCursor = (start - prefix.length).clamp(enclosingMatch.start, enclosingMatch.start + innerText.length);
-      _bodyController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newCursor),
-      );
-      _lastSelection = _bodyController.selection;
-      _bodyFocusNode.requestFocus();
-      return;
-    }
-
-    if (selectedText.isEmpty) {
-      final replacement = prefix + suffix;
-      final newText = text.replaceRange(start, end, replacement);
-      _bodyController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: start + prefix.length),
-      );
-      _lastSelection = _bodyController.selection;
-      _bodyFocusNode.requestFocus();
-      return;
-    }
-
-    final replacement = prefix + selectedText + suffix;
-    final newText = text.replaceRange(start, end, replacement);
-    _bodyController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection(
-        baseOffset: start + prefix.length,
-        extentOffset: start + prefix.length + selectedText.length,
-      ),
-    );
-    _lastSelection = _bodyController.selection;
-    _bodyFocusNode.requestFocus();
-  }
-
-  void _insertLink() {
-    final selection = _currentSelection();
-
-    final text = _bodyController.text;
-    final start = selection.start.clamp(0, text.length);
-    final end = selection.end.clamp(0, text.length);
-
-    // If cursor is inside an existing link, show LinkPreviewDialog immediately!
-    final linkPattern = RegExp(r'\[([^\]]*?)\]\(([^\)]*?)\)', dotAll: true);
-    for (final match in linkPattern.allMatches(text)) {
-      if (start >= match.start && end <= match.end) {
-        final label = match.group(1) ?? '';
-        final url = match.group(2) ?? '';
-        LinkPreviewDialog.show(context, label, url);
-        return;
-      }
-    }
-
-    final selectedText = text.substring(start, end);
-
-    final urlController = TextEditingController(text: 'https://');
-    final textController = TextEditingController(text: selectedText);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            'Insert Link',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (selectedText.isEmpty) ...[
-                TextField(
-                  controller: textController,
-                  decoration: const InputDecoration(
-                    labelText: 'Link Text',
-                    hintText: 'e.g. Google',
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              TextField(
-                controller: urlController,
-                decoration: const InputDecoration(
-                  labelText: 'Link URL',
-                  hintText: 'https://example.com',
-                ),
-                autofocus: true,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final linkText = textController.text.trim();
-                final linkUrl = urlController.text.trim();
-                if (linkUrl.isNotEmpty) {
-                  final displayName = linkText.isNotEmpty ? linkText : linkUrl;
-                  final replacement = '[$displayName]($linkUrl)';
-                  final newText = text.replaceRange(start, end, replacement);
-                  _bodyController.value = TextEditingValue(
-                    text: newText,
-                    selection: TextSelection.collapsed(
-                      offset: start + replacement.length,
-                    ),
-                  );
-                  _lastSelection = _bodyController.selection;
-                }
-                Navigator.of(context).pop();
-                _bodyFocusNode.requestFocus();
-              },
-              child: const Text('Insert'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.noteId != null;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
     final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
     final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
     final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+
+    final editorState = _editorKey.currentState;
 
     return PopScope(
       canPop: true,
@@ -681,6 +215,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         appBar: AppBar(
           backgroundColor: bgApp,
           elevation: 0,
+          scrolledUnderElevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: textPrimary),
             onPressed: () async {
@@ -704,24 +239,38 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                   color: textPrimary,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: _saveStatus == 'Saving...'
-                      ? EpicordiaColors.blue100
+                      ? activeBlue.withValues(alpha: 0.15)
                       : (isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6)),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  _saveStatus,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _saveStatus == 'Saving...'
-                        ? EpicordiaColors.blue600
-                        : EpicordiaColors.textSecondaryLight,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _saveStatus == 'Saving...'
+                            ? activeBlue
+                            : (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _saveStatus,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _saveStatus == 'Saving...' ? activeBlue : textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -731,6 +280,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
               icon: Icon(
                 _isLocked ? Icons.lock : Icons.lock_open_outlined,
                 color: _isLocked ? activeBlue : textTertiary,
+                size: 20,
               ),
               tooltip: _isLocked ? 'Note Locked' : 'Lock Note',
               onPressed: () {
@@ -746,216 +296,265 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                 icon: Icon(
                   Icons.delete_outline,
                   color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight,
+                  size: 20,
                 ),
                 onPressed: _delete,
               ),
-            TextButton(
-              onPressed: _save,
-              child: Text(
-                'Save',
-                style: TextStyle(
-                  color: activeBlue,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
+                onPressed: _save,
+                child: Text(
+                  'Done',
+                  style: TextStyle(
+                    color: activeBlue,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),
           ],
         ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        body: SafeArea(
           child: Column(
             children: [
-              // Entry Date Picker + Tag Selection Row
-              Row(
-                children: [
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _entryDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          _entryDate = picked;
-                          _saveStatus = 'Saving...';
-                        });
-                        _autoSave();
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: borderClr),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Date Picker + Tag Chips Row
+                      Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined, size: 14, color: activeBlue),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${_entryDate.year}-${_entryDate.month.toString().padLeft(2, '0')}-${_entryDate.day.toString().padLeft(2, '0')}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: textPrimary,
+                          InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _entryDate,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _entryDate = picked;
+                                  _saveStatus = 'Saving...';
+                                });
+                                _autoSave();
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: borderClr),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.calendar_today_outlined, size: 13, color: activeBlue),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${_entryDate.year}-${_entryDate.month.toString().padLeft(2, '0')}-${_entryDate.day.toString().padLeft(2, '0')}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: ['Journal', 'Idea', 'Task', 'Personal', 'Work'].map((tag) {
+                                  final selected = _selectedTag == tag;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: ChoiceChip(
+                                      label: Text(tag),
+                                      selected: selected,
+                                      visualDensity: VisualDensity.compact,
+                                      selectedColor: activeBlue.withValues(alpha: 0.15),
+                                      side: BorderSide(
+                                        color: selected ? activeBlue : borderClr,
+                                      ),
+                                      labelStyle: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                        color: selected ? activeBlue : textSecondary,
+                                      ),
+                                      onSelected: (_) {
+                                        setState(() {
+                                          _selectedTag = tag;
+                                          _saveStatus = 'Saving...';
+                                        });
+                                        _autoSave();
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: ['Journal', 'Idea', 'Task', 'Personal', 'Work'].map((tag) {
-                          final selected = _selectedTag == tag;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: FilterChip(
-                              label: Text(tag),
-                              selected: selected,
-                              visualDensity: VisualDensity.compact,
-                              selectedColor: isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100,
-                              checkmarkColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700,
-                              labelStyle: TextStyle(
-                                fontSize: 12,
-                                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                                color: selected ? (isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue700) : textPrimary,
-                              ),
-                              onSelected: (_) {
-                                setState(() {
-                                  _selectedTag = tag;
-                                  _saveStatus = 'Saving...';
-                                });
-                                _autoSave();
-                              },
-                            ),
-                          );
-                        }).toList(),
+                      const SizedBox(height: 16),
+                      // Title Input
+                      TextField(
+                        controller: _titleController,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: textPrimary,
+                          letterSpacing: -0.4,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Note title...',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          hintStyle: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: textTertiary,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Title
-              TextField(
-                controller: _titleController,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: textPrimary,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Note title...',
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  hintStyle: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: textTertiary,
+                      const SizedBox(height: 12),
+                      Divider(color: borderClr.withValues(alpha: 0.5)),
+                      const SizedBox(height: 12),
+                      // Block Editor
+                      BlockNoteEditor(
+                        key: _editorKey,
+                        initialBlocks: _blocks,
+                        onChanged: _onBlocksChanged,
+                      ),
+                      const SizedBox(height: 80),
+                    ],
                   ),
                 ),
               ),
-              Divider(color: borderClr),
-              const SizedBox(height: 8),
-              // Body
-              Expanded(
-                child: TextField(
-                  controller: _bodyController,
-                  focusNode: _bodyFocusNode,
-                  autofocus: true,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: textPrimary,
-                    height: 1.6,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Start writing...',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    filled: false,
-                    hintStyle: TextStyle(color: textTertiary),
-                  ),
-                ),
-              ),
+              // Floating Bottom Formatting Toolbar
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: borderClr),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    _FmtButton(
-                      icon: Icons.format_bold,
-                      isActive: _isBoldActive(),
-                      onTap: () => _applyFormat('**', '**'),
-                    ),
-                    const SizedBox(width: 4),
-                    _FmtButton(
-                      icon: Icons.format_italic,
-                      isActive: _isItalicActive(),
-                      onTap: () => _applyFormat('*', '*'),
-                    ),
-                    const SizedBox(width: 4),
-                    _FmtButton(
-                      icon: Icons.format_underline,
-                      isActive: _isUnderlineActive(),
-                      onTap: () => _applyFormat('<u>', '</u>'),
-                    ),
-                    const SizedBox(width: 4),
-                    _FmtButton(
-                      icon: Icons.format_list_bulleted,
-                      isActive: _isBulletActive(),
-                      onTap: () => _applyFormat('- ', '', isLineStart: true),
-                    ),
-                    const SizedBox(width: 4),
-                    _FmtButton(
-                      icon: Icons.format_list_numbered,
-                      isActive: _isNumberedActive(),
-                      onTap: () => _applyFormat('1. ', '', isLineStart: true),
-                    ),
-                    const SizedBox(width: 4),
-                    _FmtButton(
-                      icon: Icons.link,
-                      isActive: _isLinkActive(),
-                      onTap: _insertLink,
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderClr, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
                   ],
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Block type controls
+                      _ToolBtn(
+                        icon: Icons.title,
+                        label: 'Heading',
+                        isActive: editorState?.isBlockTypeActive(BlockType.heading) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.heading),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.format_list_bulleted,
+                        label: 'Bullet List',
+                        isActive: editorState?.isBlockTypeActive(BlockType.bulletListItem) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.bulletListItem),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.format_list_numbered,
+                        label: 'Numbered List',
+                        isActive: editorState?.isBlockTypeActive(BlockType.numberedListItem) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.numberedListItem),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.check_box_outlined,
+                        label: 'Checklist',
+                        isActive: editorState?.isBlockTypeActive(BlockType.checklistItem) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.checklistItem),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.format_quote,
+                        label: 'Quote',
+                        isActive: editorState?.isBlockTypeActive(BlockType.quote) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleBlockType(BlockType.quote),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        height: 20,
+                        width: 1,
+                        color: borderClr,
+                      ),
+                      // Inline format controls
+                      _ToolBtn(
+                        icon: Icons.format_bold,
+                        label: 'Bold',
+                        isActive: editorState?.isMarkActive(MarkType.bold) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.bold),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.format_italic,
+                        label: 'Italic',
+                        isActive: editorState?.isMarkActive(MarkType.italic) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.italic),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.format_underline,
+                        label: 'Underline',
+                        isActive: editorState?.isMarkActive(MarkType.underline) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.underline),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.strikethrough_s,
+                        label: 'Strikethrough',
+                        isActive: editorState?.isMarkActive(MarkType.strikethrough) ?? false,
+                        onTap: () => _editorKey.currentState?.toggleMark(MarkType.strikethrough),
+                      ),
+                      _ToolBtn(
+                        icon: Icons.link,
+                        label: 'Link',
+                        isActive: editorState?.isMarkActive(MarkType.link) ?? false,
+                        onTap: () => _editorKey.currentState?.insertLink(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
-class _FmtButton extends StatelessWidget {
+class _ToolBtn extends StatelessWidget {
   final IconData icon;
+  final String label;
   final VoidCallback onTap;
   final bool isActive;
-  const _FmtButton({
+
+  const _ToolBtn({
     required this.icon,
+    required this.label,
     required this.onTap,
     this.isActive = false,
   });
@@ -968,17 +567,21 @@ class _FmtButton extends StatelessWidget {
     final iconColor = isActive ? activeColor : inactiveColor;
     final bgColor = isActive ? activeColor.withValues(alpha: 0.15) : Colors.transparent;
 
-    return InkWell(
-      onTap: onTap,
-      canRequestFocus: false,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(6),
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        onTap: onTap,
+        canRequestFocus: false,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 19, color: iconColor),
         ),
-        child: Icon(icon, size: 20, color: iconColor),
       ),
     );
   }

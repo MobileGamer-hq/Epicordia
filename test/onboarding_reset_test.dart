@@ -28,7 +28,7 @@ void main() {
             databaseProvider.overrideWithValue(testDb),
           ],
           child: MaterialApp(
-            theme: EpicordiaTheme.lightTheme,
+            theme: EpicordiaTheme.lightTheme(AppPrimaryColor.blue),
             home: const OnboardingScreen(),
           ),
         ),
@@ -63,7 +63,7 @@ void main() {
             databaseProvider.overrideWithValue(testDb),
           ],
           child: MaterialApp(
-            theme: EpicordiaTheme.lightTheme,
+            theme: EpicordiaTheme.lightTheme(AppPrimaryColor.blue),
             home: const SettingsScreen(),
           ),
         ),

@@ -244,7 +244,7 @@ class _DeviceSyncReviewSheetState extends ConsumerState<DeviceSyncReviewSheet> {
                   color: EpicordiaColors.blue600.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.sync, color: EpicordiaColors.blue600, size: 22),
+                child: Icon(Icons.sync, color: EpicordiaColors.blue600, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(

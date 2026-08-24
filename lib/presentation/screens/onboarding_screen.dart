@@ -240,7 +240,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: EpicordiaColors.blue600, width: 2),
+                  borderSide: BorderSide(color: EpicordiaColors.blue600, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),

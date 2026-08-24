@@ -1,97 +1,125 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import '../../domain/models/note_model.dart';
+import '../theme.dart';
 
-/// A utility to format markdown text strings into styled [TextSpan]s
-/// for note titles, previews, and cards throughout the app.
+/// A utility to format note content (both structured JSON blocks and legacy raw markdown)
+/// into styled [TextSpan] trees for note titles, previews, cards, and dialogs.
 class MarkdownFormatter {
-  static final RegExp _inlinePattern = RegExp(
-    r'(\*\*.*?\*\*)|(\*[^\*\n]+?\*)|(<u>.*?</u>)|(~~.*?~~)|(\[[^\]]*?\]\([^\)]*?\))',
-    dotAll: true,
-  );
-
-  /// Converts raw markdown text into a styled [TextSpan] tree.
+  /// Converts note content string (structured JSON blocks or legacy markdown) into a styled [TextSpan] tree.
   /// If [isTitle] is true, header `#` prefixes are stripped and formatted as bold title text.
   static TextSpan formatToTextSpan(
-    String text, {
+    String content, {
     required TextStyle baseStyle,
     Color? activeBlue,
     bool isTitle = false,
     void Function(String label, String url)? onLinkTap,
   }) {
-    if (text.isEmpty) {
-      return TextSpan(text: text, style: baseStyle);
+    if (content.isEmpty) {
+      return TextSpan(text: content, style: baseStyle);
     }
 
-    final lines = text.split('\n');
+    final blocks = NoteDocument.decodeBlocks(content);
+    return formatBlocksToTextSpan(
+      blocks,
+      baseStyle: baseStyle,
+      activeBlue: activeBlue,
+      isTitle: isTitle,
+      onLinkTap: onLinkTap,
+    );
+  }
+
+  /// Converts a list of [NoteBlock]s into a styled [TextSpan] tree.
+  static TextSpan formatBlocksToTextSpan(
+    List<NoteBlock> blocks, {
+    required TextStyle baseStyle,
+    Color? activeBlue,
+    bool isTitle = false,
+    void Function(String label, String url)? onLinkTap,
+  }) {
+    if (blocks.isEmpty) {
+      return TextSpan(style: baseStyle, text: '');
+    }
+
     final lineSpans = <TextSpan>[];
+    int numberedCounter = 1;
 
-    for (int i = 0; i < lines.length; i++) {
-      String line = lines[i];
+    for (int i = 0; i < blocks.length; i++) {
+      final block = blocks[i];
 
-      // Handle block level prefixes for lines (bullet list, numbered list, headers)
-      String prefix = '';
-      TextStyle lineBaseStyle = baseStyle;
-
-      if (!isTitle) {
-        if (RegExp(r'^[\*\-\+]\s+').hasMatch(line)) {
-          prefix = '• ';
-          line = line.replaceFirst(RegExp(r'^[\*\-\+]\s+'), '');
-        } else if (RegExp(r'^\d+\.\s+').hasMatch(line)) {
-          final match = RegExp(r'^\d+\.\s+').firstMatch(line)!;
-          prefix = match.group(0)!;
-          line = line.substring(match.end);
-        } else if (line.startsWith('#')) {
-          final headerMatch = RegExp(r'^#+\s*').firstMatch(line);
-          if (headerMatch != null) {
-            line = line.substring(headerMatch.end);
-            lineBaseStyle = baseStyle.copyWith(fontWeight: FontWeight.bold);
-          }
+      if (block.type == BlockType.numberedListItem) {
+        if (i == 0 || blocks[i - 1].type != BlockType.numberedListItem) {
+          numberedCounter = block.listIndex ?? 1;
         }
       } else {
-        if (line.startsWith('#')) {
-          final headerMatch = RegExp(r'^#+\s*').firstMatch(line);
-          if (headerMatch != null) {
-            line = line.substring(headerMatch.end);
-          }
+        numberedCounter = 1;
+      }
+
+      TextStyle blockStyle = baseStyle;
+      String prefix = '';
+
+      if (isTitle) {
+        // Strip block markers if formatting a single title line
+        blockStyle = baseStyle.copyWith(fontWeight: FontWeight.bold);
+      } else {
+        switch (block.type) {
+          case BlockType.paragraph:
+            break;
+          case BlockType.bulletListItem:
+            prefix = '• ';
+            break;
+          case BlockType.numberedListItem:
+            prefix = '$numberedCounter. ';
+            numberedCounter++;
+            break;
+          case BlockType.checklistItem:
+            prefix = block.checked ? '☑ ' : '☐ ';
+            break;
+          case BlockType.heading:
+            blockStyle = baseStyle.copyWith(
+              fontSize: (baseStyle.fontSize ?? 14) * 1.25,
+              fontWeight: FontWeight.w800,
+            );
+            break;
+          case BlockType.quote:
+            prefix = '│ ';
+            blockStyle = baseStyle.copyWith(
+              fontStyle: FontStyle.italic,
+              color: (baseStyle.color ?? Colors.black).withValues(alpha: 0.75),
+            );
+            break;
         }
       }
 
       final children = <TextSpan>[];
+
       if (prefix.isNotEmpty) {
         children.add(TextSpan(
           text: prefix,
-          style: lineBaseStyle.copyWith(fontWeight: FontWeight.bold),
+          style: blockStyle.copyWith(
+            fontWeight: FontWeight.bold,
+            color: activeBlue ?? EpicordiaColors.blue600,
+          ),
         ));
       }
 
-      // Parse inline markdown syntax for this line
-      int pos = 0;
-      for (final match in _inlinePattern.allMatches(line)) {
-        if (match.start > pos) {
-          children.add(TextSpan(
-            text: line.substring(pos, match.start),
-            style: lineBaseStyle,
-          ));
-        }
+      // Render inline marks over plain text
+      final inlineSpan = buildInlineTextSpan(
+        block.text,
+        block.marks,
+        baseStyle: blockStyle,
+        activeBlue: activeBlue,
+        onLinkTap: onLinkTap,
+      );
 
-        final token = match.group(0)!;
-        children.add(_styledInlineSpan(token, lineBaseStyle, activeBlue, onLinkTap));
-        pos = match.end;
-      }
-
-      if (pos < line.length) {
-        children.add(TextSpan(
-          text: line.substring(pos),
-          style: lineBaseStyle,
-        ));
-      }
+      children.add(inlineSpan);
 
       lineSpans.add(TextSpan(
         children: children,
-        style: lineBaseStyle,
+        style: blockStyle,
       ));
 
-      if (i < lines.length - 1) {
+      if (i < blocks.length - 1) {
         lineSpans.add(const TextSpan(text: '\n'));
       }
     }
@@ -99,65 +127,86 @@ class MarkdownFormatter {
     return TextSpan(style: baseStyle, children: lineSpans);
   }
 
-  static TextSpan _styledInlineSpan(
-    String token,
-    TextStyle baseStyle,
+  /// Map inline marks over plain text to styled [TextSpan]s.
+  static TextSpan buildInlineTextSpan(
+    String text,
+    List<Mark> marks, {
+    required TextStyle baseStyle,
     Color? activeBlue,
     void Function(String label, String url)? onLinkTap,
-  ) {
-    // Bold: **text**
-    if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
-      final inner = token.substring(2, token.length - 2);
-      return TextSpan(
-        text: inner,
-        style: baseStyle.copyWith(fontWeight: FontWeight.w700),
-      );
+  }) {
+    if (text.isEmpty) {
+      return TextSpan(text: '', style: baseStyle);
+    }
+    if (marks.isEmpty) {
+      return TextSpan(text: text, style: baseStyle);
     }
 
-    // Underline: <u>text</u>
-    if (token.startsWith('<u>') && token.endsWith('</u>') && token.length >= 7) {
-      final inner = token.substring(3, token.length - 4);
-      return TextSpan(
-        text: inner,
-        style: baseStyle.copyWith(decoration: TextDecoration.underline),
-      );
+    // Collect all boundary offsets (0, text.length, mark.start, mark.end)
+    final boundaries = <int>{0, text.length};
+    for (final mark in marks) {
+      if (mark.start >= 0 && mark.start <= text.length) boundaries.add(mark.start);
+      if (mark.end >= 0 && mark.end <= text.length) boundaries.add(mark.end);
     }
 
-    // Strikethrough: ~~text~~
-    if (token.startsWith('~~') && token.endsWith('~~') && token.length >= 4) {
-      final inner = token.substring(2, token.length - 2);
-      return TextSpan(
-        text: inner,
-        style: baseStyle.copyWith(decoration: TextDecoration.lineThrough),
-      );
+    final sortedBoundaries = boundaries.toList()..sort();
+    final spans = <TextSpan>[];
+
+    for (int i = 0; i < sortedBoundaries.length - 1; i++) {
+      final start = sortedBoundaries[i];
+      final end = sortedBoundaries[i + 1];
+      if (start >= end) continue;
+
+      final chunkText = text.substring(start, end);
+
+      // Find all active marks covering this chunk
+      final activeMarks = marks.where((m) => m.start <= start && m.end >= end).toList();
+
+      TextStyle spanStyle = baseStyle;
+      String? linkUrl;
+
+      for (final mark in activeMarks) {
+        switch (mark.type) {
+          case MarkType.bold:
+            spanStyle = spanStyle.copyWith(fontWeight: FontWeight.w700);
+            break;
+          case MarkType.italic:
+            spanStyle = spanStyle.copyWith(fontStyle: FontStyle.italic);
+            break;
+          case MarkType.underline:
+            spanStyle = spanStyle.copyWith(decoration: TextDecoration.underline);
+            break;
+          case MarkType.strikethrough:
+            spanStyle = spanStyle.copyWith(decoration: TextDecoration.lineThrough);
+            break;
+          case MarkType.link:
+            linkUrl = mark.href;
+            spanStyle = spanStyle.copyWith(
+              color: activeBlue ?? EpicordiaColors.blue600,
+              decoration: TextDecoration.underline,
+            );
+            break;
+        }
+      }
+
+      TapGestureRecognizer? recognizer;
+      if (linkUrl != null && linkUrl.isNotEmpty) {
+        final url = linkUrl;
+        recognizer = TapGestureRecognizer()
+          ..onTap = () {
+            if (onLinkTap != null) {
+              onLinkTap(chunkText, url);
+            }
+          };
+      }
+
+      spans.add(TextSpan(
+        text: chunkText,
+        style: spanStyle,
+        recognizer: recognizer,
+      ));
     }
 
-    // Link: [label](url)
-    if (token.startsWith('[') && token.contains('](') && token.endsWith(')')) {
-      final closeBracket = token.indexOf(']');
-      final label = token.substring(1, closeBracket);
-      final url = token.substring(closeBracket + 2, token.length - 1);
-      return TextSpan(
-        text: label,
-        style: baseStyle.copyWith(
-          color: activeBlue ?? Colors.blue,
-          decoration: TextDecoration.underline,
-        ),
-        recognizer: onLinkTap != null
-            ? (TapGestureRecognizer()..onTap = () => onLinkTap(label, url))
-            : null,
-      );
-    }
-
-    // Italic: *text*
-    if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
-      final inner = token.substring(1, token.length - 1);
-      return TextSpan(
-        text: inner,
-        style: baseStyle.copyWith(fontStyle: FontStyle.italic),
-      );
-    }
-
-    return TextSpan(text: token, style: baseStyle);
+    return TextSpan(children: spans, style: baseStyle);
   }
 }

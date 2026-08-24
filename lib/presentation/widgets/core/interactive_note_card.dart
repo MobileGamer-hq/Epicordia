@@ -5,6 +5,7 @@ import '../../../core/theme.dart';
 import '../../../core/app_lock_provider.dart';
 import '../../../domain/state/journaling_provider.dart';
 import '../../../core/utils/markdown_formatter.dart';
+import '../../../domain/models/note_model.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/pin_repository.dart';
 import '../../screens/pin_lock_screen.dart';
@@ -83,13 +84,22 @@ class InteractiveNoteCard extends ConsumerWidget {
     final isJournal = noteTags.toLowerCase().contains('journal');
     final isLocked = note.isLocked || (lockAll && isJournal);
 
-    final lines = (note.content ?? '').split('\n');
-    final rawTitle = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
+    final rawContent = note.content ?? '';
+    final blocks = NoteDocument.decodeBlocks(rawContent);
+
+    String rawTitle = 'Untitled Note';
+    List<NoteBlock> bodyBlocks = blocks;
+
+    if (blocks.isNotEmpty) {
+      if (blocks.first.type == BlockType.heading) {
+        rawTitle = blocks.first.text.isNotEmpty ? blocks.first.text : 'Untitled Note';
+        bodyBlocks = blocks.sublist(1);
+      } else {
+        rawTitle = blocks.first.text.isNotEmpty ? blocks.first.text : 'Untitled Note';
+      }
+    }
+
     final title = isLocked ? 'Locked Note' : rawTitle;
-    final preview = isLocked
-        ? 'Protected content. Tap to verify PIN and unlock.'
-        : (lines.length > 1 ? lines.sublist(1).join('\n').trim() : 'No additional content');
-    final body = note.content ?? '';
     final isPinned = note.boardId != null;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -100,6 +110,8 @@ class InteractiveNoteCard extends ConsumerWidget {
     final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
 
     final formattedTime = timeFormatted ?? _formatModified(note.modifiedAt);
+
+    final exportText = NoteDocument.exportToMarkdown(blocks);
 
     return GestureDetector(
       onTap: () => _handleTap(context, ref),
@@ -126,7 +138,7 @@ class InteractiveNoteCard extends ConsumerWidget {
                         onTap: () {
                           ItemInteractionDialogs.copyToClipboard(
                             context,
-                            '$title\n\n$body',
+                            exportText,
                           );
                         },
                       ),
@@ -136,7 +148,7 @@ class InteractiveNoteCard extends ConsumerWidget {
                         onTap: () {
                           ItemInteractionDialogs.shareContent(
                             context,
-                            '$title\n\n$body',
+                            exportText,
                           );
                         },
                       ),
@@ -188,7 +200,7 @@ class InteractiveNoteCard extends ConsumerWidget {
                   ),
                 ),
                 if (isLocked) ...[
-                  const Icon(Icons.lock, size: 16, color: EpicordiaColors.blue600),
+                  Icon(Icons.lock, size: 16, color: EpicordiaColors.blue600),
                   const SizedBox(width: 6),
                 ],
                 Container(
@@ -223,21 +235,41 @@ class InteractiveNoteCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text.rich(
-              MarkdownFormatter.formatToTextSpan(
-                preview,
-                baseStyle: TextStyle(
+            if (isLocked)
+              Text(
+                'Protected content. Tap to verify PIN and unlock.',
+                style: TextStyle(
                   fontSize: 13,
-                  color: isLocked ? textTertiary : textSecondary,
-                  fontStyle: isLocked ? FontStyle.italic : FontStyle.normal,
+                  color: textTertiary,
+                  fontStyle: FontStyle.italic,
                   height: 1.45,
                 ),
-                activeBlue: activeBlue,
-                onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
+              )
+            else if (bodyBlocks.isEmpty || bodyBlocks.every((b) => b.text.trim().isEmpty))
+              Text(
+                'No additional content',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: textTertiary,
+                  fontStyle: FontStyle.italic,
+                  height: 1.45,
+                ),
+              )
+            else
+              Text.rich(
+                MarkdownFormatter.formatBlocksToTextSpan(
+                  bodyBlocks,
+                  baseStyle: TextStyle(
+                    fontSize: 13,
+                    color: textSecondary,
+                    height: 1.45,
+                  ),
+                  activeBlue: activeBlue,
+                  onLinkTap: (label, url) => LinkPreviewDialog.show(context, label, url),
+                ),
+                maxLines: isExpanded ? null : 3,
+                overflow: isExpanded ? TextOverflow.clip : TextOverflow.ellipsis,
               ),
-              maxLines: isExpanded ? null : 3,
-              overflow: isExpanded ? TextOverflow.clip : TextOverflow.ellipsis,
-            ),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -268,4 +300,3 @@ class InteractiveNoteCard extends ConsumerWidget {
     );
   }
 }
-

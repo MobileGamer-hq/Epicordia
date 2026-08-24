@@ -53,11 +53,12 @@ class _EpicordiaAppState extends ConsumerState<EpicordiaApp> {
   Widget build(BuildContext context) {
     final goRouter = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final primaryColor = ref.watch(appPrimaryColorProvider);
 
     return MaterialApp.router(
       title: 'Epicordia',
-      theme: EpicordiaTheme.lightTheme,
-      darkTheme: EpicordiaTheme.darkTheme,
+      theme: EpicordiaTheme.lightTheme(primaryColor),
+      darkTheme: EpicordiaTheme.darkTheme(primaryColor),
       themeMode: themeMode,
       routerConfig: goRouter,
       builder: (context, child) {

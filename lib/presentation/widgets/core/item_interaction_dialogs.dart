@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils/markdown_formatter.dart';
+import '../../../domain/models/note_model.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/task_repository.dart';
 import '../../../data/repository/pin_repository.dart';
@@ -22,9 +23,22 @@ class ItemInteractionDialogs {
     required PinEntity note,
     required String boardTitle,
   }) {
-    final lines = (note.content ?? '').split('\n');
-    final title = lines.isNotEmpty && lines[0].trim().isNotEmpty ? lines[0] : 'Untitled Note';
-    final body = lines.length > 1 ? lines.sublist(1).join('\n').trim() : note.content ?? '';
+    final rawContent = note.content ?? '';
+    final blocks = NoteDocument.decodeBlocks(rawContent);
+
+    String title = 'Untitled Note';
+    List<NoteBlock> bodyBlocks = blocks;
+
+    if (blocks.isNotEmpty) {
+      if (blocks.first.type == BlockType.heading) {
+        title = blocks.first.text.isNotEmpty ? blocks.first.text : 'Untitled Note';
+        bodyBlocks = blocks.sublist(1);
+      } else {
+        title = blocks.first.text.isNotEmpty ? blocks.first.text : 'Untitled Note';
+      }
+    }
+
+    final exportText = NoteDocument.exportToMarkdown(blocks);
 
     showGeneralDialog(
       context: context,
@@ -153,8 +167,10 @@ class ItemInteractionDialogs {
                         child: SingleChildScrollView(
                           child: SelectionArea(
                             child: Text.rich(
-                              MarkdownFormatter.formatToTextSpan(
-                                body.isEmpty ? 'No additional content.' : body,
+                              MarkdownFormatter.formatBlocksToTextSpan(
+                                bodyBlocks.isEmpty
+                                    ? [NoteBlock(type: BlockType.paragraph, text: 'No additional content.')]
+                                    : bodyBlocks,
                                 baseStyle: TextStyle(
                                   fontSize: 14,
                                   height: 1.5,
@@ -185,7 +201,7 @@ class ItemInteractionDialogs {
                               label: 'Copy',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                copyToClipboard(context, '$title\n\n$body');
+                                copyToClipboard(context, exportText);
                               },
                             ),
                             _ActionButton(
@@ -193,7 +209,7 @@ class ItemInteractionDialogs {
                               label: 'Share',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                shareContent(context, '$title\n\n$body');
+                                shareContent(context, exportText);
                               },
                             ),
                             _ActionButton(

@@ -33,7 +33,7 @@ class AppSidebar extends StatelessWidget {
                     ),
                     child: const Icon(Icons.space_dashboard, color: Colors.white, size: 20),
                   )
-                : const Align(
+                : Align(
                     alignment: Alignment.centerLeft,
                     child: Text('Epicordia', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: EpicordiaColors.blue700)),
                   ),

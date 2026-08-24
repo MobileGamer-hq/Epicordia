@@ -19,7 +19,7 @@ void main() {
           databaseProvider.overrideWithValue(testDb),
         ],
         child: MaterialApp(
-          theme: EpicordiaTheme.lightTheme,
+          theme: EpicordiaTheme.lightTheme(AppPrimaryColor.blue),
           // Wrap in a Navigator-like context that GoRouter expects for GoRouterState
           home: const Scaffold(body: Center(child: Text('Loading...'))),
         ),

@@ -129,7 +129,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                             color: EpicordiaColors.blue600.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.alarm, color: EpicordiaColors.blue600, size: 28),
+                          child: Icon(Icons.alarm, color: EpicordiaColors.blue600, size: 28),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -147,7 +147,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                               const SizedBox(height: 2),
                               Text(
                                 alarm.formattedTime,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 26,
                                   fontWeight: FontWeight.w800,
                                   color: EpicordiaColors.blue600,
@@ -177,13 +177,13 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.timer_outlined, color: EpicordiaColors.blue600, size: 24),
+                          Icon(Icons.timer_outlined, color: EpicordiaColors.blue600, size: 24),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Time Remaining',
                                   style: TextStyle(
                                     fontSize: 11,
@@ -194,7 +194,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                                 const SizedBox(height: 2),
                                 Text(
                                   alarm.isEnabled ? 'Rings in $countdownText' : 'Alarm Disabled',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w800,
                                     color: EpicordiaColors.blue600,
@@ -495,7 +495,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
               child: Container(
                 width: 44,
                 height: 44,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: EpicordiaColors.blue600,
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -788,10 +788,10 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: EpicordiaColors.blue500.withValues(alpha: 0.25)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(Icons.info_outline_rounded, color: EpicordiaColors.blue600, size: 20),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'System Clock App Handoff mode active (configured in Settings).',
@@ -912,7 +912,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                     ),
                     Text(
                       '${_customMinutesController.text.isNotEmpty ? _customMinutesController.text : _selectedPresetMinutes} mins',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
                     ),
                   ],
                 ),
@@ -975,7 +975,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: EpicordiaColors.blue600, width: 1.5),
+                      borderSide: BorderSide(color: EpicordiaColors.blue600, width: 1.5),
                     ),
                   ),
                   onChanged: (val) => setState(() {}),
@@ -1061,7 +1061,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.event_available_outlined, size: 40, color: EpicordiaColors.blue600),
+                        Icon(Icons.event_available_outlined, size: 40, color: EpicordiaColors.blue600),
                         const SizedBox(height: 12),
                         Text(
                           'No Tasks Scheduled Due Today',
@@ -1126,8 +1126,8 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                                     _currentIndex = 0;
                                   });
                                 },
-                                icon: const Icon(Icons.timer_outlined, size: 18, color: EpicordiaColors.blue600),
-                                label: const Text(
+                                icon: Icon(Icons.timer_outlined, size: 18, color: EpicordiaColors.blue600),
+                                label: Text(
                                   'Start 25m Focus Session',
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
                                 ),

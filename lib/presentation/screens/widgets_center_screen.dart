@@ -306,7 +306,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                       ),
                       child: Text(
                         boardsMap[subtaskTask?.boardId]?.title ?? 'INBOX',
-                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -401,7 +401,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                           ),
                           child: Text(
                             boardsMap[note?.boardId]?.title ?? 'INBOX',
-                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
                           ),
                         ),
                         Text(
@@ -535,7 +535,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Row(
                               children: [
-                                const Icon(Icons.schedule, size: 12, color: EpicordiaColors.blue600),
+                                Icon(Icons.schedule, size: 12, color: EpicordiaColors.blue600),
                                 const SizedBox(width: 6),
                                 Text('${slot.startTime} - ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary)),
                                 Expanded(
@@ -577,7 +577,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.alarm, color: EpicordiaColors.blue600, size: 22),
+                    Icon(Icons.alarm, color: EpicordiaColors.blue600, size: 22),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(

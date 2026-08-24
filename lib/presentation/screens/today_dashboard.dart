@@ -860,7 +860,7 @@ class _SectionHeader extends StatelessWidget {
         if (actionLabel != null && onAction != null)
           GestureDetector(
             onTap: onAction,
-            child: Text(actionLabel!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: EpicordiaColors.blue600)),
+            child: Text(actionLabel!, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: EpicordiaColors.blue600)),
           ),
       ],
     );

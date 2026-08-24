@@ -177,7 +177,7 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle_rounded, color: EpicordiaColors.blue600)
+                      ? Icon(Icons.check_circle_rounded, color: EpicordiaColors.blue600)
                       : null,
                   onTap: () {
                     setState(() {
@@ -231,7 +231,7 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
         actions: [
           TextButton(
             onPressed: _saveAlarm,
-            child: const Text(
+            child: Text(
               'Save',
               style: TextStyle(
                 fontSize: 18,

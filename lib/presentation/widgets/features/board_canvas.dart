@@ -937,7 +937,7 @@ class _EmptyCanvasHint extends StatelessWidget {
               color: EpicordiaColors.blue700.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.dashboard_customize_outlined, size: 32, color: EpicordiaColors.blue700),
+            child: Icon(Icons.dashboard_customize_outlined, size: 32, color: EpicordiaColors.blue700),
           ),
           const SizedBox(height: 16),
           const Text(

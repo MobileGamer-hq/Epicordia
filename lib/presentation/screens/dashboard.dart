@@ -114,7 +114,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     const SizedBox(height: 4),
                                     GestureDetector(
                                       onTap: () => context.push('/create/task'),
-                                      child: const Text('Add a task for this week', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
+                                      child: Text('Add a task for this week', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
                                     ),
                                   ],
                                 ),
@@ -156,7 +156,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     const SizedBox(height: 4),
                                     GestureDetector(
                                       onTap: () => context.push('/create/board'),
-                                      child: const Text('Create your first visual board', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
+                                      child: Text('Create your first visual board', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: EpicordiaColors.blue600)),
                                     ),
                                   ],
                                 ),
@@ -270,7 +270,7 @@ class _SectionHeader extends StatelessWidget {
         if (actionLabel != null)
           GestureDetector(
             onTap: onAction,
-            child: Text(actionLabel!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: EpicordiaColors.blue600)),
+            child: Text(actionLabel!, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: EpicordiaColors.blue600)),
           ),
       ],
     );
@@ -302,7 +302,7 @@ class _QuickCaptureCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(category, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: EpicordiaColors.blue600, letterSpacing: 0.6)),
+            Text(category, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: EpicordiaColors.blue600, letterSpacing: 0.6)),
             const SizedBox(height: 6),
             Expanded(
               child: Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),

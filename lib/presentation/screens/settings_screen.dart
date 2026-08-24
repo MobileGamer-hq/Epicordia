@@ -71,7 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.code, color: EpicordiaColors.blue600),
+              leading: Icon(Icons.code, color: EpicordiaColors.blue600),
               title: const Text('Export Workspace as JSON'),
               subtitle: const Text('Full snapshot of boards, pins, tasks, and timetable'),
               onTap: () async {
@@ -93,7 +93,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.table_chart, color: EpicordiaColors.blue600),
+              leading: Icon(Icons.table_chart, color: EpicordiaColors.blue600),
               title: const Text('Export Weekly Schedule as CSV'),
               subtitle: const Text('Weekly recurring schedule in spreadsheet format'),
               onTap: () async {
@@ -115,7 +115,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.list_alt, color: EpicordiaColors.blue600),
+              leading: Icon(Icons.list_alt, color: EpicordiaColors.blue600),
               title: const Text('Export Tasks as CSV'),
               subtitle: const Text('Tasks list with status, dates, and boards'),
               onTap: () async {
@@ -399,6 +399,114 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 20),
                   const Divider(height: 1, color: EpicordiaColors.borderSubtleLight),
                   const SizedBox(height: 16),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final activeColor = ref.watch(appPrimaryColorProvider);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Primary Accent Color',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? EpicordiaColors.textSecondaryDark
+                                  : EpicordiaColors.textSecondaryLight,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Select an accent theme color for buttons, active indicators, and highlights.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? EpicordiaColors.textTertiaryDark
+                                  : EpicordiaColors.textTertiaryLight,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: AppPrimaryColor.values.map((colorOption) {
+                              final isSelected = colorOption == activeColor;
+                              final palette = colorOption.palette;
+
+                              return InkWell(
+                                onTap: () {
+                                  ref
+                                      .read(appPrimaryColorProvider.notifier)
+                                      .setPrimaryColor(colorOption);
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? palette.swatchColor.withValues(alpha: isDark ? 0.25 : 0.12)
+                                        : (isDark
+                                            ? EpicordiaColors.surfaceSunkenDark
+                                            : EpicordiaColors.surfaceSunkenLight),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? palette.swatchColor
+                                          : (isDark
+                                              ? EpicordiaColors.borderSubtleDark
+                                              : EpicordiaColors.borderSubtleLight),
+                                      width: isSelected ? 2.0 : 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          color: palette.swatchColor,
+                                          shape: BoxShape.circle,
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: palette.swatchColor.withValues(alpha: 0.4),
+                                                    blurRadius: 4,
+                                                    spreadRadius: 1,
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(
+                                                Icons.check,
+                                                size: 14,
+                                                color: Colors.white,
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        palette.label,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                          color: textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(height: 1, color: EpicordiaColors.borderSubtleLight),
+                  const SizedBox(height: 16),
                   Text(
                     'Board Toolbar Position',
                     style: TextStyle(
@@ -473,7 +581,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: EpicordiaColors.blue600.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.widgets_outlined, color: EpicordiaColors.blue600, size: 20),
+                    child: Icon(Icons.widgets_outlined, color: EpicordiaColors.blue600, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
