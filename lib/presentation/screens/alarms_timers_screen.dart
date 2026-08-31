@@ -54,21 +54,6 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
     super.dispose();
   }
 
-  void _showRingingDialogIfNeeded(RingingEvent? event) {
-    if (event == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AlarmRingingDialog.show(
-        context,
-        event: event,
-        onDismiss: () {
-          ref.read(alarmTimerProvider.notifier).dismissRinging();
-        },
-        onSnooze: (dur) {
-          ref.read(alarmTimerProvider.notifier).snoozeRinging(dur);
-        },
-      );
-    });
-  }
 
   // ─────────────────────────────────────────────────────────────
   // Interactive Long-Press Floating Pop-Up for Alarms
@@ -347,12 +332,6 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
     final timerAlarmState = ref.watch(alarmTimerProvider);
     final activeTimer = timerAlarmState.activeTimer;
 
-    // Listen to ringing event
-    ref.listen<AlarmTimerState>(alarmTimerProvider, (prev, next) {
-      if (next.ringingEvent != null && prev?.ringingEvent != next.ringingEvent) {
-        _showRingingDialogIfNeeded(next.ringingEvent);
-      }
-    });
 
     return Scaffold(
       backgroundColor: bgApp,

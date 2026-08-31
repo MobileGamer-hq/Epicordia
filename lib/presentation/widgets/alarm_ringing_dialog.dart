@@ -141,26 +141,47 @@ class _AlarmRingingDialogState extends State<AlarmRingingDialog>
             const SizedBox(height: 28),
 
             // Buttons
-            Row(
+            Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 if (widget.event.isAlarm) ...[
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => widget.onSnooze(const Duration(minutes: 5)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: EpicordiaColors.borderStrongLight),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => widget.onSnooze(const Duration(minutes: 1)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: EpicordiaColors.borderStrongLight),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+                          ),
+                          child: const Text(
+                            '+1 Min',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
                       ),
-                      child: const Text(
-                        'Snooze 5m',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => widget.onSnooze(const Duration(minutes: 5)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: EpicordiaColors.borderStrongLight),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+                          ),
+                          child: const Text(
+                            '+5 Min',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 10),
                 ],
-                Expanded(
+                SizedBox(
+                  width: double.infinity,
                   child: FilledButton(
                     onPressed: widget.onDismiss,
                     style: FilledButton.styleFrom(

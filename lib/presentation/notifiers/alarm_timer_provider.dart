@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:alarm/alarm.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/in_app_alarm_model.dart';
@@ -11,12 +12,14 @@ import '../../domain/services/notification_service.dart';
 const String kSavedAlarmsKey = 'in_app_alarms_v1';
 
 class RingingEvent {
+  final int? alarmId;
   final String title;
   final String? subtitle;
   final bool isAlarm; // true if alarm, false if timer
   final String? taskId;
 
   const RingingEvent({
+    this.alarmId,
     required this.title,
     this.subtitle,
     this.isAlarm = false,
@@ -52,15 +55,19 @@ class AlarmTimerState {
 class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   Timer? _ticker;
   Timer? _alarmCheckTicker;
+  StreamSubscription<AlarmSettings>? _alarmSubscription;
   final NotificationService _notificationService = NotificationService();
 
   @override
   AlarmTimerState build() {
     _loadAlarms();
     _startAlarmChecker();
+    _subscribeToNativeAlarms();
+
     ref.onDispose(() {
       _ticker?.cancel();
       _alarmCheckTicker?.cancel();
+      _alarmSubscription?.cancel();
     });
 
     return const AlarmTimerState(
@@ -71,6 +78,19 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         state: TimerState.idle,
       ),
     );
+  }
+
+  void _subscribeToNativeAlarms() {
+    _alarmSubscription = Alarm.ringStream.stream.listen((alarmSettings) {
+      triggerRinging(
+        RingingEvent(
+          alarmId: alarmSettings.id,
+          title: alarmSettings.notificationSettings.title,
+          subtitle: alarmSettings.notificationSettings.body,
+          isAlarm: true,
+        ),
+      );
+    });
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -105,18 +125,37 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   // ─────────────────────────────────────────────────────────────
   // Alarms Logic
   // ─────────────────────────────────────────────────────────────
+  Future<void> _scheduleNativeAlarm(InAppAlarm alarm) async {
+    if (!alarm.isEnabled) return;
+    try {
+      final nextDuration = alarm.timeUntilNextRing;
+      final alarmSettings = AlarmSettings(
+        id: alarm.id.hashCode,
+        dateTime: DateTime.now().add(nextDuration),
+        assetAudioPath: '',
+        loopAudio: true,
+        vibrate: true,
+        warningNotificationOnKill: true,
+        androidFullScreenIntent: true,
+        notificationSettings: NotificationSettings(
+          title: 'ALARM: ${alarm.title}',
+          body: 'Scheduled Alarm (${alarm.formattedTime})',
+          stopButton: 'Stop',
+        ),
+      );
+      await Alarm.set(alarmSettings: alarmSettings);
+    } catch (e) {
+      debugPrint('Error scheduling native alarm: $e');
+    }
+  }
+
   Future<void> addAlarm(InAppAlarm alarm) async {
     final updated = [...state.alarms, alarm];
     state = state.copyWith(alarms: updated);
     await _saveAlarms(updated);
 
-    final nextDuration = alarm.timeUntilNextRing;
     if (alarm.isEnabled) {
-      await _notificationService.scheduleTimerNotification(
-        id: alarm.id.hashCode,
-        title: 'ALARM: ${alarm.title}',
-        duration: nextDuration,
-      );
+      await _scheduleNativeAlarm(alarm);
     }
   }
 
@@ -131,28 +170,39 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
     state = state.copyWith(alarms: updatedList);
     await _saveAlarms(updatedList);
 
+    await Alarm.stop(updatedAlarm.id.hashCode);
     if (updatedAlarm.isEnabled) {
-      await _notificationService.scheduleTimerNotification(
-        id: updatedAlarm.id.hashCode,
-        title: 'ALARM: ${updatedAlarm.title}',
-        duration: updatedAlarm.timeUntilNextRing,
-      );
+      await _scheduleNativeAlarm(updatedAlarm);
     }
   }
 
   Future<void> toggleAlarm(String id) async {
+    InAppAlarm? target;
     final updated = state.alarms.map((a) {
       if (a.id == id) {
-        return a.copyWith(isEnabled: !a.isEnabled);
+        target = a.copyWith(isEnabled: !a.isEnabled);
+        return target!;
       }
       return a;
     }).toList();
 
     state = state.copyWith(alarms: updated);
     await _saveAlarms(updated);
+
+    if (target != null) {
+      if (target!.isEnabled) {
+        await _scheduleNativeAlarm(target!);
+      } else {
+        await Alarm.stop(target!.id.hashCode);
+      }
+    }
   }
 
   Future<void> deleteAlarm(String id) async {
+    final target = state.alarms.firstWhere((a) => a.id == id, orElse: () => const InAppAlarm(id: '', title: '', hour: 0, minute: 0));
+    if (target.id.isNotEmpty) {
+      await Alarm.stop(target.id.hashCode);
+    }
     final updated = state.alarms.where((a) => a.id != id).toList();
     state = state.copyWith(alarms: updated);
     await _saveAlarms(updated);
@@ -317,16 +367,41 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   }
 
 
-  void dismissRinging() {
+  Future<void> dismissRinging() async {
+    final event = state.ringingEvent;
+    if (event?.alarmId != null) {
+      await Alarm.stop(event!.alarmId!);
+    }
     state = state.copyWith(clearRinging: true);
   }
 
-  void snoozeRinging(Duration snoozeDuration) {
-    dismissRinging();
-    startTimer(
-      duration: snoozeDuration,
-      label: 'Snoozed: ${state.activeTimer.label ?? 'Alarm'}',
-    );
+  Future<void> snoozeRinging(Duration snoozeDuration) async {
+    final event = state.ringingEvent;
+    final alarmId = event?.alarmId;
+    if (alarmId != null) {
+      await Alarm.stop(alarmId);
+    }
+    state = state.copyWith(clearRinging: true);
+
+    try {
+      final snoozedSettings = AlarmSettings(
+        id: alarmId ?? DateTime.now().millisecondsSinceEpoch.hashCode,
+        dateTime: DateTime.now().add(snoozeDuration),
+        assetAudioPath: '',
+        loopAudio: true,
+        vibrate: true,
+        warningNotificationOnKill: true,
+        androidFullScreenIntent: true,
+        notificationSettings: NotificationSettings(
+          title: 'Snoozed: ${event?.title ?? "Alarm"}',
+          body: 'Ringing again in ${snoozeDuration.inMinutes} minute(s)',
+          stopButton: 'Stop',
+        ),
+      );
+      await Alarm.set(alarmSettings: snoozedSettings);
+    } catch (e) {
+      debugPrint('Error scheduling snoozed alarm: $e');
+    }
   }
 }
 

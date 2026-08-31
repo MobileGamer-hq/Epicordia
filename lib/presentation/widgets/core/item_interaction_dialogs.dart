@@ -512,29 +512,53 @@ class ItemInteractionDialogs {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    ...notesPayload.subitems.map((sub) {
+                                    ...notesPayload.subitems.asMap().entries.map((entry) {
+                                      final idx = entry.key;
+                                      final sub = entry.value;
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(vertical: 3),
-                                        child: Row(
-                                          children: [
-                                            CustomCircularCheckbox(
-                                              isChecked: sub.isDone,
-                                              size: 18,
-                                              activeColor: successClr,
-                                              borderColor: textTertiary,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                sub.title,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  color: sub.isDone ? textTertiary : textPrimary,
-                                                  decoration: sub.isDone ? TextDecoration.lineThrough : null,
+                                        child: InkWell(
+                                          onTap: () {
+                                            final subitems = List<TaskSubitem>.from(notesPayload.subitems);
+                                            subitems[idx] = sub.copyWith(isDone: !sub.isDone);
+                                            final enc = TaskSubitem.encodeNotes(
+                                              userNotes: notesPayload.userNotes,
+                                              subitems: subitems,
+                                            );
+                                            final allDone = subitems.isNotEmpty && subitems.every((s) => s.isDone);
+                                            final anyDone = subitems.any((s) => s.isDone);
+                                            final newStatus = allDone
+                                                ? 'done'
+                                                : (anyDone ? 'in_progress' : (task.status == 'done' ? 'todo' : task.status));
+                                            ref.read(taskRepositoryProvider).updateTask(
+                                              task.copyWith(
+                                                notes: enc.isNotEmpty ? Value(enc) : const Value.absent(),
+                                                status: newStatus,
+                                              ),
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Row(
+                                            children: [
+                                              CustomCircularCheckbox(
+                                                isChecked: sub.isDone,
+                                                size: 18,
+                                                activeColor: successClr,
+                                                borderColor: textTertiary,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  sub.title,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: sub.isDone ? textTertiary : textPrimary,
+                                                    decoration: sub.isDone ? TextDecoration.lineThrough : null,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       );
                                     }),
@@ -559,6 +583,15 @@ class ItemInteractionDialogs {
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             _ActionButton(
+                              icon: Icons.center_focus_strong_rounded,
+                              label: 'Focus',
+                              color: activeBlue,
+                              onTap: () {
+                                Navigator.of(ctx).pop();
+                                context.push('/task/${task.id}/focus');
+                              },
+                            ),
+                            _ActionButton(
                               icon: isCompleted ? Icons.undo_rounded : Icons.check_circle_outline,
                               label: isCompleted ? 'Reopen' : 'Complete',
                               color: statusColor,
@@ -575,7 +608,7 @@ class ItemInteractionDialogs {
                                 Navigator.of(ctx).pop();
                                 final decoded = TaskSubitem.decodeNotes(task.notes);
                                 final subStr = decoded.hasSubitems
-                                    ? '\nSubtasks:\n' + decoded.subitems.map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}').join('\n')
+                                    ? '\nSubtasks:\n${decoded.subitems.map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}').join('\n')}'
                                     : '';
                                 final notesStr = decoded.userNotes != null ? '\nNotes: ${decoded.userNotes}' : '';
                                 copyToClipboard(context, 'Task: ${task.title}\nStatus: $statusLabel$notesStr$subStr');
@@ -588,7 +621,7 @@ class ItemInteractionDialogs {
                                 Navigator.of(ctx).pop();
                                 final decoded = TaskSubitem.decodeNotes(task.notes);
                                 final subStr = decoded.hasSubitems
-                                    ? '\nSubtasks:\n' + decoded.subitems.map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}').join('\n')
+                                    ? '\nSubtasks:\n${decoded.subitems.map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}').join('\n')}'
                                     : '';
                                 final notesStr = decoded.userNotes != null ? '\nNotes: ${decoded.userNotes}' : '';
                                 shareContent(context, 'Task: ${task.title}\nStatus: $statusLabel$notesStr$subStr');

@@ -123,6 +123,15 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   void _toggleSubitem(int index) {
     setState(() {
       _subitemDoneStates[index] = !_subitemDoneStates[index];
+      if (_subitemDoneStates.isNotEmpty) {
+        if (_subitemDoneStates.every((done) => done)) {
+          _selectedStatus = 'done';
+        } else if (_subitemDoneStates.any((done) => done)) {
+          _selectedStatus = 'in_progress';
+        } else if (_selectedStatus == 'done') {
+          _selectedStatus = 'todo';
+        }
+      }
       _saveStatus = 'Saving...';
     });
     _onTextChanged();
@@ -187,10 +196,16 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
       subitems: subitems,
     );
 
-    // Auto update status if all subitems are finished
+    // Auto update status if subitems are completed
     String updatedStatus = _selectedStatus;
-    if (subitems.isNotEmpty && subitems.every((s) => s.isDone)) {
-      updatedStatus = 'done';
+    if (subitems.isNotEmpty) {
+      if (subitems.every((s) => s.isDone)) {
+        updatedStatus = 'done';
+      } else if (subitems.any((s) => s.isDone)) {
+        updatedStatus = 'in_progress';
+      } else if (updatedStatus == 'done') {
+        updatedStatus = 'todo';
+      }
     }
 
     final updatedTask = _task!.copyWith(
@@ -296,6 +311,16 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: Icon(Icons.center_focus_strong_rounded, color: activeBlue),
+              tooltip: 'Focus Mode',
+              onPressed: () async {
+                await _autoSave();
+                if (context.mounted) {
+                  context.push('/task/${widget.taskId}/focus');
+                }
+              },
+            ),
             IconButton(
               icon: Icon(Icons.delete_outline, color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight),
               onPressed: _delete,
@@ -435,6 +460,32 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                           ),
                         );
                       }),
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: _addSubitem,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: activeBlue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add, size: 18, color: activeBlue),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Add another item',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: activeBlue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
 
                     const SizedBox(height: 20),
                     Divider(color: borderClr),
@@ -652,6 +703,19 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                           : 'Repeats: ${_recurrenceRule!.toUpperCase()}',
                       onTap: () {
                         _showRecurrenceDialog(context);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Focus on Task option row
+                    _OptionRow(
+                      icon: Icons.center_focus_strong_rounded,
+                      label: 'Focus on Task & Subtasks',
+                      onTap: () async {
+                        await _autoSave();
+                        if (context.mounted) {
+                          context.push('/task/${widget.taskId}/focus');
+                        }
                       },
                     ),
                     const SizedBox(height: 12),

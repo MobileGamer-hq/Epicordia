@@ -555,7 +555,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                       if (_itemControllers.length > 1) ...[
                         const SizedBox(width: 6),
                         IconButton(
-                          icon: Icon(Icons.remove_circle_outline, color: EpicordiaColors.errorLight, size: 20),
+                          icon: Icon(Icons.close, size: 18, color: textTertiary),
                           onPressed: () => _removeItemField(i),
                         ),
                       ],
@@ -569,7 +569,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                   decoration: BoxDecoration(
-                    color: activeBlue.withOpacity(0.1),
+                    color: activeBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(

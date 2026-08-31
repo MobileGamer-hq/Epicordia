@@ -69,9 +69,12 @@ class _InteractiveTaskCardState extends ConsumerState<InteractiveTaskCard> {
       subitems: subitems,
     );
 
-    // Auto-update overall task status if all subitems are completed
-    final allDone = subitems.every((s) => s.isDone);
-    final newStatus = allDone ? 'done' : (widget.task.status == 'done' ? 'todo' : widget.task.status);
+    // Auto-update overall task status if subitems are completed
+    final allDone = subitems.isNotEmpty && subitems.every((s) => s.isDone);
+    final anyDone = subitems.any((s) => s.isDone);
+    final newStatus = allDone
+        ? 'done'
+        : (anyDone ? 'in_progress' : (widget.task.status == 'done' ? 'todo' : widget.task.status));
 
     ref.read(taskRepositoryProvider).updateTask(
           widget.task.copyWith(
@@ -123,6 +126,11 @@ class _InteractiveTaskCardState extends ConsumerState<InteractiveTaskCard> {
                 title: task.title,
                 subtitle: 'Task in ${widget.boardTitle}',
                 items: [
+                  DoubleTapMenuItem(
+                    icon: Icons.center_focus_strong_rounded,
+                    label: 'Focus Mode',
+                    onTap: () => context.push('/task/${task.id}/focus'),
+                  ),
                   DoubleTapMenuItem(
                     icon: isCompleted ? Icons.undo_rounded : Icons.check_circle_outline,
                     label: isCompleted ? 'Mark as To Do' : 'Mark as Complete',

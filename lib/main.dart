@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:alarm/alarm.dart';
 import 'core/theme.dart';
 import 'core/theme_provider.dart';
 import 'core/router.dart';
 import 'core/widgets/widget_service.dart';
 import 'core/widgets/widget_deep_link_handler.dart';
 import 'presentation/widgets/app_lock_wrapper.dart';
+import 'presentation/widgets/alarm_ringing_wrapper.dart';
 import 'domain/services/notification_service.dart';
 import 'data/providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Alarm.init();
 
   final notificationService = NotificationService();
   await notificationService.initialize();
@@ -62,7 +65,11 @@ class _EpicordiaAppState extends ConsumerState<EpicordiaApp> {
       themeMode: themeMode,
       routerConfig: goRouter,
       builder: (context, child) {
-        return AppLockWrapper(child: child ?? const SizedBox.shrink());
+        return AppLockWrapper(
+          child: AlarmRingingWrapper(
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
       },
       debugShowCheckedModeBanner: false,
     );

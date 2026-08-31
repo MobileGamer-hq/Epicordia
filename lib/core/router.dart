@@ -21,6 +21,7 @@ import '../presentation/screens/widgets_center_screen.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../presentation/screens/task_focus_screen.dart';
 import '../domain/models/in_app_alarm_model.dart';
 import '../presentation/screens/create_alarm_screen.dart';
 
@@ -83,6 +84,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/task/:id',
         builder: (context, state) => EditTaskScreen(taskId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/task/:id/focus',
+        builder: (context, state) => TaskFocusScreen(taskId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       // Create flow
