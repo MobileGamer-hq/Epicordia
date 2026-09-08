@@ -80,6 +80,21 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   Future<int> deleteTask(String id) {
     return (delete(tasks)..where((t) => t.id.equals(id))).go();
   }
+
+  /// Deletes completed tasks with modifiedAt older than [cutoff] and returns their IDs.
+  Future<List<String>> deleteCompletedTasksOlderThan(DateTime cutoff) async {
+    final toDelete = await (select(tasks)
+          ..where((t) =>
+              t.status.equals('done') &
+              t.modifiedAt.isSmallerThanValue(cutoff)))
+        .get();
+
+    final ids = toDelete.map((t) => t.id).toList();
+    if (ids.isNotEmpty) {
+      await (delete(tasks)..where((t) => t.id.isIn(ids))).go();
+    }
+    return ids;
+  }
   
   Future<void> addTaskDependency(String taskId, String dependsOnTaskId) {
     return into(taskDependencies).insert(TaskDependencyEntity(

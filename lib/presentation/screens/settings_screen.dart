@@ -13,6 +13,7 @@ import 'pin_lock_screen.dart';
 import '../notifiers/alarm_settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/state/journaling_provider.dart';
+import '../../core/task_settings_provider.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -646,6 +647,142 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ? EpicordiaColors.textTertiaryDark
                               : EpicordiaColors.textTertiaryLight,
                         ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // ── Task Completion & Auto-Delete ─────────────────────
+            const _SectionHeader(
+                icon: Icons.task_alt_outlined, label: 'Task Completion & Auto-Delete'),
+            const SizedBox(height: 10),
+            Consumer(
+              builder: (context, ref, _) {
+                final taskSettings = ref.watch(taskSettingsProvider);
+                final taskNotifier = ref.read(taskSettingsProvider.notifier);
+
+                return _Card(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SwitchRow(
+                        icon: Icons.auto_delete_outlined,
+                        label: 'Auto-Delete Completed Tasks',
+                        value: taskSettings.autoDeleteCompleted,
+                        onChanged: (enabled) async {
+                          await taskNotifier.setAutoDeleteCompleted(enabled);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  enabled
+                                      ? 'Auto-delete enabled (${TaskSettingsState.retentionLabel(taskSettings.autoDeleteHours)}).'
+                                      : 'Auto-delete disabled. Completed tasks will remain indefinitely.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        showDivider: taskSettings.autoDeleteCompleted,
+                      ),
+                      if (taskSettings.autoDeleteCompleted) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Retention Duration Before Deletion',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? EpicordiaColors.textSecondaryDark
+                                : EpicordiaColors.textSecondaryLight,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Completed tasks will be automatically deleted after this time.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark
+                                ? EpicordiaColors.textTertiaryDark
+                                : EpicordiaColors.textTertiaryLight,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: TaskSettingsState.supportedRetentionHours.map((hours) {
+                            final isSelected = taskSettings.autoDeleteHours == hours;
+                            return InkWell(
+                              onTap: () async {
+                                await taskNotifier.setAutoDeleteHours(hours);
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? EpicordiaColors.blue600
+                                      : (isDark
+                                          ? EpicordiaColors.surfaceSunkenDark
+                                          : EpicordiaColors.surfaceSunkenLight),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? EpicordiaColors.blue600
+                                        : (isDark
+                                            ? EpicordiaColors.borderSubtleDark
+                                            : EpicordiaColors.borderSubtleLight),
+                                  ),
+                                ),
+                                child: Text(
+                                  TaskSettingsState.retentionLabel(hours),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark
+                                            ? EpicordiaColors.textPrimaryDark
+                                            : EpicordiaColors.textPrimaryLight),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 14),
+                        const Divider(height: 1, color: EpicordiaColors.borderSubtleLight),
+                        const SizedBox(height: 8),
+                      ],
+                      const SizedBox(height: 4),
+                      _ActionRow(
+                        icon: Icons.cleaning_services_outlined,
+                        label: 'Clean Up Completed Tasks Now',
+                        labelColor: isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600,
+                        showChevron: false,
+                        onTap: () async {
+                          final count = await ref
+                              .read(taskRepositoryProvider)
+                              .cleanUpCompletedTasks(force: true);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  count > 0
+                                      ? 'Cleaned up $count completed task(s).'
+                                      : 'No completed tasks ready for cleanup.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),

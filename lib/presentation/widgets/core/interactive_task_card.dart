@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/theme.dart';
+import '../../../core/utils/task_date_formatter.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/task_repository.dart';
 import '../../../domain/models/task_subitem.dart';
@@ -42,21 +43,7 @@ class _InteractiveTaskCardState extends ConsumerState<InteractiveTaskCard> {
   bool _isExpanded = false;
 
   String _formatDue(DateTime? date) {
-    if (date == null) return 'No due date';
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final due = DateTime(date.year, date.month, date.day);
-
-    if (due == today) {
-      final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-      final ampm = date.hour >= 12 ? 'PM' : 'AM';
-      final minute = date.minute.toString().padLeft(2, '0');
-      return 'Due: Today, $hour:$minute $ampm';
-    } else if (due.isBefore(today)) {
-      return 'Due: Overdue (${date.month}/${date.day})';
-    } else {
-      return 'Due: ${date.month}/${date.day}';
-    }
+    return TaskDateFormatter.formatDueDate(date);
   }
 
   void _toggleSubitem(TaskNotesPayload payload, int index) {

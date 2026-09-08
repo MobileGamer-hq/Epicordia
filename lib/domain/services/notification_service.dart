@@ -371,25 +371,37 @@ class NotificationService {
 
   /// Cancel notifications for a timetable schedule slot.
   Future<void> cancelTimetableSlotNotification(dynamic slotId) async {
-    final safeBaseId = _toSafe32BitId(slotId);
-    await _notificationsPlugin.cancel(id: safeBaseId * 10 + 1);
-    await _notificationsPlugin.cancel(id: safeBaseId * 10 + 2);
+    try {
+      final safeBaseId = _toSafe32BitId(slotId);
+      await _notificationsPlugin.cancel(id: safeBaseId * 10 + 1);
+      await _notificationsPlugin.cancel(id: safeBaseId * 10 + 2);
+    } catch (e) {
+      debugPrint('Notification cancel error: $e');
+    }
   }
 
   /// Cancel all staged notifications and alarms for a task ID.
   Future<void> cancelTaskRemindersAndAlarm(dynamic baseId) async {
-    final safeBaseId = _toSafe32BitId(baseId);
-    await _notificationsPlugin.cancel(id: safeBaseId);
-    await _notificationsPlugin.cancel(id: safeBaseId * 10 + 1);
-    await _notificationsPlugin.cancel(id: safeBaseId * 10 + 2);
-    await _notificationsPlugin.cancel(id: safeBaseId * 10 + 3);
-    await _notificationsPlugin.cancel(id: safeBaseId * 10 + 4);
+    try {
+      final safeBaseId = _toSafe32BitId(baseId);
+      await _notificationsPlugin.cancel(id: safeBaseId);
+      await _notificationsPlugin.cancel(id: safeBaseId * 10 + 1);
+      await _notificationsPlugin.cancel(id: safeBaseId * 10 + 2);
+      await _notificationsPlugin.cancel(id: safeBaseId * 10 + 3);
+      await _notificationsPlugin.cancel(id: safeBaseId * 10 + 4);
+    } catch (e) {
+      debugPrint('Notification cancel error: $e');
+    }
   }
 
   /// Cancel a scheduled notification by ID.
   Future<void> cancelNotification(dynamic id) async {
-    final safeId = _toSafe32BitId(id);
-    await _notificationsPlugin.cancel(id: safeId);
+    try {
+      final safeId = _toSafe32BitId(id);
+      await _notificationsPlugin.cancel(id: safeId);
+    } catch (e) {
+      debugPrint('Notification cancel error: $e');
+    }
   }
 
   /// Sync/reschedule all active incomplete tasks with due dates.

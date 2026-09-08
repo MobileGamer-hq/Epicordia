@@ -4,6 +4,8 @@ import '../database/database.dart';
 import '../providers.dart';
 import '../../domain/services/notification_service.dart';
 
+import '../../core/task_settings_provider.dart';
+
 final taskRepositoryProvider = Provider<TaskRepository>((ref) => TaskRepository(ref));
 
 final allTasksProvider = StreamProvider<List<TaskEntity>>((ref) {
@@ -40,7 +42,6 @@ class TaskRepository {
     return ref.watch(taskDaoProvider).watchTasksDueThisWeek();
   }
 
-
   Stream<List<TaskEntity>> watchAllTasks() {
     final taskDao = ref.watch(taskDaoProvider);
     return taskDao.select(taskDao.tasks).watch();
@@ -59,7 +60,8 @@ class TaskRepository {
   }
 
   Future<void> updateTask(TaskEntity task) async {
-    await ref.read(taskDaoProvider).updateTask(task);
+    final taskToUpdate = task.copyWith(modifiedAt: DateTime.now());
+    await ref.read(taskDaoProvider).updateTask(taskToUpdate);
     if (task.status.toLowerCase() == 'done') {
       await _notificationService.cancelTaskRemindersAndAlarm(task.id.hashCode);
     } else if (task.dueDate != null) {
@@ -77,5 +79,24 @@ class TaskRepository {
   Future<void> deleteTask(String id) async {
     await ref.read(taskDaoProvider).deleteTask(id);
     await _notificationService.cancelTaskRemindersAndAlarm(id.hashCode);
+  }
+
+  /// Automatically deletes completed tasks that are older than the configured retention period.
+  /// Returns the count of deleted tasks.
+  Future<int> cleanUpCompletedTasks({bool force = false, int? customHours}) async {
+    final settings = ref.read(taskSettingsProvider);
+    if (!settings.autoDeleteCompleted && !force) {
+      return 0;
+    }
+
+    final hours = customHours ?? settings.autoDeleteHours;
+    final cutoff = DateTime.now().subtract(Duration(hours: hours));
+    final deletedIds = await ref.read(taskDaoProvider).deleteCompletedTasksOlderThan(cutoff);
+
+    for (final id in deletedIds) {
+      await _notificationService.cancelTaskRemindersAndAlarm(id.hashCode);
+    }
+
+    return deletedIds.length;
   }
 }

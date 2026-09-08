@@ -10,6 +10,7 @@ import 'presentation/widgets/app_lock_wrapper.dart';
 import 'presentation/widgets/alarm_ringing_wrapper.dart';
 import 'domain/services/notification_service.dart';
 import 'data/providers.dart';
+import 'data/repository/task_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,9 @@ class _EpicordiaAppState extends ConsumerState<EpicordiaApp> {
       final timetableDao = ref.read(timetableDaoProvider);
       await notificationService.syncAllTaskNotifications(taskDao);
       await notificationService.syncAllTimetableSlotNotifications(timetableDao);
+
+      // Clean up completed tasks exceeding auto-delete retention period
+      await ref.read(taskRepositoryProvider).cleanUpCompletedTasks();
     });
   }
 
