@@ -51,9 +51,11 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   void initState() {
     super.initState();
     _currentNoteId = widget.noteId;
-    _titleController.addListener(_onTitleChanged);
     if (widget.noteId != null) {
+      _isLoadingNote = true;
       _loadExistingNote();
+    } else {
+      _titleController.addListener(_onTitleChanged);
     }
   }
 
@@ -143,9 +145,12 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         boardTitle = board?.title;
       }
 
+      _titleController.removeListener(_onTitleChanged);
+      _titleController.text = title;
+      _titleController.addListener(_onTitleChanged);
+
       setState(() {
         _existingNote = note;
-        _titleController.text = title;
         _blocks = loadedBlocks;
         _drawingData = payload.drawing;
         _selectedTag = note.tags ?? 'Journal';
@@ -154,9 +159,14 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         _selectedBoardId = note.boardId;
         _selectedBoardTitle = boardTitle;
         _saveStatus = 'Saved';
+        _isLoadingNote = false;
+      });
+    } else if (mounted) {
+      _titleController.addListener(_onTitleChanged);
+      setState(() {
+        _isLoadingNote = false;
       });
     }
-    _isLoadingNote = false;
   }
 
   void _showBoardPickerModal() {
@@ -293,6 +303,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   }
 
   Future<void> _autoSave() async {
+    if (_isLoadingNote) return;
     final title = _titleController.text.trim();
     if (title.isEmpty && _blocks.every((b) => b.text.trim().isEmpty) && _drawingData.isEmpty) return;
 
@@ -308,17 +319,22 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
     );
     final contentJson = NoteDocument.encode(payload);
 
-    if (_currentNoteId != null && _existingNote != null) {
-      final updatedPin = _existingNote!.copyWith(
-        content: drift.Value(contentJson),
-        tags: drift.Value(_selectedTag),
-        isLocked: _isLocked,
-        entryDate: drift.Value(_entryDate),
-        boardId: drift.Value(_selectedBoardId),
-        modifiedAt: DateTime.now(),
-      );
-      await ref.read(pinRepositoryProvider).updatePin(updatedPin);
-      _existingNote = updatedPin;
+    if (_currentNoteId != null) {
+      if (_existingNote == null) {
+        _existingNote = await ref.read(pinDaoProvider).getPin(_currentNoteId!);
+      }
+      if (_existingNote != null) {
+        final updatedPin = _existingNote!.copyWith(
+          content: drift.Value(contentJson),
+          tags: drift.Value(_selectedTag),
+          isLocked: _isLocked,
+          entryDate: drift.Value(_entryDate),
+          boardId: drift.Value(_selectedBoardId),
+          modifiedAt: DateTime.now(),
+        );
+        await ref.read(pinRepositoryProvider).updatePin(updatedPin);
+        _existingNote = updatedPin;
+      }
     } else {
       final newId = DateTime.now().millisecondsSinceEpoch.toString();
       _currentNoteId = newId;
@@ -373,13 +389,25 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
       if (_currentNoteId != null) {
         await ref.read(pinRepositoryProvider).deletePin(_currentNoteId!);
       }
-      if (mounted) context.go('/notes');
+      if (mounted) {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/notes');
+        }
+      }
     }
   }
 
   Future<void> _save() async {
     await _autoSave();
-    if (mounted) context.go('/notes');
+    if (mounted) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/notes');
+      }
+    }
   }
 
   @override
@@ -520,11 +548,13 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
             ),
           ],
         ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
+        body: _isLoadingNote
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
                   physics: (_isPenModeActive && !_isStylusOnlyMode)
                       ? const NeverScrollableScrollPhysics()
                       : const AlwaysScrollableScrollPhysics(),

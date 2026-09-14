@@ -107,6 +107,53 @@ class BlockNoteEditorStateController extends State<BlockNoteEditor> {
   @override
   void initState() {
     super.initState();
+    _loadBlocksFromWidget();
+  }
+
+  @override
+  void didUpdateWidget(BlockNoteEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_shouldUpdateBlocks(widget.initialBlocks, oldWidget.initialBlocks)) {
+      _loadBlocksFromWidget();
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    for (final node in _focusNodes) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  bool _shouldUpdateBlocks(List<NoteBlock> newBlocks, List<NoteBlock> oldBlocks) {
+    if (identical(newBlocks, oldBlocks)) return false;
+    if (newBlocks.length != oldBlocks.length) return true;
+    for (int i = 0; i < newBlocks.length; i++) {
+      if (newBlocks[i].id != oldBlocks[i].id ||
+          newBlocks[i].text != oldBlocks[i].text ||
+          newBlocks[i].type != oldBlocks[i].type ||
+          newBlocks[i].checked != oldBlocks[i].checked) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _loadBlocksFromWidget() {
+    // Dispose previous controllers & focus nodes
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    for (final node in _focusNodes) {
+      node.dispose();
+    }
+    _controllers.clear();
+    _focusNodes.clear();
+
     _blocks = widget.initialBlocks.isNotEmpty
         ? widget.initialBlocks.map((b) => b.copyWith()).toList()
         : [NoteBlock(type: BlockType.paragraph, text: '')];
@@ -114,6 +161,29 @@ class BlockNoteEditorStateController extends State<BlockNoteEditor> {
     for (int i = 0; i < _blocks.length; i++) {
       _initBlockController(i, _blocks[i]);
     }
+    _focusedIndex = 0;
+  }
+
+  void setBlocks(List<NoteBlock> blocks) {
+    setState(() {
+      for (final controller in _controllers) {
+        controller.dispose();
+      }
+      for (final node in _focusNodes) {
+        node.dispose();
+      }
+      _controllers.clear();
+      _focusNodes.clear();
+
+      _blocks = blocks.isNotEmpty
+          ? blocks.map((b) => b.copyWith()).toList()
+          : [NoteBlock(type: BlockType.paragraph, text: '')];
+
+      for (int i = 0; i < _blocks.length; i++) {
+        _initBlockController(i, _blocks[i]);
+      }
+      _focusedIndex = 0;
+    });
   }
 
   void _initBlockController(int index, NoteBlock block) {
@@ -612,16 +682,6 @@ class BlockNoteEditorStateController extends State<BlockNoteEditor> {
     }
   }
 
-  @override
-  void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    for (final f in _focusNodes) {
-      f.dispose();
-    }
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
