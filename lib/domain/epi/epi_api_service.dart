@@ -246,4 +246,42 @@ class EpiApiService {
       return false;
     }
   }
+
+  /// Fetches a subtle, warm 1-sentence daily thought from Epi based on current context.
+  /// Returns null if offline, timeout, or an error occurs.
+  Future<String?> fetchDailyThought({String? baseUrl}) async {
+    try {
+      final endpoint = (baseUrl ?? defaultEndpoint).replaceAll(RegExp(r'/+$'), '');
+      final uri = Uri.parse('$endpoint/daily-thought');
+
+      final contextSnapshot = await buildContextSnapshot();
+      final body = jsonEncode({
+        'context': contextSnapshot,
+        'userName': contextSnapshot['userName'],
+      });
+
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: body,
+          )
+          .timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final thought = json['thought'] as String?;
+        if (thought != null && thought.trim().isNotEmpty) {
+          // Strictly enforce no em dashes or en dashes
+          return thought
+              .replaceAll('—', '-')
+              .replaceAll('–', '-')
+              .trim();
+        }
+      }
+    } catch (_) {
+      // Offline, timeout, or server unavailable: return null to allow clean fallback
+    }
+    return null;
+  }
 }
