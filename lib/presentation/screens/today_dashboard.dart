@@ -74,6 +74,132 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
     return colors[boardId.hashCode % colors.length];
   }
 
+  Widget _buildEpiDailyThoughtCard(BuildContext context, bool isDark) {
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
+    final weekTasksAsync = ref.watch(tasksDueThisWeekProvider);
+    final slotsAsync = ref.watch(allTimetableSlotsProvider);
+    final now = DateTime.now();
+
+    final taskCount = weekTasksAsync.value?.where((t) => t.status != 'done').length ?? 0;
+    final todaySlots = slotsAsync.value?.where((s) => s.dayOfWeek == now.weekday).length ?? 0;
+
+    String thought;
+    String promptText;
+    if (now.hour < 12) {
+      if (taskCount > 0) {
+        thought = "You have $taskCount open task${taskCount == 1 ? '' : 's'} this week. Start with your top priority and take it one step at a time.";
+        promptText = "Good morning Epi! Here's my morning check-in. Help me prioritize what to focus on today.";
+      } else {
+        thought = "All clear for today. Take a breath and let me know if you want to plan ahead.";
+        promptText = "Good morning Epi! I have some open time today. What should we organize or plan?";
+      }
+    } else if (now.hour < 17) {
+      if (todaySlots > 0) {
+        thought = "Midday check-in: You have $todaySlots schedule session${todaySlots == 1 ? '' : 's'} today. Remember to take quick breaks between blocks.";
+        promptText = "Hey Epi, give me a quick midday overview of my schedule and tasks.";
+      } else {
+        thought = "Keep up the great momentum this afternoon. Let me know if you need to organize any thoughts.";
+        promptText = "Hey Epi, help me review where I'm at today and what I should tackle next.";
+      }
+    } else {
+      thought = "Evening wind-down time. Review what went well today and get set up for tomorrow.";
+      promptText = "Hey Epi, help me do a quick evening reflection and plan for tomorrow.";
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderClr),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            context.push('/epi', extra: {
+              'prompt': promptText,
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: activeBlue.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: activeBlue.withValues(alpha: 0.25)),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.auto_awesome, size: 18, color: activeBlue),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            "Epi's Daily Thought",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: activeBlue,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Ask Epi',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: textTertiary,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 10, color: textTertiary),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        thought,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: textSecondary,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final unsortedNotesAsync = ref.watch(unsortedNotesProvider);
@@ -138,6 +264,10 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                   ],
                 ),
               ),
+
+              // Epi's Daily Thought
+              _buildEpiDailyThoughtCard(context, isDark),
+              const SizedBox(height: 16),
 
               // Activity Heatmap
               Hero(

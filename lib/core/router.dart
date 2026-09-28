@@ -24,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../presentation/screens/task_focus_screen.dart';
 import '../domain/models/in_app_alarm_model.dart';
 import '../presentation/screens/create_alarm_screen.dart';
+import '../presentation/screens/epi_chat_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -88,6 +89,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/task/:id/focus',
         builder: (context, state) => TaskFocusScreen(taskId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/epi',
+        builder: (context, state) {
+          final boardContext = state.uri.queryParameters['boardContext'] ??
+              (state.extra is Map ? (state.extra as Map)['boardTitle'] as String? : null);
+          final initialPrompt = state.uri.queryParameters['prompt'] ??
+              (state.extra is Map ? (state.extra as Map)['prompt'] as String? : null);
+          return EpiChatScreen(
+            initialBoardContext: boardContext,
+            initialPrompt: initialPrompt,
+          );
+        },
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       // Create flow

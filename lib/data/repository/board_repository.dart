@@ -18,6 +18,10 @@ class BoardRepository {
     return ref.watch(boardDaoProvider).watchAllBoards();
   }
 
+  Future<List<BoardEntity>> getAllBoards() {
+    return ref.read(boardDaoProvider).getAllBoards();
+  }
+
   Future<BoardEntity?> getBoard(String id) {
     return ref.read(boardDaoProvider).getBoard(id);
   }

@@ -58,6 +58,7 @@ dependencies:
     path: ./packages/flutter_alarm_clock
   attributed_text: ^0.4.7
   alarm: ^4.0.8
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

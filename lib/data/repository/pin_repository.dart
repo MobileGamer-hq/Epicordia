@@ -35,6 +35,14 @@ class PinRepository {
     return ref.watch(pinDaoProvider).watchUnsortedNotes();
   }
 
+  Future<List<PinEntity>> getAllNotes() {
+    return ref.read(pinDaoProvider).getAllNotes();
+  }
+
+  Future<List<PinEntity>> getUnsortedNotes() {
+    return ref.read(pinDaoProvider).getUnsortedNotes();
+  }
+
 
   Future<PinEntity?> getPin(String id) {
     return ref.read(pinDaoProvider).getPin(id);

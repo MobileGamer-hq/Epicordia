@@ -27,10 +27,12 @@ const List<NavigationItem> sidebarNavItems = [
   NavigationItem(label: 'Boards',  icon: Icons.space_dashboard_outlined, route: '/boards'),
   NavigationItem(label: 'Notes',   icon: Icons.description_outlined,     route: '/notes'),
   NavigationItem(label: 'Tasks',   icon: Icons.check_circle_outline,     route: '/tasks'),
+  NavigationItem(label: 'Epi AI',  icon: Icons.auto_awesome,             route: '/epi'),
 ];
 
 /// Popup Menu / Quick Access items for sidebar (Progress, Alarms, Activity, Calendar)
 const List<NavigationItem> quickAccessNavItems = [
+  NavigationItem(label: 'Epi AI Companion',     icon: Icons.auto_awesome,            route: '/epi'),
   NavigationItem(label: 'Progress & Reports',   icon: Icons.bar_chart_rounded,      route: '/report'),
   NavigationItem(label: 'Sessions',             icon: Icons.timer_outlined,         route: '/sessions'),
   NavigationItem(label: 'Activity & Inbox',     icon: Icons.notifications_outlined, route: '/inbox'),

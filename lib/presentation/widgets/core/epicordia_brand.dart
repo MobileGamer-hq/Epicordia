@@ -74,6 +74,11 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 20,
       title: EpicordiaLogo(),
       actions: [
+        IconButton(
+          icon: Icon(Icons.auto_awesome, color: EpicordiaColors.blue600),
+          tooltip: 'Talk with Epi',
+          onPressed: () => context.push('/epi'),
+        ),
         if (showSearch)
           IconButton(
             icon: Icon(Icons.search, color: iconColor),
@@ -88,6 +93,9 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           onSelected: (value) {
             switch (value) {
+              case 'epi':
+                context.push('/epi');
+                break;
               case 'reports':
                 context.push('/report');
                 break;
@@ -107,6 +115,16 @@ class EpicordiaAppBar extends StatelessWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'epi',
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: EpicordiaColors.blue600, size: 20),
+                  const SizedBox(width: 12),
+                  Text('Epi Companion', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                ],
+              ),
+            ),
             PopupMenuItem(
               value: 'reports',
               child: Row(

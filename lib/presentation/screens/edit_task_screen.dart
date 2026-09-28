@@ -312,6 +312,22 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
           ),
           actions: [
             IconButton(
+              icon: Icon(Icons.auto_awesome, color: activeBlue),
+              tooltip: 'Break down with Epi',
+              onPressed: () async {
+                await _autoSave();
+                if (context.mounted) {
+                  final title = _titleController.text.trim();
+                  final prompt = title.isNotEmpty
+                      ? 'Help me break down this task into smaller actionable steps: "$title"'
+                      : 'Help me break down this task into smaller steps';
+                  context.push('/epi', extra: {
+                    'prompt': prompt,
+                  });
+                }
+              },
+            ),
+            IconButton(
               icon: Icon(Icons.center_focus_strong_rounded, color: activeBlue),
               tooltip: 'Focus Mode',
               onPressed: () async {
@@ -409,9 +425,52 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                     if (_subitemControllers.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          'No subtasks. Tap "Add Item" above to create a checklist.',
-                          style: TextStyle(fontSize: 13, color: textTertiary, fontStyle: FontStyle.italic),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'No subtasks yet. Break it down with Epi or add items manually.',
+                                style: TextStyle(fontSize: 13, color: textTertiary, fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () async {
+                                await _autoSave();
+                                if (context.mounted) {
+                                  final title = _titleController.text.trim();
+                                  final prompt = title.isNotEmpty
+                                      ? 'Help me break down this task into smaller actionable steps: "$title"'
+                                      : 'Help me break down this task into smaller steps';
+                                  context.push('/epi', extra: {'prompt': prompt});
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: activeBlue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: activeBlue.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.auto_awesome, size: 14, color: activeBlue),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Ask Epi',
+                                      style: TextStyle(
+                                        color: activeBlue,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     else
@@ -461,30 +520,71 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                         );
                       }),
                       const SizedBox(height: 6),
-                      GestureDetector(
-                        onTap: _addSubitem,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: activeBlue.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.add, size: 18, color: activeBlue),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Add another item',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: activeBlue,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          GestureDetector(
+                            onTap: _addSubitem,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: activeBlue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add, size: 18, color: activeBlue),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Add another item',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: activeBlue,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+                          GestureDetector(
+                            onTap: () async {
+                              await _autoSave();
+                              if (context.mounted) {
+                                final title = _titleController.text.trim();
+                                final prompt = title.isNotEmpty
+                                    ? 'Help me break down this task into smaller actionable steps: "$title"'
+                                    : 'Help me break down this task into smaller steps';
+                                context.push('/epi', extra: {'prompt': prompt});
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: activeBlue.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: activeBlue.withValues(alpha: 0.2)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.auto_awesome, size: 16, color: activeBlue),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Break down with Epi',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: activeBlue,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
                     const SizedBox(height: 20),

@@ -10,6 +10,8 @@ class BoardDao extends DatabaseAccessor<AppDatabase> with _$BoardDaoMixin {
 
   Stream<List<BoardEntity>> watchAllBoards() => select(boards).watch();
 
+  Future<List<BoardEntity>> getAllBoards() => select(boards).get();
+
   Future<BoardEntity?> getBoard(String id) {
     return (select(boards)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
