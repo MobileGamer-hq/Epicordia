@@ -284,4 +284,47 @@ void main() {
       expect(ratio, 0.5);
     });
   });
+
+  group('Unified Task Creation & Type Inference Tests', () {
+    test('Empty subtasks list infers single task with plain notes', () {
+      final validSubtasks = <String>[];
+      final List<TaskSubitem> subitems = [];
+      if (validSubtasks.isNotEmpty) {
+        for (int i = 0; i < validSubtasks.length; i++) {
+          subitems.add(TaskSubitem(id: 'sub_$i', title: validSubtasks[i]));
+        }
+      }
+
+      final encoded = TaskSubitem.encodeNotes(
+        userNotes: 'Just a normal single task',
+        subitems: subitems.isNotEmpty ? subitems : null,
+      );
+
+      final decoded = TaskSubitem.decodeNotes(encoded);
+      expect(decoded.hasSubitems, isFalse);
+      expect(decoded.subitems, isEmpty);
+      expect(decoded.userNotes, 'Just a normal single task');
+    });
+
+    test('Non-empty subtasks list infers checklist task with subitems', () {
+      final validSubtasks = ['Buy milk', 'Call plumber'];
+      final List<TaskSubitem> subitems = [];
+      for (int i = 0; i < validSubtasks.length; i++) {
+        subitems.add(TaskSubitem(id: 'sub_$i', title: validSubtasks[i]));
+      }
+
+      final encoded = TaskSubitem.encodeNotes(
+        userNotes: 'Checklist note',
+        subitems: subitems.isNotEmpty ? subitems : null,
+      );
+
+      final decoded = TaskSubitem.decodeNotes(encoded);
+      expect(decoded.hasSubitems, isTrue);
+      expect(decoded.subitems.length, 2);
+      expect(decoded.subitems[0].title, 'Buy milk');
+      expect(decoded.subitems[1].title, 'Call plumber');
+      expect(decoded.userNotes, 'Checklist note');
+    });
+  });
 }
+

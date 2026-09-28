@@ -382,28 +382,23 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                     const SizedBox(width: 8),
                     InkWell(
                       onTap: () => _showSortBottomSheet(context),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: borderStrong),
-                        ),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               _getSortCriterionIcon(_selectedSort),
-                              size: 16,
+                              size: 18,
                               color: activeBlue,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             Icon(
                               _sortDirection == SortDirection.ascending
                                   ? Icons.arrow_upward_rounded
                                   : Icons.arrow_downward_rounded,
-                              size: 14,
+                              size: 16,
                               color: activeBlue,
                             ),
                           ],
