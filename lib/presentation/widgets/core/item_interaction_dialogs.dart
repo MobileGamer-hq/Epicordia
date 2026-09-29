@@ -114,32 +114,27 @@ class ItemInteractionDialogs {
                             ),
                           ),
                           const Spacer(),
-                          InkWell(
-                            onTap: () {
+                          TextButton.icon(
+                            onPressed: () {
                               Navigator.of(ctx).pop();
                               context.push('/epi', extra: {
                                 if (boardTitle.isNotEmpty) 'boardTitle': boardTitle,
                                 'prompt': 'Help me organize and build on my notes: "$title"',
                               });
                             },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.auto_awesome, size: 14, color: activeBlue),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Ask Epi',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: activeBlue,
-                                    ),
-                                  ),
-                                ],
+                            icon: Icon(Icons.auto_awesome, size: 14, color: activeBlue),
+                            label: Text(
+                              'Ask Epi',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: activeBlue,
                               ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -398,32 +393,27 @@ class ItemInteractionDialogs {
                             ),
                           ),
                           const Spacer(),
-                          InkWell(
-                            onTap: () {
+                          TextButton.icon(
+                            onPressed: () {
                               Navigator.of(ctx).pop();
                               context.push('/epi', extra: {
                                 if (boardTitle.isNotEmpty) 'boardTitle': boardTitle,
                                 'prompt': 'Help me break down this task into smaller actionable steps: "${task.title}"',
                               });
                             },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.auto_awesome, size: 14, color: activeBlue),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Ask Epi',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: activeBlue,
-                                    ),
-                                  ),
-                                ],
+                            icon: Icon(Icons.auto_awesome, size: 14, color: activeBlue),
+                            label: Text(
+                              'Ask Epi',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: activeBlue,
                               ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -825,31 +815,26 @@ class ItemInteractionDialogs {
                             ),
                           ),
                           const Spacer(),
-                          InkWell(
-                            onTap: () {
+                          TextButton.icon(
+                            onPressed: () {
                               Navigator.of(ctx).pop();
                               context.push('/epi', extra: {
                                 'prompt': 'Help me prepare for my schedule session: "${slot.title}" ($dayName ${slot.startTime}-${slot.endTime})',
                               });
                             },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.auto_awesome, size: 14, color: activeBlue),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Ask Epi',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: activeBlue,
-                                    ),
-                                  ),
-                                ],
+                            icon: Icon(Icons.auto_awesome, size: 14, color: activeBlue),
+                            label: Text(
+                              'Ask Epi',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: activeBlue,
                               ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                           const SizedBox(width: 4),

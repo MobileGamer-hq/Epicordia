@@ -452,59 +452,55 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
               }
             },
           ),
-          title: Row(
+          titleSpacing: 0,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 isEditing ? 'Edit Note' : 'New Note',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: textPrimary,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _saveStatus == 'Saving...'
-                      ? activeBlue.withValues(alpha: 0.15)
-                      : (isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _saveStatus == 'Saving...'
-                            ? activeBlue
-                            : (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight),
-                      ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _saveStatus == 'Saving...'
+                          ? activeBlue
+                          : (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _saveStatus,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: _saveStatus == 'Saving...' ? activeBlue : textSecondary,
-                      ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _saveStatus,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: _saveStatus == 'Saving...' ? activeBlue : textTertiary,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
           actions: [
             // Preview Markdown Toggle Button
             IconButton(
+              visualDensity: VisualDensity.compact,
               icon: Icon(
                 _isPreviewMode ? Icons.edit_outlined : Icons.visibility_outlined,
                 color: _isPreviewMode ? activeBlue : textTertiary,
-                size: 22,
+                size: 20,
               ),
               tooltip: _isPreviewMode ? 'Switch to Editor' : 'Preview Markdown',
               onPressed: () {
@@ -518,10 +514,11 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
             ),
             // Pen Drawing Mode Toggle Button
             IconButton(
+              visualDensity: VisualDensity.compact,
               icon: Icon(
                 _isPenModeActive ? Icons.edit_note : Icons.gesture_outlined,
                 color: _isPenModeActive ? activeBlue : textTertiary,
-                size: 22,
+                size: 20,
               ),
               tooltip: _isPenModeActive ? 'Exit Pen Mode' : 'Pen / Stylus Drawing Mode',
               onPressed: () {
@@ -535,10 +532,11 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
             ),
             // Lock Note Button
             IconButton(
+              visualDensity: VisualDensity.compact,
               icon: Icon(
                 _isLocked ? Icons.lock : Icons.lock_open_outlined,
                 color: _isLocked ? activeBlue : textTertiary,
-                size: 20,
+                size: 19,
               ),
               tooltip: _isLocked ? 'Note Locked' : 'Lock Note',
               onPressed: () {
@@ -551,6 +549,7 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
             ),
             if (isEditing)
               IconButton(
+                visualDensity: VisualDensity.compact,
                 icon: Icon(
                   Icons.delete_outline,
                   color: isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight,
@@ -559,15 +558,19 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                 onPressed: _delete,
               ),
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 6),
               child: TextButton(
                 onPressed: _save,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
                 child: Text(
                   'Done',
                   style: TextStyle(
                     color: activeBlue,
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
+                    fontSize: 14,
                   ),
                 ),
               ),

@@ -13,6 +13,7 @@ import '../widgets/core/custom_circular_checkbox.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
 import '../../domain/epi/epi_chat_controller.dart';
 import '../../domain/epi/epi_models.dart';
+import 'package:remixicon/remixicon.dart';
 
 class EpiChatScreen extends ConsumerStatefulWidget {
   final String? initialBoardContext;
@@ -181,7 +182,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        chatState.isBackendOnline ? 'Companion • Render' : 'Connecting...',
+                        chatState.isBackendOnline ? 'Companion' : 'Connecting...',
                         style: TextStyle(fontSize: 11, color: textSecondary),
                       ),
                     ],
@@ -192,19 +193,19 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.history_rounded),
+              icon: const Icon(Remix.history_line, size: 20),
               tooltip: 'Past chats',
               color: textSecondary,
               onPressed: () => _showHistorySheet(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
             ),
             IconButton(
-              icon: const Icon(Icons.undo_rounded),
+              icon: const Icon(Remix.arrow_go_back_line, size: 20),
               tooltip: 'Undo last action',
               color: textSecondary,
               onPressed: _handleUndo,
             ),
             IconButton(
-              icon: const Icon(Icons.add_comment_outlined),
+              icon: const Icon(Remix.chat_ai_3_fill, size: 20),
               tooltip: 'New chat',
               color: textSecondary,
               onPressed: () {
@@ -484,17 +485,6 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                   for (final record in message.actionRecords)
                     _buildActionItem(record, isDark, cardBg, textPrimary, textSecondary, textTertiary, borderClr, activeBlue),
                 ],
-
-                if (message.modelUsed != null && message.modelUsed!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 2),
-                    child: Text(
-                      'via ${message.modelUsed}',
-                      style: TextStyle(fontSize: 10, color: textSecondary.withValues(alpha: 0.6)),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -553,6 +543,10 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     if ((tool == 'create_task' ||
             tool == 'update_task' ||
             tool == 'set_task_status' ||
+            tool == 'add_subtasks' ||
+            tool == 'break_down_task' ||
+            tool == 'link_tasks' ||
+            tool == 'triage_unsorted' ||
             tool == 'query_tasks' ||
             tool == 'get_today_overview') &&
         record.entityIds.isNotEmpty) {

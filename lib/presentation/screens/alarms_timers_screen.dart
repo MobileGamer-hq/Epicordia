@@ -9,7 +9,6 @@ import '../../domain/models/in_app_timer_model.dart';
 import '../notifiers/alarm_settings_provider.dart';
 import '../notifiers/alarm_timer_provider.dart';
 import '../widgets/animated_progress_ring.dart';
-import '../widgets/alarm_ringing_dialog.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';

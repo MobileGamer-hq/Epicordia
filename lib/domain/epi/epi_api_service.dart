@@ -58,7 +58,14 @@ class EpiApiService {
       return t.dueDate!.isAfter(startOfDay) && t.dueDate!.isBefore(endOfDay);
     }).length;
 
-    // 4. Count unsorted items (boardId == null)
+    // 4. Urgent / overdue task titles (max 2, non-locked tasks only)
+    final urgentTasks = allTasks.where((t) {
+      if (t.status.toLowerCase() == 'done') return false;
+      if (t.dueDate == null) return false;
+      return t.dueDate!.isBefore(now) || (t.dueDate!.isAfter(startOfDay) && t.dueDate!.isBefore(endOfDay));
+    }).map((t) => t.title).take(2).toList();
+
+    // 5. Count unsorted items (boardId == null)
     // Tasks unsorted:
     final unsortedTasksCount = allTasks.where((t) => t.boardId == null).length;
 
@@ -75,6 +82,7 @@ class EpiApiService {
       'overdueCount': overdueCount,
       'unsortedCount': unsortedTasksCount + unsortedNotesCount,
       'todayTaskCount': todayTaskCount,
+      'urgentTaskTitles': urgentTasks,
       'recentActions': <String>[],
     };
   }
@@ -357,5 +365,95 @@ class EpiApiService {
       // Offline, timeout, or server unavailable: return null to allow clean fallback
     }
     return null;
+  }
+
+  /// Fetches a subtle cold-start proactive check-in from Epi (mentioning at most 1-2 items, or silence).
+  /// Probes main API (Vercel) first, falling back to backup API (Render), and synthesizing locally if offline.
+  Future<ProactiveCheckinResult> fetchProactiveCheckin({String? baseUrl}) async {
+    if (baseUrl != null) {
+      final res = await _fetchProactiveCheckinFrom(baseUrl);
+      if (res != null) return res;
+    } else {
+      // 1. Try main endpoint (Vercel)
+      final mainRes = await _fetchProactiveCheckinFrom(mainEndpoint);
+      if (mainRes != null) return mainRes;
+
+      // 2. Fall back to backup endpoint (Render)
+      final backupRes = await _fetchProactiveCheckinFrom(backupEndpoint);
+      if (backupRes != null) return backupRes;
+    }
+
+    // 3. Resilient fallback: compute local heuristic check-in
+    return _localHeuristicCheckin();
+  }
+
+  Future<ProactiveCheckinResult?> _fetchProactiveCheckinFrom(String endpoint) async {
+    try {
+      final cleanEndpoint = endpoint.replaceAll(RegExp(r'/+$'), '');
+      final uri = Uri.parse('$cleanEndpoint/proactive-checkin');
+
+      final contextSnapshot = await buildContextSnapshot();
+      final body = jsonEncode({
+        'context': contextSnapshot,
+        'userName': contextSnapshot['userName'],
+      });
+
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: body,
+          )
+          .timeout(const Duration(seconds: 6));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        return ProactiveCheckinResult.fromJson(json);
+      }
+    } catch (_) {
+      // Offline, timeout, or server unavailable: fall through
+    }
+    return null;
+  }
+
+  Future<ProactiveCheckinResult> _localHeuristicCheckin() async {
+    final contextSnapshot = await buildContextSnapshot();
+    final overdue = contextSnapshot['overdueCount'] as int? ?? 0;
+    final today = contextSnapshot['todayTaskCount'] as int? ?? 0;
+    final urgent = (contextSnapshot['urgentTaskTitles'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    final name = contextSnapshot['userName'] as String? ?? 'there';
+
+    if (overdue == 0 && today == 0 && urgent.isEmpty) {
+      return const ProactiveCheckinResult(
+        shouldSpeak: false,
+        message: '',
+        relevantItemIds: [],
+        suggestedActions: [],
+        modelUsed: 'offline_heuristic',
+      );
+    }
+
+    final parts = <String>[];
+    if (urgent.isNotEmpty) {
+      parts.add('"${urgent[0]}"');
+      if (urgent.length > 1) parts.add('"${urgent[1]}"');
+    } else if (overdue > 0) {
+      parts.add('$overdue overdue task${overdue > 1 ? 's' : ''}');
+    } else if (today > 0) {
+      parts.add('$today task${today > 1 ? 's' : ''} due today');
+    }
+
+    final message = 'Hey $name, you have ${parts.join(' and ')} on your radar. Want to tackle that first, or check your schedule?';
+
+    return ProactiveCheckinResult(
+      shouldSpeak: true,
+      message: message.replaceAll('—', '-').replaceAll('–', '-'),
+      relevantItemIds: urgent.take(2).toList(),
+      suggestedActions: const ['Chat with Epi', 'View tasks', 'Dismiss'],
+      modelUsed: 'offline_heuristic',
+    );
   }
 }

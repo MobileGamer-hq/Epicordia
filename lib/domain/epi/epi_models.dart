@@ -235,3 +235,40 @@ class EpiStreamEvent {
     this.errorMessage,
   });
 }
+
+class ProactiveCheckinResult {
+  final bool shouldSpeak;
+  final String message;
+  final List<String> relevantItemIds;
+  final List<String> suggestedActions;
+  final String? modelUsed;
+
+  const ProactiveCheckinResult({
+    required this.shouldSpeak,
+    required this.message,
+    this.relevantItemIds = const [],
+    this.suggestedActions = const [],
+    this.modelUsed,
+  });
+
+  factory ProactiveCheckinResult.fromJson(Map<String, dynamic> json) {
+    final actionsList = (json['suggestedActions'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        ['Chat with Epi', 'View tasks', 'Dismiss'];
+
+    return ProactiveCheckinResult(
+      shouldSpeak: json['shouldSpeak'] as bool? ?? false,
+      message: (json['message'] as String? ?? '')
+          .replaceAll('—', '-')
+          .replaceAll('–', '-')
+          .trim(),
+      relevantItemIds: (json['relevantItemIds'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      suggestedActions: actionsList,
+      modelUsed: json['modelUsed'] as String?,
+    );
+  }
+}

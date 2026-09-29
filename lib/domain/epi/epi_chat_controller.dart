@@ -231,7 +231,7 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
       // Finalize assistant message
       final exists = state.messages.any((m) => m.id == assistantMsgId);
       final finalMsgText = accumulatedText.isEmpty && executionRecords.isNotEmpty
-          ? 'Understood. Staged ${executionRecords.length} action(s).'
+          ? 'Understood. Staged ${executionRecords.length} ${executionRecords.length == 1 ? 'action' : 'actions'}.'
           : (accumulatedText.isEmpty ? 'All set!' : accumulatedText);
 
       final assistantMsg = EpiChatMessage(

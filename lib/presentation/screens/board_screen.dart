@@ -277,18 +277,6 @@ class _BoardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Ask Epi about this board',
-                      onPressed: () {
-                        context.push('/epi', extra: {
-                          'boardTitle': title,
-                        });
-                      },
-                      icon: Icon(
-                        Icons.auto_awesome,
-                        color: activeBlue,
-                      ),
-                    ),
-                    IconButton(
                       tooltip: 'Settings',
                       onPressed: () => context.push('/settings'),
                       icon: Icon(

@@ -19,6 +19,7 @@ import '../../core/utils/markdown_formatter.dart';
 import '../../core/theme.dart';
 import '../../core/theme_provider.dart';
 import '../../domain/epi/epi_api_service.dart';
+import '../widgets/proactive_checkin_card.dart';
 import 'search_screen.dart';
 
 final epiDailyThoughtProvider = FutureProvider.autoDispose<String?>((ref) async {
@@ -146,6 +147,9 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
                   ],
                 ),
               ),
+
+              // Proactive Cold-Start Check-in Card (Appears if items present, silent if clear)
+              const ProactiveCheckinCard(),
 
               // Activity Heatmap
               Hero(

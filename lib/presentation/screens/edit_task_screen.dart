@@ -278,55 +278,48 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
               }
             },
           ),
-          title: Row(
+          titleSpacing: 0,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Edit Task',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: textPrimary,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _saveStatus == 'Saving...'
-                      ? EpicordiaColors.blue100
-                      : (isDark ? const Color(0xFF2B2E34) : const Color(0xFFF3F4F6)),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _saveStatus,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _saveStatus == 'Saving...'
-                        ? EpicordiaColors.blue600
-                        : EpicordiaColors.textSecondaryLight,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _saveStatus == 'Saving...'
+                          ? activeBlue
+                          : (isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _saveStatus,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: _saveStatus == 'Saving...' ? activeBlue : textTertiary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
           actions: [
-            IconButton(
-              icon: Icon(Icons.auto_awesome, color: activeBlue),
-              tooltip: 'Break down with Epi',
-              onPressed: () async {
-                await _autoSave();
-                if (context.mounted) {
-                  final title = _titleController.text.trim();
-                  final prompt = title.isNotEmpty
-                      ? 'Help me break down this task into smaller actionable steps: "$title"'
-                      : 'Help me break down this task into smaller steps';
-                  context.push('/epi', extra: {
-                    'prompt': prompt,
-                  });
-                }
-              },
-            ),
             IconButton(
               icon: Icon(Icons.center_focus_strong_rounded, color: activeBlue),
               tooltip: 'Focus Mode',
@@ -434,8 +427,8 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            InkWell(
-                              onTap: () async {
+                            TextButton.icon(
+                              onPressed: () async {
                                 await _autoSave();
                                 if (context.mounted) {
                                   final title = _titleController.text.trim();
@@ -445,29 +438,19 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                                   context.push('/epi', extra: {'prompt': prompt});
                                 }
                               },
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: activeBlue.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: activeBlue.withValues(alpha: 0.3)),
+                              icon: Icon(Icons.auto_awesome, size: 14, color: activeBlue),
+                              label: Text(
+                                'Ask Epi',
+                                style: TextStyle(
+                                  color: activeBlue,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.auto_awesome, size: 14, color: activeBlue),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Ask Epi',
-                                      style: TextStyle(
-                                        color: activeBlue,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                             ),
                           ],
@@ -549,8 +532,8 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                               ),
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () async {
+                          TextButton.icon(
+                            onPressed: () async {
                               await _autoSave();
                               if (context.mounted) {
                                 final title = _titleController.text.trim();
@@ -560,28 +543,17 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                                 context.push('/epi', extra: {'prompt': prompt});
                               }
                             },
-                            child: Container(
+                            icon: Icon(Icons.auto_awesome, size: 16, color: activeBlue),
+                            label: Text(
+                              'Break down with Epi',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: activeBlue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                              decoration: BoxDecoration(
-                                color: activeBlue.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: activeBlue.withValues(alpha: 0.2)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.auto_awesome, size: 16, color: activeBlue),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Break down with Epi',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: activeBlue,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
                           ),
                         ],

@@ -6,6 +6,10 @@ import '../../data/providers.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../domain/models/note_model.dart';
+import '../../domain/models/task_subitem.dart';
+import '../../domain/cycle_detector.dart';
+import '../../domain/models/in_app_alarm_model.dart';
+import '../../presentation/notifiers/alarm_timer_provider.dart';
 import 'epi_models.dart';
 import 'epi_action_log.dart';
 
@@ -67,6 +71,25 @@ class EpiToolExecutor {
 
         case 'get_today_overview':
           return await _executeGetTodayOverview(action);
+
+        case 'add_subtasks':
+        case 'break_down_task':
+          return await _executeAddSubtasks(action);
+
+        case 'link_tasks':
+          return await _executeLinkTasks(action);
+
+        case 'triage_unsorted':
+          return await _executeTriageUnsorted(action);
+
+        case 'set_alarm':
+          return await _executeSetAlarm(action);
+
+        case 'set_timer':
+          return await _executeSetTimer(action);
+
+        case 'query_timetable':
+          return await _executeQueryTimetable(action);
 
         default:
           return EpiActionExecutionRecord(
@@ -406,7 +429,11 @@ class EpiToolExecutor {
     return EpiActionExecutionRecord(
       action: action,
       status: ActionExecutionStatus.success,
-      message: 'Found ${results.length} task(s)',
+      message: results.isEmpty
+          ? 'No tasks found'
+          : results.length == 1
+              ? 'Found 1 task'
+              : 'Found ${results.length} tasks',
       entityIds: matchingIds,
       timestamp: DateTime.now(),
     );
@@ -432,7 +459,11 @@ class EpiToolExecutor {
     return EpiActionExecutionRecord(
       action: action,
       status: ActionExecutionStatus.success,
-      message: 'Found ${results.length} note(s)',
+      message: results.isEmpty
+          ? 'No notes found'
+          : results.length == 1
+              ? 'Found 1 note'
+              : 'Found ${results.length} notes',
       entityIds: matchingIds,
       timestamp: DateTime.now(),
     );
@@ -454,6 +485,301 @@ class EpiToolExecutor {
       status: ActionExecutionStatus.success,
       message: '${dueToday.length} due today, ${overdue.length} overdue',
       entityIds: relatedIds,
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeAddSubtasks(EpiActionCall action) async {
+    final taskId = action.parameters['task_id']?.toString();
+    if (taskId == null) throw Exception('task_id is required for add_subtasks');
+
+    final rawSubtasks = action.parameters['subtasks'];
+    final subtaskList = <String>[];
+    if (rawSubtasks is List) {
+      for (final s in rawSubtasks) {
+        if (s != null && s.toString().trim().isNotEmpty) {
+          subtaskList.add(_stripDashes(s.toString().trim()));
+        }
+      }
+    } else if (rawSubtasks is String && rawSubtasks.isNotEmpty) {
+      subtaskList.add(_stripDashes(rawSubtasks.trim()));
+    }
+
+    if (subtaskList.isEmpty) {
+      throw Exception('At least one subtask title is required');
+    }
+
+    final taskDao = ref.read(taskDaoProvider);
+    final taskRepo = ref.read(taskRepositoryProvider);
+    final existing = await taskDao.getTask(taskId);
+    if (existing == null) throw Exception('Task $taskId not found');
+
+    final payload = TaskSubitem.decodeNotes(existing.notes);
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final newSubitems = <TaskSubitem>[];
+    for (var i = 0; i < subtaskList.length; i++) {
+      newSubitems.add(TaskSubitem(
+        id: '${nowMs}_$i',
+        title: subtaskList[i],
+        isDone: false,
+      ));
+    }
+
+    final updatedSubitems = [...payload.subitems, ...newSubitems];
+    final updatedNotes = TaskSubitem.encodeNotes(
+      userNotes: payload.userNotes,
+      subitems: updatedSubitems,
+    );
+
+    final updated = existing.copyWith(
+      notes: drift.Value(updatedNotes),
+      modifiedAt: DateTime.now(),
+    );
+
+    await taskRepo.updateTask(updated);
+
+    // Record in Action Log for undo
+    final prevNotes = existing.notes;
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      entityId: taskId,
+      summary: 'Added ${newSubitems.length} ${newSubitems.length == 1 ? 'subtask' : 'subtasks'} to "${existing.title}"',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        final cur = await taskDao.getTask(taskId);
+        if (cur != null) {
+          await taskRepo.updateTask(cur.copyWith(
+            notes: drift.Value(prevNotes),
+            modifiedAt: DateTime.now(),
+          ));
+        }
+      },
+    ));
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Added ${newSubitems.length} ${newSubitems.length == 1 ? 'subtask' : 'subtasks'} to "${existing.title}"',
+      createdEntityId: taskId,
+      entityIds: [taskId],
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeLinkTasks(EpiActionCall action) async {
+    final taskId = action.parameters['task_id']?.toString();
+    final dependsOnTaskId = action.parameters['depends_on_task_id']?.toString();
+    if (taskId == null || dependsOnTaskId == null) {
+      throw Exception('task_id and depends_on_task_id are both required');
+    }
+
+    final taskDao = ref.read(taskDaoProvider);
+    final taskA = await taskDao.getTask(taskId);
+    final taskB = await taskDao.getTask(dependsOnTaskId);
+    if (taskA == null) throw Exception('Task $taskId not found');
+    if (taskB == null) throw Exception('Prerequisite task $dependsOnTaskId not found');
+
+    // Cycle detection check
+    final allDeps = await taskDao.getAllTaskDependencies();
+    if (createsCycle(taskId, dependsOnTaskId, allDeps)) {
+      return EpiActionExecutionRecord(
+        action: action,
+        status: ActionExecutionStatus.failed,
+        message: 'Could not link "${taskA.title}" to "${taskB.title}": this creates a circular dependency loop.',
+        entityIds: [taskId, dependsOnTaskId],
+        timestamp: DateTime.now(),
+      );
+    }
+
+    await taskDao.addTaskDependency(taskId, dependsOnTaskId);
+
+    // Record in Action Log for undo
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      entityId: taskId,
+      summary: 'Linked "${taskA.title}" to depend on "${taskB.title}"',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        await taskDao.removeTaskDependency(taskId, dependsOnTaskId);
+      },
+    ));
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Linked "${taskA.title}" to depend on "${taskB.title}"',
+      entityIds: [taskId, dependsOnTaskId],
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeTriageUnsorted(EpiActionCall action) async {
+    final rawAssignments = action.parameters['assignments'];
+    if (rawAssignments is! List || rawAssignments.isEmpty) {
+      throw Exception('assignments list is required for triage_unsorted');
+    }
+
+    final taskDao = ref.read(taskDaoProvider);
+    final taskRepo = ref.read(taskRepositoryProvider);
+
+    final affectedIds = <String>[];
+    final undoSnapshots = <TaskEntity>[];
+
+    for (final item in rawAssignments) {
+      if (item is! Map) continue;
+      final itemId = item['item_id']?.toString() ?? item['task_id']?.toString();
+      final boardId = item['board_id']?.toString();
+      final dueDateStr = item['due_date']?.toString();
+
+      if (itemId == null || boardId == null) continue;
+
+      final existing = await taskDao.getTask(itemId);
+      if (existing != null) {
+        undoSnapshots.add(existing);
+        DateTime? newDueDate = existing.dueDate;
+        if (dueDateStr != null && dueDateStr.isNotEmpty) {
+          newDueDate = DateTime.tryParse(dueDateStr);
+        }
+
+        final updated = existing.copyWith(
+          boardId: drift.Value(boardId),
+          dueDate: drift.Value(newDueDate),
+          modifiedAt: DateTime.now(),
+        );
+        await taskRepo.updateTask(updated);
+        affectedIds.add(itemId);
+      }
+    }
+
+    // Record in Action Log for undo
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      summary: 'Triaged ${affectedIds.length} ${affectedIds.length == 1 ? 'item' : 'items'} to boards',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        for (final snap in undoSnapshots) {
+          await taskRepo.updateTask(snap);
+        }
+      },
+    ));
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Triaged ${affectedIds.length} ${affectedIds.length == 1 ? 'item' : 'items'} to respective boards',
+      entityIds: affectedIds,
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeSetAlarm(EpiActionCall action) async {
+    final rawTitle = action.parameters['title']?.toString() ?? 'Alarm';
+    final title = _stripDashes(rawTitle);
+    final timeStr = action.parameters['time']?.toString() ?? '08:00';
+    final taskId = action.parameters['task_id']?.toString();
+    final repeatDaysRaw = action.parameters['repeat_days'];
+
+    List<int> repeatDays = [];
+    if (repeatDaysRaw is List) {
+      repeatDays = repeatDaysRaw.map((e) => (e as num).toInt()).toList();
+    }
+
+    final parts = timeStr.split(':');
+    final hour = int.tryParse(parts[0]) ?? 8;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+
+    final alarmId = DateTime.now().millisecondsSinceEpoch.toString();
+    final newAlarm = InAppAlarm(
+      id: alarmId,
+      title: title,
+      hour: hour,
+      minute: minute,
+      repeatDays: repeatDays,
+      taskId: taskId,
+    );
+
+    final alarmNotifier = ref.read(alarmTimerProvider.notifier);
+    await alarmNotifier.addAlarm(newAlarm);
+
+    // Record in Action Log for undo
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      entityId: alarmId,
+      summary: 'Set alarm "$title" for ${newAlarm.formattedTime}',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        await alarmNotifier.deleteAlarm(alarmId);
+      },
+    ));
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Set alarm "$title" for ${newAlarm.formattedTime}',
+      createdEntityId: alarmId,
+      entityIds: [alarmId],
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeSetTimer(EpiActionCall action) async {
+    final durationNum = (action.parameters['duration_minutes'] as num?)?.toInt() ?? 25;
+    final rawLabel = action.parameters['label']?.toString() ?? 'Focus Session';
+    final label = _stripDashes(rawLabel);
+    final taskId = action.parameters['task_id']?.toString();
+
+    final alarmNotifier = ref.read(alarmTimerProvider.notifier);
+    alarmNotifier.startTimer(
+      duration: Duration(minutes: durationNum),
+      label: label,
+      taskId: taskId,
+    );
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Started $durationNum-minute timer for "$label"',
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeQueryTimetable(EpiActionCall action) async {
+    final timetableDao = ref.read(timetableDaoProvider);
+    final dayOfWeek = (action.parameters['day_of_week'] as num?)?.toInt();
+
+    final List<TimetableSlotEntity> slots;
+    if (dayOfWeek != null) {
+      slots = await (timetableDao.select(timetableDao.timetableSlots)
+            ..where((t) => t.dayOfWeek.equals(dayOfWeek))
+            ..orderBy([(t) => drift.OrderingTerm(expression: t.startTime)]))
+          .get();
+    } else {
+      slots = await timetableDao.getAllSlots();
+    }
+
+    final ids = slots.map((s) => s.id).take(5).toList();
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: slots.isEmpty
+          ? 'No schedule slots found'
+          : slots.length == 1
+              ? 'Found 1 schedule slot'
+              : 'Found ${slots.length} schedule slots',
+      entityIds: ids,
       timestamp: DateTime.now(),
     );
   }

@@ -59,6 +59,7 @@ dependencies:
   attributed_text: ^0.4.7
   alarm: ^4.0.8
   http: ^1.6.0
+  remixicon: ^4.9.3
 
 dev_dependencies:
   flutter_test:

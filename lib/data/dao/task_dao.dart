@@ -106,4 +106,14 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       dependsOnTaskId: dependsOnTaskId
     ));
   }
+
+  Future<List<TaskDependencyEntity>> getAllTaskDependencies() {
+    return select(taskDependencies).get();
+  }
+
+  Future<int> removeTaskDependency(String taskId, String dependsOnTaskId) {
+    return (delete(taskDependencies)
+          ..where((t) => t.taskId.equals(taskId) & t.dependsOnTaskId.equals(dependsOnTaskId)))
+        .go();
+  }
 }
