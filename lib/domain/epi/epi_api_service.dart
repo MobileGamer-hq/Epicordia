@@ -10,7 +10,15 @@ final epiApiServiceProvider = Provider<EpiApiService>((ref) {
 
 class EpiApiService {
   final Ref ref;
-  static const String defaultEndpoint = 'https://epicordiaagent.onrender.com';
+
+  /// Primary API backend hosted on Vercel
+  static const String mainEndpoint = 'https://epicordia-agent.vercel.app';
+
+  /// Backup failover API backend hosted on Render
+  static const String backupEndpoint = 'https://epicordiaagent.onrender.com';
+
+  /// Default endpoint pointing to main
+  static const String defaultEndpoint = mainEndpoint;
 
   EpiApiService(this.ref);
 
@@ -71,14 +79,44 @@ class EpiApiService {
     };
   }
 
-  /// Sends a user message to Epi hosted on Render.
+  /// Sends a user message to Epi.
+  /// Tries the main Vercel API first, automatically falling back to Render backup if it fails.
   Future<EpiChatResponse> sendMessage({
     required String message,
     required String sessionId,
     String? baseUrl,
   }) async {
-    final endpoint = (baseUrl ?? defaultEndpoint).replaceAll(RegExp(r'/+$'), '');
-    final uri = Uri.parse('$endpoint/chat');
+    if (baseUrl != null) {
+      return _sendSingleChatRequest(
+        endpoint: baseUrl,
+        message: message,
+        sessionId: sessionId,
+      );
+    }
+
+    try {
+      return await _sendSingleChatRequest(
+        endpoint: mainEndpoint,
+        message: message,
+        sessionId: sessionId,
+      );
+    } catch (_) {
+      // Main API failed; try backup API
+      return await _sendSingleChatRequest(
+        endpoint: backupEndpoint,
+        message: message,
+        sessionId: sessionId,
+      );
+    }
+  }
+
+  Future<EpiChatResponse> _sendSingleChatRequest({
+    required String endpoint,
+    required String message,
+    required String sessionId,
+  }) async {
+    final cleanEndpoint = endpoint.replaceAll(RegExp(r'/+$'), '');
+    final uri = Uri.parse('$cleanEndpoint/chat');
 
     final contextSnapshot = await buildContextSnapshot();
 
@@ -106,6 +144,7 @@ class EpiApiService {
   }
 
   /// Streams events (status updates, tokens, staged actions) from Epi.
+  /// Tries the main Vercel API first, falling back to the Render backup API if unreachable.
   /// Seamlessly falls back to `/chat` with progressive statuses and token-simulated
   /// word streaming if SSE is not reached or returns an error.
   Stream<EpiStreamEvent> streamChat({
@@ -113,8 +152,9 @@ class EpiApiService {
     required String sessionId,
     String? baseUrl,
   }) async* {
-    final endpoint = (baseUrl ?? defaultEndpoint).replaceAll(RegExp(r'/+$'), '');
-    final uri = Uri.parse('$endpoint/chat/stream');
+    final endpointsToTry = baseUrl != null
+        ? [baseUrl]
+        : [mainEndpoint, backupEndpoint];
 
     yield const EpiStreamEvent(
       type: EpiStreamEventType.status,
@@ -134,80 +174,90 @@ class EpiApiService {
       statusMessage: 'Epi is thinking...',
     );
 
-    http.Client? client;
-    try {
-      client = http.Client();
-      final request = http.Request('POST', uri)
-        ..headers.addAll({
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        })
-        ..body = body;
+    bool streamSucceeded = false;
 
-      final streamedResponse = await client.send(request).timeout(const Duration(seconds: 45));
+    for (final endpoint in endpointsToTry) {
+      final cleanEndpoint = endpoint.replaceAll(RegExp(r'/+$'), '');
+      final uri = Uri.parse('$cleanEndpoint/chat/stream');
 
-      if (streamedResponse.statusCode == 200) {
-        String? currentEvent;
+      http.Client? client;
+      try {
+        client = http.Client();
+        final request = http.Request('POST', uri)
+          ..headers.addAll({
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+          })
+          ..body = body;
 
-        await for (final line in streamedResponse.stream
-            .transform(utf8.decoder)
-            .transform(const LineSplitter())) {
-          final trimmed = line.trim();
-          if (trimmed.isEmpty) {
-            currentEvent = null;
-            continue;
-          }
+        final streamedResponse = await client.send(request).timeout(const Duration(seconds: 45));
 
-          if (trimmed.startsWith('event:')) {
-            currentEvent = trimmed.substring(6).trim();
-            continue;
-          }
+        if (streamedResponse.statusCode == 200) {
+          String? currentEvent;
 
-          if (trimmed.startsWith('data:')) {
-            final dataStr = trimmed.substring(5).trim();
-            try {
-              final json = jsonDecode(dataStr) as Map<String, dynamic>;
-              if (currentEvent == 'status') {
-                yield EpiStreamEvent(
-                  type: EpiStreamEventType.status,
-                  statusMessage: json['message'] as String?,
-                );
-              } else if (currentEvent == 'token') {
-                yield EpiStreamEvent(
-                  type: EpiStreamEventType.token,
-                  tokenDelta: json['delta'] as String?,
-                );
-              } else if (currentEvent == 'action') {
-                yield EpiStreamEvent(
-                  type: EpiStreamEventType.action,
-                  action: EpiActionCall.fromJson(json),
-                );
-              } else if (currentEvent == 'done') {
-                final actionsList = (json['actions'] as List<dynamic>?)
-                        ?.map((e) => EpiActionCall.fromJson(e as Map<String, dynamic>))
-                        .toList() ??
-                    [];
-                yield EpiStreamEvent(
-                  type: EpiStreamEventType.done,
-                  fullReply: json['reply'] as String?,
-                  finalActions: actionsList,
-                  modelUsed: json['modelUsed'] as String?,
-                );
+          await for (final line in streamedResponse.stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())) {
+            final trimmed = line.trim();
+            if (trimmed.isEmpty) {
+              currentEvent = null;
+              continue;
+            }
+
+            if (trimmed.startsWith('event:')) {
+              currentEvent = trimmed.substring(6).trim();
+              continue;
+            }
+
+            if (trimmed.startsWith('data:')) {
+              final dataStr = trimmed.substring(5).trim();
+              try {
+                final json = jsonDecode(dataStr) as Map<String, dynamic>;
+                if (currentEvent == 'status') {
+                  yield EpiStreamEvent(
+                    type: EpiStreamEventType.status,
+                    statusMessage: json['message'] as String?,
+                  );
+                } else if (currentEvent == 'token') {
+                  yield EpiStreamEvent(
+                    type: EpiStreamEventType.token,
+                    tokenDelta: json['delta'] as String?,
+                  );
+                } else if (currentEvent == 'action') {
+                  yield EpiStreamEvent(
+                    type: EpiStreamEventType.action,
+                    action: EpiActionCall.fromJson(json),
+                  );
+                } else if (currentEvent == 'done') {
+                  final actionsList = (json['actions'] as List<dynamic>?)
+                          ?.map((e) => EpiActionCall.fromJson(e as Map<String, dynamic>))
+                          .toList() ??
+                      [];
+                  yield EpiStreamEvent(
+                    type: EpiStreamEventType.done,
+                    fullReply: json['reply'] as String?,
+                    finalActions: actionsList,
+                    modelUsed: json['modelUsed'] as String?,
+                  );
+                }
+              } catch (_) {
+                // Ignore partial parse
               }
-            } catch (_) {
-              // Ignore partial parse
             }
           }
+          streamSucceeded = true;
+          break;
         }
-        return;
+      } catch (_) {
+        // Current endpoint failed; loop will try next endpoint (backup)
+      } finally {
+        client?.close();
       }
-    } catch (_) {
-      // Fallback below
-    } finally {
-      client?.close();
     }
 
-    // ── Resilient Fallback: Regular /chat endpoint ──
+    if (streamSucceeded) return;
+
+    // ── Resilient Fallback: Regular /chat endpoint (tries main then backup) ──
     try {
       final res = await sendMessage(
         message: message,
@@ -236,11 +286,21 @@ class EpiApiService {
   }
 
   /// Health check probe to check connection status.
+  /// Probes main API (Vercel) first, falling back to backup API (Render).
   Future<bool> checkHealth({String? baseUrl}) async {
+    if (baseUrl != null) {
+      return _probeHealth(baseUrl);
+    }
+    final mainOk = await _probeHealth(mainEndpoint);
+    if (mainOk) return true;
+    return _probeHealth(backupEndpoint);
+  }
+
+  Future<bool> _probeHealth(String url) async {
     try {
-      final endpoint = (baseUrl ?? defaultEndpoint).replaceAll(RegExp(r'/+$'), '');
+      final endpoint = url.replaceAll(RegExp(r'/+$'), '');
       final uri = Uri.parse('$endpoint/health');
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      final res = await http.get(uri).timeout(const Duration(seconds: 5));
       return res.statusCode == 200;
     } catch (_) {
       return false;
@@ -248,11 +308,25 @@ class EpiApiService {
   }
 
   /// Fetches a subtle, warm 1-sentence daily thought from Epi based on current context.
-  /// Returns null if offline, timeout, or an error occurs.
+  /// Tries main API (Vercel) first, falling back to backup API (Render).
+  /// Returns null if offline, timeout, or both servers are unavailable.
   Future<String?> fetchDailyThought({String? baseUrl}) async {
+    if (baseUrl != null) {
+      return _fetchDailyThoughtFrom(baseUrl);
+    }
+
+    // 1. Try main endpoint (Vercel)
+    final mainThought = await _fetchDailyThoughtFrom(mainEndpoint);
+    if (mainThought != null) return mainThought;
+
+    // 2. Fall back to backup endpoint (Render)
+    return _fetchDailyThoughtFrom(backupEndpoint);
+  }
+
+  Future<String?> _fetchDailyThoughtFrom(String endpoint) async {
     try {
-      final endpoint = (baseUrl ?? defaultEndpoint).replaceAll(RegExp(r'/+$'), '');
-      final uri = Uri.parse('$endpoint/daily-thought');
+      final cleanEndpoint = endpoint.replaceAll(RegExp(r'/+$'), '');
+      final uri = Uri.parse('$cleanEndpoint/daily-thought');
 
       final contextSnapshot = await buildContextSnapshot();
       final body = jsonEncode({
@@ -266,7 +340,7 @@ class EpiApiService {
             headers: {'Content-Type': 'application/json'},
             body: body,
           )
-          .timeout(const Duration(seconds: 4));
+          .timeout(const Duration(seconds: 6));
 
       if (response.statusCode == 200) {
         final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
