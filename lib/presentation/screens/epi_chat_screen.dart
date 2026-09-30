@@ -196,7 +196,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
               onPressed: _handleUndo,
             ),
             IconButton(
-              icon: const Icon(Remix.chat_ai_3_fill, size: 20),
+              icon: const Icon(Remix.add_large_line, size: 20),
               tooltip: 'New chat',
               color: textSecondary,
               onPressed: () {
@@ -293,7 +293,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                   ),
                   const SizedBox(width: 8),
                   _buildPillButton(
-                    icon: Icons.cleaning_services_rounded,
+                    icon: Remix.eraser_line,
                     label: 'Wipe thread',
                     isDark: isDark,
                     cardBg: cardBg,
@@ -1253,7 +1253,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                               setState(() => _attachedItems.clear());
                               Navigator.pop(ctx);
                             },
-                            icon: const Icon(Icons.add_rounded, size: 16),
+                            icon: const Icon(Remix.add_large_line, size: 16),
                             label: const Text('New Chat'),
                           ),
                         ],
