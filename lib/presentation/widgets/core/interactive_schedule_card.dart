@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
+import '../../../core/feedback_service.dart';
 import '../../../data/database/database.dart';
 import '../../../data/providers.dart';
 import '../edit_timetable_slot_dialog.dart';
@@ -93,12 +94,7 @@ class InteractiveScheduleCard extends ConsumerWidget {
                     onTap: () async {
                       await ref.read(timetableDaoProvider).deleteSlot(slot.id);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Schedule event deleted'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        FeedbackService.showSuccess('Schedule event deleted');
                       }
                     },
                   ),

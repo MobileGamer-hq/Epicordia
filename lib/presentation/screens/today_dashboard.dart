@@ -17,6 +17,7 @@ import '../widgets/core/link_preview_dialog.dart';
 import '../../core/utils/markdown_formatter.dart';
 
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../core/theme_provider.dart';
 import '../../domain/epi/epi_api_service.dart';
 import '../widgets/proactive_checkin_card.dart';
@@ -944,12 +945,7 @@ class _QuickCaptureCard extends ConsumerWidget {
             onTap: () async {
               await ref.read(pinRepositoryProvider).deletePin(note.id);
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Note deleted'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                FeedbackService.showSuccess('Note deleted');
               }
             },
           ),

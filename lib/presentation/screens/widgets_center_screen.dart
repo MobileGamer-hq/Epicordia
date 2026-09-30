@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../data/providers.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/task_repository.dart';
@@ -206,12 +207,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                 ),
               ),
               onSync: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Create Widget takes you directly to the Create Hub screen!'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                FeedbackService.showInfo('Create Widget takes you directly to the Create Hub screen!');
               },
             ),
 
@@ -272,9 +268,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                 ),
               ),
               onSync: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Focus Heatmap Widget synced!'), behavior: SnackBarBehavior.floating),
-                );
+                FeedbackService.showSuccess('Focus Heatmap Widget synced!');
               },
             ),
 
@@ -362,9 +356,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                       final boardTitle = boardsMap[subtaskTask.boardId]?.title ?? 'Inbox';
                       await ref.read(widgetServiceProvider).syncTaskWithSubtasks(subtaskTask, boardTitle);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Task & Subtasks Widget synced!'), behavior: SnackBarBehavior.floating),
-                        );
+                        FeedbackService.showSuccess('Task & Subtasks Widget synced!');
                       }
                     }
                   : null,
@@ -436,9 +428,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                       final boardTitle = boardsMap[note.boardId]?.title ?? 'Inbox';
                       await ref.read(widgetServiceProvider).syncPinnedNoteWidget(note, boardTitle);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Pinned Note Widget synced!'), behavior: SnackBarBehavior.floating),
-                        );
+                        FeedbackService.showSuccess('Pinned Note Widget synced!');
                       }
                     }
                   : null,
@@ -497,9 +487,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                       final boardTitle = boardsMap[task.boardId]?.title ?? 'Inbox';
                       await ref.read(widgetServiceProvider).syncPinnedTaskWidget(task, boardTitle);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Featured Task Widget synced!'), behavior: SnackBarBehavior.floating),
-                        );
+                        FeedbackService.showSuccess('Featured Task Widget synced!');
                       }
                     }
                   : null,
@@ -547,9 +535,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
               onSync: () async {
                 await ref.read(widgetServiceProvider).syncDailyScheduleWidget(timetableSlots);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Daily Schedule Widget synced!'), behavior: SnackBarBehavior.floating),
-                  );
+                  FeedbackService.showSuccess('Daily Schedule Widget synced!');
                 }
               },
             ),
@@ -600,9 +586,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
                 if (alarmsState.alarms.isNotEmpty) {
                   await ref.read(widgetServiceProvider).syncSessionWidget(alarmsState.alarms.first);
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Session Widget synced!'), behavior: SnackBarBehavior.floating),
-                    );
+                    FeedbackService.showSuccess('Session Widget synced!');
                   }
                 }
               },

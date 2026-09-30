@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../domain/models/task_subitem.dart';
 import '../../domain/services/notification_service.dart';
 import '../../domain/services/device_timer_alarm_service.dart';
@@ -342,12 +343,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
     // Validation
     if (title.isEmpty && validSubtasks.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a task title or add subtasks.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showError('Please enter a task title or add subtasks.');
       return;
     }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../../core/theme.dart';
+import '../../../core/feedback_service.dart';
 import '../../../core/utils/markdown_formatter.dart';
 import '../../../domain/models/note_model.dart';
 import '../../../data/database/database.dart';
@@ -265,12 +266,7 @@ class ItemInteractionDialogs {
                                 if (confirm == true) {
                                   await ref.read(pinRepositoryProvider).deletePin(note.id);
                                   if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Note deleted'),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
+                                    FeedbackService.showSuccess('Note deleted');
                                   }
                                 }
                               },
@@ -640,16 +636,6 @@ class ItemInteractionDialogs {
                               },
                             ),
                             _ActionButton(
-                              icon: isCompleted ? Icons.undo_rounded : Icons.check_circle_outline,
-                              label: isCompleted ? 'Reopen' : 'Complete',
-                              color: statusColor,
-                              onTap: () {
-                                Navigator.of(ctx).pop();
-                                final next = isCompleted ? 'todo' : 'done';
-                                ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: next));
-                              },
-                            ),
-                            _ActionButton(
                               icon: Icons.copy_rounded,
                               label: 'Copy',
                               onTap: () {
@@ -693,12 +679,7 @@ class ItemInteractionDialogs {
                                 if (confirm == true) {
                                   await ref.read(taskRepositoryProvider).deleteTask(task.id);
                                   if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Task deleted'),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
+                                    FeedbackService.showSuccess('Task deleted');
                                   }
                                 }
                               },
@@ -953,12 +934,7 @@ class ItemInteractionDialogs {
                                 if (confirm == true) {
                                   await ref.read(timetableDaoProvider).deleteSlot(slot.id);
                                   if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Schedule event deleted'),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
+                                    FeedbackService.showSuccess('Schedule event deleted');
                                   }
                                 }
                               },
@@ -1101,36 +1077,12 @@ class ItemInteractionDialogs {
   // ── Clipboard & Share helpers ──────────────────────────────
   static void copyToClipboard(BuildContext context, String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Copied to clipboard!'),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    FeedbackService.showSuccess('Copied to clipboard!');
   }
 
   static void shareContent(BuildContext context, String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.share, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Content ready to share (copied to clipboard)!'),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    FeedbackService.showInfo('Content ready to share (copied to clipboard)!');
   }
 
   static Future<bool?> _showDeleteConfirmDialog(BuildContext context, String itemType) {
@@ -1236,12 +1188,7 @@ class ItemInteractionDialogs {
                   final updated = note.copyWith(boardId: const Value(null));
                   await ref.read(pinRepositoryProvider).updatePin(updated);
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Note unpinned (moved to Inbox)'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    FeedbackService.showSuccess('Note unpinned (moved to Inbox)');
                   }
                 },
               ),
@@ -1282,12 +1229,7 @@ class ItemInteractionDialogs {
                           final updated = note.copyWith(boardId: Value(board.id));
                           await ref.read(pinRepositoryProvider).updatePin(updated);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Pinned to "${board.title}"'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            FeedbackService.showSuccess('Pinned to "${board.title}"');
                           }
                         },
                       );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../data/providers.dart';
 import '../../data/database/database.dart';
 import '../../data/repository/task_repository.dart';
@@ -96,22 +97,9 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     final result = await ref.read(epiChatProvider.notifier).undoLastAction();
     if (!mounted) return;
     if (result != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          backgroundColor: Colors.teal.shade700,
-        ),
-      );
+      FeedbackService.showSuccess(result);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No recent actions to undo.'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      FeedbackService.showInfo('No recent actions to undo.');
     }
   }
 
@@ -316,12 +304,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                     onTap: () {
                       ref.read(epiChatProvider.notifier).clearChat();
                       setState(() => _attachedItems.clear());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Thread wiped. Fresh start!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      FeedbackService.showInfo('Thread wiped. Fresh start!');
                     },
                   ),
                   if (chatState.messages.length <= 2) ...[
@@ -845,9 +828,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     if (!mounted) return;
 
     if (nonLockedNotes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No notes found. Create a note first!')),
-      );
+      FeedbackService.showInfo('No notes found. Create a note first!');
       return;
     }
 
@@ -947,9 +928,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     if (!mounted) return;
 
     if (allTasks.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No tasks found. Create a task first!')),
-      );
+      FeedbackService.showInfo('No tasks found. Create a task first!');
       return;
     }
 

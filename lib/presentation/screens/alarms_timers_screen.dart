@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../domain/models/in_app_alarm_model.dart';
 import '../../domain/models/in_app_timer_model.dart';
 import '../notifiers/alarm_settings_provider.dart';
@@ -226,13 +227,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                           onTap: () {
                             SystemSound.play(SystemSoundType.alert);
                             HapticFeedback.heavyImpact();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Playing preview: ${alarm.ringtone}'),
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                            FeedbackService.showInfo('Playing preview: ${alarm.ringtone}');
                           },
                         ),
                         _buildToolButton(
@@ -253,12 +248,7 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                           onTap: () {
                             ref.read(alarmTimerProvider.notifier).deleteAlarm(alarm.id);
                             Navigator.of(ctx).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Alarm deleted'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            FeedbackService.showSuccess('Alarm deleted');
                           },
                         ),
                       ],

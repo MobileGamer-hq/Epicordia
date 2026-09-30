@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/services/device_timer_alarm_service.dart';
 import '../../domain/services/notification_service.dart';
+import '../../core/feedback_service.dart';
 
 class TimerPickerPopover extends ConsumerStatefulWidget {
   final String? taskTitle;
@@ -53,20 +54,10 @@ class _TimerPickerPopoverState extends ConsumerState<TimerPickerPopover> {
     if (result == TimerActionResult.inAppTimerStarted) {
       Navigator.of(context).pop();
       context.push('/alarms');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Started $minutes min in-app timer!'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showSuccess('Started $minutes min in-app timer!');
     } else if (result == TimerActionResult.androidSystemHandoffSuccess) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Started $minutes min timer in system Clock app'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showSuccess('Started $minutes min timer in system Clock app');
     } else if (result == TimerActionResult.iosNotificationScheduled) {
       await _notificationService.scheduleTimerNotification(
         id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -75,19 +66,9 @@ class _TimerPickerPopoverState extends ConsumerState<TimerPickerPopover> {
       );
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Timer set for $minutes min (Scheduled notification)'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showSuccess('Timer set for $minutes min (Scheduled notification)');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to start timer'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showError('Failed to start timer');
     }
   }
 

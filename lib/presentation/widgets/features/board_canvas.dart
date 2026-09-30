@@ -8,6 +8,7 @@ import 'package:infinite_canvas/infinite_canvas.dart';
 
 import '../../../core/board_settings_provider.dart';
 import '../../../core/theme.dart';
+import '../../../core/feedback_service.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/connector_repository.dart';
 import '../../../data/repository/pin_repository.dart';
@@ -117,13 +118,10 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
       _connectorSourcePinId = null;
     });
     if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (_isConnectingMode) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Connector Mode: Tap source card then tap target card to connect.'),
-            duration: Duration(seconds: 4),
-          ),
+        FeedbackService.showInfo(
+          'Connector Mode: Tap source card then tap target card to connect.',
+          duration: const Duration(seconds: 4),
         );
       }
     }
@@ -134,12 +132,9 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
       if (_connectorSourcePinId == null) {
         setState(() => _connectorSourcePinId = pinId);
         if (mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Selected source card. Now tap target card to connect.'),
-              duration: Duration(seconds: 4),
-            ),
+          FeedbackService.showInfo(
+            'Selected source card. Now tap target card to connect.',
+            duration: const Duration(seconds: 4),
           );
         }
       } else {
@@ -155,13 +150,7 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
             ),
           );
           if (mounted) {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Cards connected successfully!'),
-                duration: Duration(seconds: 2),
-              ),
-            );
+            FeedbackService.showSuccess('Cards connected successfully!');
           }
         }
         setState(() {
@@ -452,13 +441,7 @@ class BoardCanvasState extends ConsumerState<BoardCanvas> {
                         ),
                       );
                       if (mounted) {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Cards connected successfully!'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        FeedbackService.showSuccess('Cards connected successfully!');
                       }
                     }
                   }

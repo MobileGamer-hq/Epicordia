@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:epicordia/core/theme.dart';
+import 'package:epicordia/core/feedback_service.dart';
 import 'package:epicordia/data/database/database.dart';
 import 'package:epicordia/data/providers.dart';
 import 'package:epicordia/data/repository/pin_repository.dart';
@@ -1409,9 +1410,7 @@ class _ImageEditorState extends ConsumerState<_ImageEditor> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick image: $e')),
-        );
+        FeedbackService.showError('Failed to pick image: $e');
       }
     }
   }
@@ -2358,9 +2357,7 @@ class _FileEditorState extends ConsumerState<_FileEditor> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick file: $e')),
-        );
+        FeedbackService.showError('Failed to pick file: $e');
       }
     }
   }
@@ -2953,9 +2950,7 @@ class _AudioEditorState extends ConsumerState<_AudioEditor> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick audio file: $e')),
-        );
+        FeedbackService.showError('Failed to pick audio file: $e');
       }
     }
   }

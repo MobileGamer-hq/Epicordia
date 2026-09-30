@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme.dart';
+import '../../../core/feedback_service.dart';
 
 class LinkPreviewDialog {
   static void show(BuildContext context, String label, String url) {
@@ -206,12 +207,7 @@ class LinkPreviewDialog {
                             child: OutlinedButton.icon(
                               onPressed: () {
                                 Clipboard.setData(ClipboardData(text: cleanUrl));
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Copied "$cleanUrl" to clipboard'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                FeedbackService.showSuccess('Copied "$cleanUrl" to clipboard');
                               },
                               icon: const Icon(Icons.copy_rounded, size: 16),
                               label: const Text('Copy Link'),
@@ -230,12 +226,7 @@ class LinkPreviewDialog {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Clipboard.setData(ClipboardData(text: cleanUrl));
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Opening web link: $cleanUrl'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                FeedbackService.showInfo('Opening web link: $cleanUrl');
                                 Navigator.of(ctx).pop();
                               },
                               icon: const Icon(Icons.open_in_new, size: 16),

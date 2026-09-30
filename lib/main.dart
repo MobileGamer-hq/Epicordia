@@ -11,6 +11,7 @@ import 'presentation/widgets/alarm_ringing_wrapper.dart';
 import 'domain/services/notification_service.dart';
 import 'data/providers.dart';
 import 'data/repository/task_repository.dart';
+import 'core/feedback_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +64,7 @@ class _EpicordiaAppState extends ConsumerState<EpicordiaApp> {
     final primaryColor = ref.watch(appPrimaryColorProvider);
 
     return MaterialApp.router(
+      scaffoldMessengerKey: FeedbackService.messengerKey,
       title: 'Epicordia',
       theme: EpicordiaTheme.lightTheme(primaryColor),
       darkTheme: EpicordiaTheme.darkTheme(primaryColor),

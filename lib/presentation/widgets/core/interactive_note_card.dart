@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
+import '../../../core/feedback_service.dart';
 import '../../../core/app_lock_provider.dart';
 import '../../../domain/state/journaling_provider.dart';
 import '../../../core/utils/markdown_formatter.dart';
@@ -178,12 +179,7 @@ class InteractiveNoteCard extends ConsumerWidget {
                         onTap: () async {
                           await ref.read(pinRepositoryProvider).deletePin(note.id);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Note deleted'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            FeedbackService.showSuccess('Note deleted');
                           }
                         },
                       ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/app_lock_provider.dart';
 import '../../core/board_settings_provider.dart';
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../core/theme_provider.dart';
 import '../../domain/services/data_export_service.dart';
 import '../../data/providers.dart';
@@ -45,12 +46,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (newName.isEmpty) return;
     await ref.read(userNameProvider.notifier).updateName(newName);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Display name updated to "$newName"'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showSuccess('Display name updated to "$newName"');
     }
   }
 
@@ -84,12 +80,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   content: jsonStr,
                 );
                 if (context.mounted && path != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Workspace exported to $path'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  FeedbackService.showSuccess('Workspace exported to $path');
                 }
               },
             ),
@@ -106,12 +97,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   content: csvStr,
                 );
                 if (context.mounted && path != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Weekly Schedule exported to $path'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  FeedbackService.showSuccess('Weekly Schedule exported to $path');
                 }
               },
             ),
@@ -130,12 +116,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   content: csvStr,
                 );
                 if (context.mounted && path != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Tasks exported to $path'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  FeedbackService.showSuccess('Tasks exported to $path');
                 }
               },
             ),
@@ -218,12 +199,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await prefs.clear();
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('App data reset successfully. Welcome back to Onboarding!'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showSuccess('App data reset successfully. Welcome back to Onboarding!');
       context.go('/onboarding');
     }
   }
@@ -676,15 +652,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         onChanged: (enabled) async {
                           await taskNotifier.setAutoDeleteCompleted(enabled);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  enabled
-                                      ? 'Auto-delete enabled (${TaskSettingsState.retentionLabel(taskSettings.autoDeleteHours)}).'
-                                      : 'Auto-delete disabled. Completed tasks will remain indefinitely.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
+                            FeedbackService.showInfo(
+                              enabled
+                                  ? 'Auto-delete enabled (${TaskSettingsState.retentionLabel(taskSettings.autoDeleteHours)}).'
+                                  : 'Auto-delete disabled. Completed tasks will remain indefinitely.',
                             );
                           }
                         },
@@ -771,16 +742,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .read(taskRepositoryProvider)
                               .cleanUpCompletedTasks(force: true);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  count > 0
-                                      ? 'Cleaned up $count completed ${count == 1 ? 'task' : 'tasks'}.'
-                                      : 'No completed tasks ready for cleanup.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            if (count > 0) {
+                              FeedbackService.showSuccess('Cleaned up $count completed ${count == 1 ? 'task' : 'tasks'}.');
+                            } else {
+                              FeedbackService.showInfo('No completed tasks ready for cleanup.');
+                            }
                           }
                         },
                       ),
@@ -812,15 +778,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         onChanged: (enabled) async {
                           await journalingNotifier.updatePlan(isEnabled: enabled);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  enabled
-                                      ? 'Journaling habit enabled. Automatic reminders scheduled!'
-                                      : 'Journaling habit disabled. Reminders cancelled.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
+                            FeedbackService.showInfo(
+                              enabled
+                                  ? 'Journaling habit enabled. Automatic reminders scheduled!'
+                                  : 'Journaling habit disabled. Reminders cancelled.',
                             );
                           }
                         },
@@ -980,12 +941,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             if (!lockState.hasPin) {
                               final created = await PinLockScreen.showCreate(context);
                               if (created == true && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('App Lock enabled with your new PIN.'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                FeedbackService.showSuccess('App Lock enabled with your new PIN.');
                               }
                             } else {
                               await lockNotifier.enableAppLock();
@@ -994,12 +950,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             final verified = await PinLockScreen.showVerify(context);
                             if (verified == true && context.mounted) {
                               await lockNotifier.disableAppLock();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('App Lock disabled.'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              FeedbackService.showInfo('App Lock disabled.');
                             }
                           }
                         },
@@ -1019,15 +970,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             await lockAllNotifier.toggle(enabled);
                           }
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  enabled
-                                      ? 'All journal notes are now PIN locked.'
-                                      : 'Global journal lock disabled.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
+                            FeedbackService.showInfo(
+                              enabled
+                                  ? 'All journal notes are now PIN locked.'
+                                  : 'Global journal lock disabled.',
                             );
                           }
                         },
@@ -1044,22 +990,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           if (!lockState.hasPin) {
                             final created = await PinLockScreen.showCreate(context);
                             if (created == true && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('PIN created successfully.'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              FeedbackService.showSuccess('PIN created successfully.');
                             }
                           } else {
                             final changed = await PinLockScreen.showChange(context);
                             if (changed == true && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('PIN changed successfully.'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              FeedbackService.showSuccess('PIN changed successfully.');
                             }
                           }
                         },

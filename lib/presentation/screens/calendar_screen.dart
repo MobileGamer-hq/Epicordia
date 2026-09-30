@@ -6,6 +6,7 @@ import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../domain/services/data_export_service.dart';
 import '../../data/providers.dart';
 import '../widgets/permission_explanation_dialog.dart';
@@ -55,12 +56,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
 
     if (mounted && path != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export saved: $fileName'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showSuccess('Export saved: $fileName');
     }
   }
 

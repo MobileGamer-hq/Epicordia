@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../domain/services/device_calendar_service.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/providers.dart';
@@ -183,12 +184,7 @@ class _DeviceSyncReviewSheetState extends ConsumerState<DeviceSyncReviewSheet> {
 
     if (mounted) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Successfully imported $importedCount items!'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      FeedbackService.showSuccess('Successfully imported $importedCount items!');
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/theme.dart';
+import '../../../core/feedback_service.dart';
 import '../../../core/utils/task_date_formatter.dart';
 import '../../../data/database/database.dart';
 import '../../../data/repository/task_repository.dart';
@@ -149,12 +150,7 @@ class _InteractiveTaskCardState extends ConsumerState<InteractiveTaskCard> {
                     onTap: () async {
                       await ref.read(taskRepositoryProvider).deleteTask(task.id);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Task deleted'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        FeedbackService.showSuccess('Task deleted');
                       }
                     },
                   ),
