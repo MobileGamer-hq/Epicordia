@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:drift/drift.dart' as drift;
+import '../../data/database/database.dart';
 import '../../data/providers.dart';
+import '../../domain/models/note_model.dart';
+import '../../domain/models/task_subitem.dart';
 import 'epi_models.dart';
 
 final epiApiServiceProvider = Provider<EpiApiService>((ref) {
@@ -27,21 +31,79 @@ class EpiApiService {
   /// CRITICAL PRIVACY INVARIANT:
   /// Notes, journal entries, or pins marked as PIN-locked (`isLocked == true`)
   /// MUST NEVER leave the device. They are strictly filtered out here.
-  Future<Map<String, dynamic>> buildContextSnapshot() async {
+  Future<Map<String, dynamic>> buildContextSnapshot({
+    String? userQuery,
+    List<EpiAttachedItem>? attachedItems,
+  }) async {
     final now = DateTime.now();
     final userName = ref.read(userNameProvider);
 
-    // 1. Gather non-locked boards
     final boardDao = ref.read(boardDaoProvider);
+    final pinDao = ref.read(pinDaoProvider);
+    final taskDao = ref.read(taskDaoProvider);
+    final timetableDao = ref.read(timetableDaoProvider);
+
+    // 1. Gather non-locked boards
     final boards = await boardDao.getAllBoards();
+    final boardMap = {for (final b in boards) b.id: b.title};
     final boardSummaries = boards.map((b) => {
       'id': b.id,
       'title': b.title,
       'viewMode': b.defaultViewMode,
     }).toList();
 
-    // 2. Count overdue tasks (excluding completed)
-    final taskDao = ref.read(taskDaoProvider);
+    // 2. "About Me" Note: Find or auto-create, strictly non-locked
+    final allNotes = await pinDao.getAllNotes();
+    PinEntity? aboutMePin;
+    for (final note in allNotes) {
+      if (note.isLocked) continue;
+      final blocks = NoteDocument.decodeBlocks(note.content ?? '');
+      if (blocks.isNotEmpty) {
+        final title = blocks.first.text.trim().toLowerCase();
+        if (title == 'about me' || title == '# about me') {
+          aboutMePin = note;
+          break;
+        }
+      }
+    }
+
+    String aboutMeContent = '';
+    if (aboutMePin == null) {
+      // Auto-create on first Epi usage so both user and Epi have it immediately
+      final newId = DateTime.now().millisecondsSinceEpoch.toString();
+      final initialBlocks = [
+        NoteBlock(type: BlockType.heading, text: 'About Me'),
+        NoteBlock(
+          type: BlockType.paragraph,
+          text: 'Preferences, routines, background, and goals learned by Epi.',
+        ),
+      ];
+      final contentJson = NoteDocument.encode(NoteDocumentPayload(blocks: initialBlocks));
+      await pinDao.insertPin(PinsCompanion.insert(
+        id: newId,
+        type: 'note',
+        content: drift.Value(contentJson),
+        tags: const drift.Value('Profile'),
+      ));
+      aboutMeContent = 'About Me\nPreferences, routines, background, and goals learned by Epi.';
+    } else {
+      final blocks = NoteDocument.decodeBlocks(aboutMePin.content ?? '');
+      aboutMeContent = NoteDocument.exportToMarkdown(blocks);
+    }
+
+    // 3. Timetable / Schedule slots
+    final allSlots = await timetableDao.getAllSlots();
+    final scheduleSlots = allSlots.map((s) => {
+      'id': s.id,
+      'title': s.title,
+      'dayOfWeek': s.dayOfWeek,
+      'startTime': s.startTime,
+      'endTime': s.endTime,
+      'location': s.location,
+      'notes': s.notes,
+    }).toList();
+
+    // 4. Tasks and Subtasks
     final allTasks = await taskDao.getAllTasks();
     final overdueCount = allTasks.where((t) {
       if (t.status.toLowerCase() == 'done') return false;
@@ -49,7 +111,6 @@ class EpiApiService {
       return t.dueDate!.isBefore(now);
     }).length;
 
-    // 3. Count today's tasks
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
     final todayTaskCount = allTasks.where((t) {
@@ -58,21 +119,147 @@ class EpiApiService {
       return t.dueDate!.isAfter(startOfDay) && t.dueDate!.isBefore(endOfDay);
     }).length;
 
-    // 4. Urgent / overdue task titles (max 2, non-locked tasks only)
     final urgentTasks = allTasks.where((t) {
       if (t.status.toLowerCase() == 'done') return false;
       if (t.dueDate == null) return false;
       return t.dueDate!.isBefore(now) || (t.dueDate!.isAfter(startOfDay) && t.dueDate!.isBefore(endOfDay));
     }).map((t) => t.title).take(2).toList();
 
-    // 5. Count unsorted items (boardId == null)
-    // Tasks unsorted:
     final unsortedTasksCount = allTasks.where((t) => t.boardId == null).length;
-
-    // Notes unsorted - ONLY non-locked notes:
-    final pinDao = ref.read(pinDaoProvider);
-    final allNotes = await pinDao.getAllNotes();
     final unsortedNotesCount = allNotes.where((p) => p.boardId == null && !p.isLocked).length;
+
+    // Filter relevant tasks for context:
+    // If user attached specific tasks: prioritize them first!
+    // Plus tasks matching keywords in userQuery, plus active tasks (todo / in_progress / due today / overdue)
+    final queryLower = (userQuery ?? '').toLowerCase();
+    const commonStopwords = {
+      'the', 'and', 'for', 'that', 'this', 'with', 'have', 'any', 'task', 'tasks',
+      'about', 'what', 'you', 'can', 'are', 'not', 'did', 'does', 'from', 'all',
+      'get', 'show', 'tell', 'see', 'look', 'find', 'there', 'some'
+    };
+    final rawTokens = queryLower
+        .split(RegExp(r'[^a-zA-Z0-9_-]+'))
+        .where((tok) => tok.length >= 2)
+        .toList();
+    final meaningfulTokens =
+        rawTokens.where((tok) => !commonStopwords.contains(tok)).toList();
+
+    final attachedTaskIds = (attachedItems ?? [])
+        .where((a) => a.type == EpiAttachedItemType.task)
+        .map((a) => a.id)
+        .toSet();
+
+    // Score and rank all tasks
+    final scoredTasks = <({TaskEntity task, int score, TaskNotesPayload decoded})>[];
+
+    for (final t in allTasks) {
+      final isAttached = attachedTaskIds.contains(t.id);
+      final decodedNotes = TaskSubitem.decodeNotes(t.notes);
+      final tTitle = t.title.toLowerCase();
+      final userNotesLower = decodedNotes.userNotes?.toLowerCase() ?? '';
+      final subtasksText =
+          decodedNotes.subitems.map((s) => s.title.toLowerCase()).join(' ');
+
+      int score = 0;
+      if (isAttached) {
+        score += 1000;
+      }
+
+      if (meaningfulTokens.isNotEmpty) {
+        for (final tok in meaningfulTokens) {
+          if (tTitle == tok) {
+            score += 100;
+          } else if (tTitle.contains(tok)) {
+            score += 50;
+          }
+          if (subtasksText.contains(tok)) {
+            score += 30;
+          }
+          if (userNotesLower.contains(tok)) {
+            score += 20;
+          }
+        }
+      }
+
+      if (t.status.toLowerCase() != 'done') {
+        score += 2;
+        if (t.dueDate != null && t.dueDate!.isBefore(endOfDay)) {
+          score += 3;
+        }
+      }
+
+      scoredTasks.add((task: t, score: score, decoded: decodedNotes));
+    }
+
+    // Sort descending by score
+    scoredTasks.sort((a, b) => b.score.compareTo(a.score));
+
+    final hasSpecificQueryMatches = scoredTasks.any((st) => st.score >= 20);
+
+    const greetingWords = {'hey', 'hi', 'hello', 'yo', 'sup', 'morning', 'afternoon', 'evening', 'howdy'};
+    final isCasualGreeting = (attachedItems == null || attachedItems.isEmpty) &&
+        (meaningfulTokens.isEmpty || meaningfulTokens.every((t) => greetingWords.contains(t)));
+
+    final taskContextList = <Map<String, dynamic>>[];
+    final maxTasks = isCasualGreeting ? 0 : (hasSpecificQueryMatches ? 10 : 15);
+
+    for (final item in scoredTasks) {
+      final t = item.task;
+      final decodedNotes = item.decoded;
+      final subtasksFormatted = decodedNotes.subitems
+          .map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}')
+          .toList();
+
+      if (hasSpecificQueryMatches && item.score < 2) continue;
+
+      taskContextList.add({
+        'id': t.id,
+        'title': t.title,
+        'status': t.status,
+        'priority': t.priority,
+        'dueDate': t.dueDate?.toIso8601String(),
+        'scheduledDate': t.scheduledDate?.toIso8601String(),
+        'boardTitle': t.boardId != null ? (boardMap[t.boardId] ?? 'Board') : 'Unsorted',
+        'subtasks': subtasksFormatted,
+        'notes': decodedNotes.userNotes,
+        if (item.score >= 20) 'isRelevantMatch': true,
+      });
+
+      if (taskContextList.length >= maxTasks) break;
+    }
+
+    // 5. Notes (strictly non-locked):
+    final noteContextList = <Map<String, dynamic>>[];
+    final attachedNoteIds = (attachedItems ?? [])
+        .where((a) => a.type == EpiAttachedItemType.note)
+        .map((a) => a.id)
+        .toSet();
+
+    for (final note in allNotes) {
+      if (note.isLocked) continue; // STRICT PRIVACY INVARIANT
+      final blocks = NoteDocument.decodeBlocks(note.content ?? '');
+      String noteTitle = 'Untitled Note';
+      String notePreview = '';
+      if (blocks.isNotEmpty) {
+        noteTitle = blocks.first.text.trim();
+        final bodyBlocks = blocks.sublist(1);
+        notePreview = bodyBlocks.map((b) => b.text).take(5).join(' ');
+      }
+
+      final isAttached = attachedNoteIds.contains(note.id);
+      final matchesQuery = meaningfulTokens.isNotEmpty && meaningfulTokens.any((tok) =>
+          noteTitle.toLowerCase().contains(tok) || notePreview.toLowerCase().contains(tok));
+
+      if (isAttached || matchesQuery) {
+        noteContextList.add({
+          'id': note.id,
+          'title': noteTitle,
+          'preview': notePreview.isNotEmpty ? notePreview : noteTitle,
+          'tags': note.tags,
+        });
+      }
+      if (noteContextList.length >= 10) break;
+    }
 
     return {
       'currentTime': now.toUtc().toIso8601String(),
@@ -83,6 +270,10 @@ class EpiApiService {
       'unsortedCount': unsortedTasksCount + unsortedNotesCount,
       'todayTaskCount': todayTaskCount,
       'urgentTaskTitles': urgentTasks,
+      'aboutMe': aboutMeContent,
+      'tasks': taskContextList,
+      'notes': noteContextList,
+      'scheduleSlots': scheduleSlots,
       'recentActions': <String>[],
     };
   }
@@ -92,6 +283,9 @@ class EpiApiService {
   Future<EpiChatResponse> sendMessage({
     required String message,
     required String sessionId,
+    List<EpiAttachedItem>? attachedItems,
+    List<EpiToolExecutionResult>? toolResults,
+    List<EpiActionCall>? inFlightToolCalls,
     String? baseUrl,
   }) async {
     if (baseUrl != null) {
@@ -99,6 +293,9 @@ class EpiApiService {
         endpoint: baseUrl,
         message: message,
         sessionId: sessionId,
+        attachedItems: attachedItems,
+        toolResults: toolResults,
+        inFlightToolCalls: inFlightToolCalls,
       );
     }
 
@@ -107,6 +304,9 @@ class EpiApiService {
         endpoint: mainEndpoint,
         message: message,
         sessionId: sessionId,
+        attachedItems: attachedItems,
+        toolResults: toolResults,
+        inFlightToolCalls: inFlightToolCalls,
       );
     } catch (_) {
       // Main API failed; try backup API
@@ -114,6 +314,9 @@ class EpiApiService {
         endpoint: backupEndpoint,
         message: message,
         sessionId: sessionId,
+        attachedItems: attachedItems,
+        toolResults: toolResults,
+        inFlightToolCalls: inFlightToolCalls,
       );
     }
   }
@@ -122,17 +325,25 @@ class EpiApiService {
     required String endpoint,
     required String message,
     required String sessionId,
+    List<EpiAttachedItem>? attachedItems,
+    List<EpiToolExecutionResult>? toolResults,
+    List<EpiActionCall>? inFlightToolCalls,
   }) async {
     final cleanEndpoint = endpoint.replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.parse('$cleanEndpoint/chat');
 
-    final contextSnapshot = await buildContextSnapshot();
+    final contextSnapshot = await buildContextSnapshot(
+      userQuery: message,
+      attachedItems: attachedItems,
+    );
 
     final body = jsonEncode({
       'message': message,
       'sessionId': sessionId,
       'userId': 'epicordia_user',
       'context': contextSnapshot,
+      if (toolResults != null) 'toolResults': toolResults.map((t) => t.toJson()).toList(),
+      if (inFlightToolCalls != null) 'inFlightToolCalls': inFlightToolCalls.map((a) => a.toJson()).toList(),
     });
 
     final response = await http
@@ -158,6 +369,9 @@ class EpiApiService {
   Stream<EpiStreamEvent> streamChat({
     required String message,
     required String sessionId,
+    List<EpiAttachedItem>? attachedItems,
+    List<EpiToolExecutionResult>? toolResults,
+    List<EpiActionCall>? inFlightToolCalls,
     String? baseUrl,
   }) async* {
     final endpointsToTry = baseUrl != null
@@ -169,12 +383,17 @@ class EpiApiService {
       statusMessage: 'Connecting to Epi...',
     );
 
-    final contextSnapshot = await buildContextSnapshot();
+    final contextSnapshot = await buildContextSnapshot(
+      userQuery: message,
+      attachedItems: attachedItems,
+    );
     final body = jsonEncode({
       'message': message,
       'sessionId': sessionId,
       'userId': 'epicordia_user',
       'context': contextSnapshot,
+      if (toolResults != null) 'toolResults': toolResults.map((t) => t.toJson()).toList(),
+      if (inFlightToolCalls != null) 'inFlightToolCalls': inFlightToolCalls.map((a) => a.toJson()).toList(),
     });
 
     yield const EpiStreamEvent(
@@ -241,10 +460,15 @@ class EpiApiService {
                           ?.map((e) => EpiActionCall.fromJson(e as Map<String, dynamic>))
                           .toList() ??
                       [];
+                  final rawStatus = json['status'] as String? ?? 'final_response';
+                  final parsedStatus = rawStatus == 'requires_tools'
+                      ? EpiResponseStatus.requiresTools
+                      : EpiResponseStatus.finalResponse;
                   yield EpiStreamEvent(
                     type: EpiStreamEventType.done,
                     fullReply: json['reply'] as String?,
                     finalActions: actionsList,
+                    status: parsedStatus,
                     modelUsed: json['modelUsed'] as String?,
                   );
                 }
@@ -270,6 +494,9 @@ class EpiApiService {
       final res = await sendMessage(
         message: message,
         sessionId: sessionId,
+        attachedItems: attachedItems,
+        toolResults: toolResults,
+        inFlightToolCalls: inFlightToolCalls,
         baseUrl: baseUrl,
       );
 
@@ -283,6 +510,7 @@ class EpiApiService {
         type: EpiStreamEventType.done,
         fullReply: res.reply,
         finalActions: res.actions,
+        status: res.status,
         modelUsed: res.modelUsed,
       );
     } catch (e) {

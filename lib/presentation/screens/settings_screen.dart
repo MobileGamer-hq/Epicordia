@@ -775,7 +775,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               SnackBar(
                                 content: Text(
                                   count > 0
-                                      ? 'Cleaned up $count completed task(s).'
+                                      ? 'Cleaned up $count completed ${count == 1 ? 'task' : 'tasks'}.'
                                       : 'No completed tasks ready for cleanup.',
                                 ),
                                 behavior: SnackBarBehavior.floating,

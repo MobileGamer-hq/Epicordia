@@ -28,15 +28,60 @@ class EpiActionCall {
       };
 }
 
+enum EpiResponseStatus {
+  requiresTools,
+  finalResponse,
+}
+
+class EpiToolExecutionResult {
+  final String toolCallId;
+  final String tool;
+  final String status; // 'success', 'failed', 'cancelled'
+  final String message;
+  final dynamic data;
+  final bool wasNoOp;
+
+  const EpiToolExecutionResult({
+    required this.toolCallId,
+    required this.tool,
+    required this.status,
+    this.message = '',
+    this.data,
+    this.wasNoOp = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'toolCallId': toolCallId,
+        'tool': tool,
+        'status': status,
+        'message': message,
+        if (data != null) 'data': data,
+        'wasNoOp': wasNoOp,
+      };
+
+  factory EpiToolExecutionResult.fromJson(Map<String, dynamic> json) {
+    return EpiToolExecutionResult(
+      toolCallId: json['toolCallId'] as String? ?? '',
+      tool: json['tool'] as String? ?? '',
+      status: json['status'] as String? ?? 'success',
+      message: json['message'] as String? ?? '',
+      data: json['data'],
+      wasNoOp: json['wasNoOp'] as bool? ?? false,
+    );
+  }
+}
+
 class EpiChatResponse {
   final String reply;
   final List<EpiActionCall> actions;
+  final EpiResponseStatus status;
   final String sessionId;
   final String modelUsed;
 
   const EpiChatResponse({
     required this.reply,
     required this.actions,
+    this.status = EpiResponseStatus.finalResponse,
     required this.sessionId,
     required this.modelUsed,
   });
@@ -47,9 +92,15 @@ class EpiChatResponse {
             .toList() ??
         [];
 
+    final rawStatus = json['status'] as String? ?? 'final_response';
+    final parsedStatus = rawStatus == 'requires_tools'
+        ? EpiResponseStatus.requiresTools
+        : EpiResponseStatus.finalResponse;
+
     return EpiChatResponse(
       reply: json['reply'] as String? ?? '',
       actions: actionsList,
+      status: parsedStatus,
       sessionId: json['sessionId'] as String? ?? '',
       modelUsed: json['modelUsed'] as String? ?? '',
     );
@@ -69,6 +120,8 @@ class EpiActionExecutionRecord {
   final String message;
   final String? createdEntityId;
   final List<String> entityIds;
+  final dynamic outputData;
+  final bool wasNoOp;
   final DateTime timestamp;
 
   const EpiActionExecutionRecord({
@@ -77,6 +130,8 @@ class EpiActionExecutionRecord {
     required this.message,
     this.createdEntityId,
     this.entityIds = const [],
+    this.outputData,
+    this.wasNoOp = false,
     required this.timestamp,
   });
 
@@ -86,6 +141,8 @@ class EpiActionExecutionRecord {
         'message': message,
         'createdEntityId': createdEntityId,
         'entityIds': entityIds,
+        if (outputData != null) 'outputData': outputData,
+        'wasNoOp': wasNoOp,
         'timestamp': timestamp.toIso8601String(),
       };
 
@@ -100,6 +157,7 @@ class EpiActionExecutionRecord {
       createdEntityId: json['createdEntityId'] as String?,
       entityIds: (json['entityIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
           (json['createdEntityId'] != null ? [json['createdEntityId'].toString()] : const []),
+      outputData: json['outputData'],
       timestamp: json['timestamp'] != null
           ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -111,6 +169,7 @@ class EpiActionExecutionRecord {
     String? message,
     String? createdEntityId,
     List<String>? entityIds,
+    dynamic outputData,
   }) {
     return EpiActionExecutionRecord(
       action: action,
@@ -118,6 +177,7 @@ class EpiActionExecutionRecord {
       message: message ?? this.message,
       createdEntityId: createdEntityId ?? this.createdEntityId,
       entityIds: entityIds ?? this.entityIds,
+      outputData: outputData ?? this.outputData,
       timestamp: timestamp,
     );
   }
@@ -175,14 +235,45 @@ class EpiConversation {
   }
 }
 
+enum EpiTimelineStepStatus { running, success, failed, cancelled }
+
+class EpiTimelineStep {
+  final String id;
+  final String title;
+  final EpiTimelineStepStatus status;
+  final DateTime timestamp;
+
+  const EpiTimelineStep({
+    required this.id,
+    required this.title,
+    required this.status,
+    required this.timestamp,
+  });
+
+  EpiTimelineStep copyWith({
+    String? title,
+    EpiTimelineStepStatus? status,
+    DateTime? timestamp,
+  }) {
+    return EpiTimelineStep(
+      id: id,
+      title: title ?? this.title,
+      status: status ?? this.status,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+}
+
 class EpiChatMessage {
   final String id;
   final String text;
   final bool isUser;
   final DateTime timestamp;
   final List<EpiActionExecutionRecord> actionRecords;
+  final List<EpiTimelineStep> timelineSteps;
   final String? modelUsed;
   final bool isStreaming;
+  final bool isWorking;
 
   const EpiChatMessage({
     required this.id,
@@ -190,15 +281,19 @@ class EpiChatMessage {
     required this.isUser,
     required this.timestamp,
     this.actionRecords = const [],
+    this.timelineSteps = const [],
     this.modelUsed,
     this.isStreaming = false,
+    this.isWorking = false,
   });
 
   EpiChatMessage copyWith({
     String? text,
     List<EpiActionExecutionRecord>? actionRecords,
+    List<EpiTimelineStep>? timelineSteps,
     String? modelUsed,
     bool? isStreaming,
+    bool? isWorking,
   }) {
     return EpiChatMessage(
       id: id,
@@ -206,8 +301,10 @@ class EpiChatMessage {
       isUser: isUser,
       timestamp: timestamp,
       actionRecords: actionRecords ?? this.actionRecords,
+      timelineSteps: timelineSteps ?? this.timelineSteps,
       modelUsed: modelUsed ?? this.modelUsed,
       isStreaming: isStreaming ?? this.isStreaming,
+      isWorking: isWorking ?? this.isWorking,
     );
   }
 }
@@ -221,6 +318,7 @@ class EpiStreamEvent {
   final EpiActionCall? action;
   final String? fullReply;
   final List<EpiActionCall>? finalActions;
+  final EpiResponseStatus? status;
   final String? modelUsed;
   final String? errorMessage;
 
@@ -231,6 +329,7 @@ class EpiStreamEvent {
     this.action,
     this.fullReply,
     this.finalActions,
+    this.status,
     this.modelUsed,
     this.errorMessage,
   });
@@ -271,4 +370,22 @@ class ProactiveCheckinResult {
       modelUsed: json['modelUsed'] as String?,
     );
   }
+}
+
+enum EpiAttachedItemType { note, task, schedule }
+
+class EpiAttachedItem {
+  final String id;
+  final String title;
+  final EpiAttachedItemType type;
+  final String? preview;
+  final Map<String, dynamic>? extraData;
+
+  const EpiAttachedItem({
+    required this.id,
+    required this.title,
+    required this.type,
+    this.preview,
+    this.extraData,
+  });
 }

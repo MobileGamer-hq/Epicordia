@@ -33,12 +33,11 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
-  String? _selectedBoardContext;
+  final List<EpiAttachedItem> _attachedItems = [];
 
   @override
   void initState() {
     super.initState();
-    _selectedBoardContext = widget.initialBoardContext;
     if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _handleSend(widget.initialPrompt!.trim());
@@ -77,15 +76,19 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     final rawText = textOverride ?? _textController.text;
     if (rawText.trim().isEmpty) return;
 
-    var textToSend = rawText.trim();
-    if (_selectedBoardContext != null && textOverride == null) {
-      textToSend = '[Context Board: $_selectedBoardContext] $textToSend';
-    }
+    final textToSend = rawText.trim();
 
     if (textOverride == null) {
       _textController.clear();
     }
-    ref.read(epiChatProvider.notifier).sendMessage(textToSend, context);
+    final attachedSnapshot = List<EpiAttachedItem>.from(_attachedItems);
+    setState(() => _attachedItems.clear());
+
+    ref.read(epiChatProvider.notifier).sendMessage(
+      textToSend,
+      context,
+      attachedItems: attachedSnapshot,
+    );
     _scrollToBottom();
   }
 
@@ -210,7 +213,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
               color: textSecondary,
               onPressed: () {
                 ref.read(epiChatProvider.notifier).clearChat();
-                setState(() => _selectedBoardContext = null);
+                setState(() => _attachedItems.clear());
               },
             ),
             const SizedBox(width: 8),
@@ -266,23 +269,39 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   _buildPillButton(
-                    icon: _selectedBoardContext == null ? Icons.add_rounded : Icons.dashboard_outlined,
-                    label: _selectedBoardContext == null ? 'Add Board Context' : 'Board: $_selectedBoardContext',
-                    trailingIcon: _selectedBoardContext == null ? null : Icons.close_rounded,
-                    isSelected: _selectedBoardContext != null,
+                    icon: Icons.description_outlined,
+                    label: '+ Note',
                     isDark: isDark,
                     cardBg: cardBg,
                     borderClr: borderClr,
                     textPrimary: textPrimary,
                     textSecondary: textSecondary,
                     activeBlue: activeBlue,
-                    onTap: () {
-                      if (_selectedBoardContext != null) {
-                        setState(() => _selectedBoardContext = null);
-                      } else {
-                        _showBoardPicker(cardBg, textPrimary, textSecondary, borderClr, activeBlue);
-                      }
-                    },
+                    onTap: () => _showNotePicker(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildPillButton(
+                    icon: Icons.check_circle_outline_rounded,
+                    label: '+ Task',
+                    isDark: isDark,
+                    cardBg: cardBg,
+                    borderClr: borderClr,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    activeBlue: activeBlue,
+                    onTap: () => _showTaskPicker(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildPillButton(
+                    icon: Icons.calendar_today_outlined,
+                    label: '+ Schedule',
+                    isDark: isDark,
+                    cardBg: cardBg,
+                    borderClr: borderClr,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    activeBlue: activeBlue,
+                    onTap: () => _showSchedulePicker(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
                   ),
                   const SizedBox(width: 8),
                   _buildPillButton(
@@ -296,7 +315,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                     activeBlue: activeBlue,
                     onTap: () {
                       ref.read(epiChatProvider.notifier).clearChat();
-                      setState(() => _selectedBoardContext = null);
+                      setState(() => _attachedItems.clear());
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Thread wiped. Fresh start!'),
@@ -333,6 +352,69 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                 ],
               ),
             ),
+
+            // Attached Context Items Chips Bar
+            if (_attachedItems.isNotEmpty)
+              Container(
+                height: 32,
+                margin: const EdgeInsets.only(bottom: 6),
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _attachedItems.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 6),
+                  itemBuilder: (context, index) {
+                    final item = _attachedItems[index];
+                    final IconData icon;
+                    switch (item.type) {
+                      case EpiAttachedItemType.note:
+                        icon = Icons.description_outlined;
+                        break;
+                      case EpiAttachedItemType.task:
+                        icon = Icons.check_circle_outline_rounded;
+                        break;
+                      case EpiAttachedItemType.schedule:
+                        icon = Icons.calendar_today_outlined;
+                        break;
+                    }
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: activeBlue.withValues(alpha: isDark ? 0.2 : 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: activeBlue.withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, size: 12, color: activeBlue),
+                          const SizedBox(width: 5),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160),
+                            child: Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: activeBlue,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _attachedItems.removeAt(index));
+                            },
+                            child: Icon(Icons.close_rounded, size: 13, color: activeBlue),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
 
             // Bottom Pill Input Bar
             Padding(
@@ -419,8 +501,6 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     Color borderClr,
     Color activeBlue,
   ) {
-    final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
-
     if (message.isUser) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 16),
@@ -449,7 +529,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     }
 
     // Epi's message
-    if (message.text.trim().isEmpty && message.actionRecords.isEmpty) {
+    if (message.text.trim().isEmpty && message.actionRecords.isEmpty && message.timelineSteps.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -468,6 +548,10 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Timeline steps (dull, muted) shown while working or after
+                if (message.timelineSteps.isNotEmpty)
+                  _buildTimelineTile(message.timelineSteps, message.isWorking, isDark),
+
                 if (message.text.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2, bottom: 4),
@@ -479,18 +563,243 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                     ),
                   ),
 
-                // Executed / Staged Actions Cards
-                if (message.actionRecords.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  for (final record in message.actionRecords)
-                    _buildActionItem(record, isDark, cardBg, textPrimary, textSecondary, textTertiary, borderClr, activeBlue),
-                ],
+                // Rich output chips for queried/created entities
+                if (!message.isWorking && message.actionRecords.isNotEmpty)
+                  _buildRichOutputChips(message.actionRecords, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Subtle timeline of intermediate tool steps: spinning when running, check when done.
+  Widget _buildTimelineTile(List<EpiTimelineStep> steps, bool isWorking, bool isDark) {
+    final dullColor = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: steps.map((step) {
+          final isRunning = step.status == EpiTimelineStepStatus.running;
+          final isSuccess = step.status == EpiTimelineStepStatus.success;
+          final isCancelled = step.status == EpiTimelineStepStatus.cancelled;
+
+          final Color stepColor = isRunning
+              ? dullColor.withValues(alpha: 0.6)
+              : isSuccess
+                  ? dullColor.withValues(alpha: 0.75)
+                  : dullColor.withValues(alpha: 0.5);
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isRunning)
+                  SizedBox(
+                    width: 10,
+                    height: 10,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(stepColor),
+                    ),
+                  )
+                else
+                  Icon(
+                    isSuccess
+                        ? Icons.check_rounded
+                        : isCancelled
+                            ? Icons.remove_circle_outline_rounded
+                            : Icons.error_outline_rounded,
+                    size: 11,
+                    color: stepColor,
+                  ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    step.title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: stepColor,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// Compact rich output chips for tasks/notes found or created by Epi.
+  Widget _buildRichOutputChips(
+    List<EpiActionExecutionRecord> records,
+    bool isDark,
+    Color cardBg,
+    Color textPrimary,
+    Color textSecondary,
+    Color borderClr,
+    Color activeBlue,
+  ) {
+    // Only show chips for records that produced data
+    final richRecords = records.where((r) {
+      if (r.status != ActionExecutionStatus.success) return false;
+      if (r.outputData == null) return false;
+      final data = r.outputData;
+      if (data is List && data.isEmpty) return false;
+      if (data is Map && data.isEmpty) return false;
+      return true;
+    }).toList();
+
+    if (richRecords.isEmpty) return const SizedBox.shrink();
+
+    final chips = <Widget>[];
+    final seenKeys = <String>{};
+
+    for (final record in richRecords) {
+      final tool = record.action.tool;
+      final data = record.outputData;
+
+      if (data is List) {
+        for (final item in data.take(5)) {
+          if (item is Map<String, dynamic>) {
+            final title = item['title'] as String? ?? item['name'] as String? ?? '';
+            if (title.isEmpty) continue;
+            final key = '${item['id'] ?? ''}_$title';
+            if (seenKeys.contains(key)) continue;
+            seenKeys.add(key);
+
+            IconData icon;
+            if (tool.contains('task')) {
+              icon = Icons.check_circle_outline_rounded;
+            } else if (tool.contains('note')) {
+              icon = Icons.description_outlined;
+            } else if (tool.contains('board') || tool.contains('project')) {
+              icon = Icons.folder_outlined;
+            } else {
+              icon = Icons.calendar_today_outlined;
+            }
+
+            chips.add(_buildResultChip(title, icon, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue, extraData: item));
+          }
+        }
+      } else if (data is Map<String, dynamic>) {
+        final title = data['title'] as String? ?? data['name'] as String? ?? '';
+        if (title.isNotEmpty) {
+          final key = '${data['id'] ?? ''}_$title';
+          if (seenKeys.contains(key)) continue;
+          seenKeys.add(key);
+
+          IconData icon;
+          if (tool.contains('task')) {
+            icon = Icons.check_circle_outline_rounded;
+          } else if (tool.contains('note')) {
+            icon = Icons.description_outlined;
+          } else {
+            icon = Icons.star_outline_rounded;
+          }
+          chips.add(_buildResultChip(title, icon, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue, extraData: data));
+        }
+      }
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: chips,
+      ),
+    );
+  }
+
+  Widget _buildResultChip(
+    String title,
+    IconData icon,
+    bool isDark,
+    Color cardBg,
+    Color textPrimary,
+    Color textSecondary,
+    Color borderClr,
+    Color activeBlue, {
+    Map<String, dynamic>? extraData,
+  }) {
+    final dueDate = extraData?['dueDate'] as String?;
+    final status = extraData?['status'] as String?;
+    final priority = extraData?['priority'] as String?;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark
+            ? EpicordiaColors.surfaceSunkenDark
+            : EpicordiaColors.surfaceSunkenLight,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderClr),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: activeBlue.withValues(alpha: 0.8)),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: textPrimary,
+                  ),
+                ),
+                if (dueDate != null || status != null || priority != null)
+                  Text(
+                    [
+                      ?status,
+                      ?priority,
+                      if (dueDate != null) _formatDueDateShort(dueDate),
+                    ].join(' · '),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDueDateShort(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate).toLocal();
+      final now = DateTime.now();
+      final diff = dt.difference(DateTime(now.year, now.month, now.day)).inDays;
+      if (diff == 0) return 'today';
+      if (diff == 1) return 'tomorrow';
+      if (diff == -1) return 'yesterday';
+      if (diff < 0) return '${diff.abs()}d overdue';
+      if (diff <= 7) return 'in ${diff}d';
+      return '${dt.day}/${dt.month}';
+    } catch (_) {
+      return isoDate;
+    }
   }
 
   Widget _buildActivityStatusIndicator(String statusText, bool isDark) {
@@ -528,170 +837,16 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     );
   }
 
-  Widget _buildActionItem(
-    EpiActionExecutionRecord record,
-    bool isDark,
-    Color cardBg,
-    Color textPrimary,
-    Color textSecondary,
-    Color textTertiary,
-    Color borderClr,
-    Color activeBlue,
-  ) {
-    final tool = record.action.tool;
-
-    if ((tool == 'create_task' ||
-            tool == 'update_task' ||
-            tool == 'set_task_status' ||
-            tool == 'add_subtasks' ||
-            tool == 'break_down_task' ||
-            tool == 'link_tasks' ||
-            tool == 'triage_unsorted' ||
-            tool == 'query_tasks' ||
-            tool == 'get_today_overview') &&
-        record.entityIds.isNotEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildActionStatusCard(record, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue),
-          for (final taskId in record.entityIds)
-            _EpiChatTaskCard(
-              taskId: taskId,
-              isDark: isDark,
-              cardBg: cardBg,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              textTertiary: textTertiary,
-              borderClr: borderClr,
-              activeBlue: activeBlue,
-            ),
-        ],
-      );
-    }
-
-    if ((tool == 'create_note' || tool == 'query_notes') && record.entityIds.isNotEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildActionStatusCard(record, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue),
-          for (final noteId in record.entityIds)
-            _EpiChatNoteCard(
-              noteId: noteId,
-              isDark: isDark,
-              cardBg: cardBg,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              textTertiary: textTertiary,
-              borderClr: borderClr,
-              activeBlue: activeBlue,
-            ),
-        ],
-      );
-    }
-
-    return _buildActionStatusCard(record, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue);
-  }
-
-  Widget _buildActionStatusCard(
-    EpiActionExecutionRecord record,
-    bool isDark,
-    Color cardBg,
-    Color textPrimary,
-    Color textSecondary,
-    Color borderClr,
-    Color activeBlue,
-  ) {
-    IconData icon;
-    Color iconColor;
-    String badgeText;
-    Color badgeBg;
-
-    final warningColor = isDark ? EpicordiaColors.warningDark : EpicordiaColors.warningLight;
-    final errorColor = isDark ? EpicordiaColors.errorDark : EpicordiaColors.errorLight;
-
-    switch (record.status) {
-      case ActionExecutionStatus.success:
-        badgeText = 'Completed';
-        badgeBg = activeBlue.withValues(alpha: isDark ? 0.2 : 0.12);
-        iconColor = activeBlue;
-        break;
-      case ActionExecutionStatus.cancelled:
-        badgeText = 'Cancelled';
-        badgeBg = warningColor.withValues(alpha: 0.15);
-        iconColor = warningColor;
-        break;
-      case ActionExecutionStatus.failed:
-        badgeText = 'Failed';
-        badgeBg = errorColor.withValues(alpha: 0.15);
-        iconColor = errorColor;
-        break;
-      case ActionExecutionStatus.pending:
-        badgeText = 'Pending';
-        badgeBg = activeBlue.withValues(alpha: 0.12);
-        iconColor = activeBlue;
-        break;
-    }
-
-    if (record.action.tool.contains('task')) {
-      icon = Icons.check_circle_outline_rounded;
-    } else if (record.action.tool.contains('note')) {
-      icon = Icons.description_outlined;
-    } else {
-      icon = Icons.auto_awesome;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderClr),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  record.message,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
-                ),
-                Text(
-                  'Tool: ${record.action.tool} • Tier: ${record.action.tier}',
-                  style: TextStyle(fontSize: 11, color: textSecondary),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: badgeBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              badgeText,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: iconColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showBoardPicker(Color cardBg, Color textPrimary, Color textSecondary, Color borderClr, Color activeBlue) async {
-    final boardDao = ref.read(boardDaoProvider);
-    final boards = await boardDao.getAllBoards();
+  Future<void> _showNotePicker(Color cardBg, Color textPrimary, Color textSecondary, Color borderClr, Color activeBlue) async {
+    final pinDao = ref.read(pinDaoProvider);
+    final allNotes = await pinDao.getAllNotes();
+    final nonLockedNotes = allNotes.where((n) => !n.isLocked).toList();
 
     if (!mounted) return;
 
-    if (boards.isEmpty) {
+    if (nonLockedNotes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No boards found. Create a board first!')),
+        const SnackBar(content: Text('No notes found. Create a note first!')),
       );
       return;
     }
@@ -713,24 +868,17 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Icon(Icons.description_outlined, color: activeBlue, size: 20),
+                      const SizedBox(width: 8),
                       Text(
-                        'Select Board Context',
+                        'Attach Note Context',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: textPrimary,
                         ),
                       ),
-                      if (_selectedBoardContext != null)
-                        TextButton(
-                          onPressed: () {
-                            setState(() => _selectedBoardContext = null);
-                            Navigator.pop(ctx);
-                          },
-                          child: const Text('Clear'),
-                        ),
                     ],
                   ),
                 ),
@@ -738,33 +886,277 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                 Flexible(
                   child: ListView.builder(
                     shrinkWrap: true,
-                    itemCount: boards.length,
+                    itemCount: nonLockedNotes.length,
                     itemBuilder: (context, index) {
-                      final b = boards[index];
-                      final isSelected = _selectedBoardContext == b.title;
+                      final n = nonLockedNotes[index];
+                      final blocks = NoteDocument.decodeBlocks(n.content ?? '');
+                      final title = blocks.isNotEmpty && blocks.first.text.trim().isNotEmpty
+                          ? blocks.first.text.trim()
+                          : 'Untitled Note';
+                      final preview = blocks.length > 1
+                          ? blocks.sublist(1).map((b) => b.text).take(3).join(' ')
+                          : '';
+
+                      final isAttached = _attachedItems.any((a) => a.id == n.id);
+
                       return ListTile(
                         leading: Icon(
-                          Icons.dashboard_outlined,
-                          color: isSelected ? activeBlue : textSecondary,
+                          Icons.description_outlined,
+                          color: isAttached ? activeBlue : textSecondary,
                         ),
                         title: Text(
-                          b.title,
+                          title,
                           style: TextStyle(
                             color: textPrimary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isAttached ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
-                        trailing: isSelected
-                            ? Icon(Icons.check_rounded, color: activeBlue)
+                        subtitle: preview.isNotEmpty
+                            ? Text(preview, maxLines: 1, overflow: TextOverflow.ellipsis)
                             : null,
+                        trailing: isAttached ? Icon(Icons.check_rounded, color: activeBlue) : null,
                         onTap: () {
-                          setState(() => _selectedBoardContext = b.title);
+                          if (!isAttached) {
+                            setState(() {
+                              _attachedItems.add(EpiAttachedItem(
+                                id: n.id,
+                                title: title,
+                                type: EpiAttachedItemType.note,
+                                preview: preview,
+                              ));
+                            });
+                          }
                           Navigator.pop(ctx);
                         },
                       );
                     },
                   ),
                 ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showTaskPicker(Color cardBg, Color textPrimary, Color textSecondary, Color borderClr, Color activeBlue) async {
+    final taskDao = ref.read(taskDaoProvider);
+    final allTasks = await taskDao.getAllTasks();
+
+    if (!mounted) return;
+
+    if (allTasks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No tasks found. Create a task first!')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle_outline_rounded, color: activeBlue, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Attach Task Context',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: allTasks.length,
+                    itemBuilder: (context, index) {
+                      final t = allTasks[index];
+                      final isAttached = _attachedItems.any((a) => a.id == t.id);
+
+                      return ListTile(
+                        leading: Icon(
+                          Icons.task_alt_rounded,
+                          color: isAttached ? activeBlue : textSecondary,
+                        ),
+                        title: Text(
+                          t.title,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontWeight: isAttached ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Status: ${t.status} • Priority: ${t.priority}',
+                          style: TextStyle(fontSize: 12, color: textSecondary),
+                        ),
+                        trailing: isAttached ? Icon(Icons.check_rounded, color: activeBlue) : null,
+                        onTap: () {
+                          if (!isAttached) {
+                            setState(() {
+                              _attachedItems.add(EpiAttachedItem(
+                                id: t.id,
+                                title: t.title,
+                                type: EpiAttachedItemType.task,
+                                preview: t.notes,
+                              ));
+                            });
+                          }
+                          Navigator.pop(ctx);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showSchedulePicker(Color cardBg, Color textPrimary, Color textSecondary, Color borderClr, Color activeBlue) async {
+    final timetableDao = ref.read(timetableDaoProvider);
+    final allSlots = await timetableDao.getAllSlots();
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today_outlined, color: activeBlue, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Attach Schedule Context',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: Icon(Icons.today_rounded, color: activeBlue),
+                  title: Text(
+                    "Today's Schedule",
+                    style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text("Attach today's timetable blocks and routine", style: TextStyle(color: textSecondary, fontSize: 12)),
+                  onTap: () {
+                    setState(() {
+                      if (!_attachedItems.any((a) => a.id == 'sched_today')) {
+                        _attachedItems.add(const EpiAttachedItem(
+                          id: 'sched_today',
+                          title: "Today's Schedule",
+                          type: EpiAttachedItemType.schedule,
+                        ));
+                      }
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.calendar_view_week_rounded, color: activeBlue),
+                  title: Text(
+                    "Weekly Timetable",
+                    style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text("Attach full weekly timetable schedule", style: TextStyle(color: textSecondary, fontSize: 12)),
+                  onTap: () {
+                    setState(() {
+                      if (!_attachedItems.any((a) => a.id == 'sched_week')) {
+                        _attachedItems.add(const EpiAttachedItem(
+                          id: 'sched_week',
+                          title: "Weekly Timetable",
+                          type: EpiAttachedItemType.schedule,
+                        ));
+                      }
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+                if (allSlots.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                    child: Text(
+                      'Specific Slots',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textSecondary),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: allSlots.length,
+                      itemBuilder: (context, index) {
+                        final slot = allSlots[index];
+                        final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                        final dayLabel = (slot.dayOfWeek >= 1 && slot.dayOfWeek <= 7)
+                            ? days[slot.dayOfWeek - 1]
+                            : 'Day ${slot.dayOfWeek}';
+                        final label = '$dayLabel ${slot.startTime}-${slot.endTime}: ${slot.title}';
+                        final isAttached = _attachedItems.any((a) => a.id == slot.id);
+
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(Icons.access_time_rounded, size: 18, color: isAttached ? activeBlue : textSecondary),
+                          title: Text(label, style: TextStyle(fontSize: 13, color: textPrimary)),
+                          trailing: isAttached ? Icon(Icons.check_rounded, color: activeBlue, size: 18) : null,
+                          onTap: () {
+                            if (!isAttached) {
+                              setState(() {
+                                _attachedItems.add(EpiAttachedItem(
+                                  id: slot.id,
+                                  title: '${slot.title} ($dayLabel)',
+                                  type: EpiAttachedItemType.schedule,
+                                  preview: '${slot.startTime}-${slot.endTime} ${slot.location ?? ""}',
+                                ));
+                              });
+                            }
+                            Navigator.pop(ctx);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -879,7 +1271,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                           TextButton.icon(
                             onPressed: () {
                               notifier.clearChat();
-                              setState(() => _selectedBoardContext = null);
+                              setState(() => _attachedItems.clear());
                               Navigator.pop(ctx);
                             },
                             icon: const Icon(Icons.add_rounded, size: 16),
@@ -989,6 +1381,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
   }
 }
 
+// ignore: unused_element
 class _EpiChatTaskCard extends ConsumerWidget {
   final String taskId;
   final bool isDark;
@@ -1223,6 +1616,7 @@ class _EpiChatTaskCard extends ConsumerWidget {
   }
 }
 
+// ignore: unused_element
 class _EpiChatNoteCard extends ConsumerWidget {
   final String noteId;
   final bool isDark;

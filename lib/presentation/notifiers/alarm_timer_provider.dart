@@ -394,7 +394,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         androidFullScreenIntent: true,
         notificationSettings: NotificationSettings(
           title: 'Snoozed: ${event?.title ?? "Alarm"}',
-          body: 'Ringing again in ${snoozeDuration.inMinutes} minute(s)',
+          body: 'Ringing again in ${snoozeDuration.inMinutes} ${snoozeDuration.inMinutes == 1 ? 'minute' : 'minutes'}',
           stopButton: 'Stop',
         ),
       );

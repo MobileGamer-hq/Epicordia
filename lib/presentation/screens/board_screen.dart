@@ -1093,7 +1093,7 @@ class _CanvasToolbar extends ConsumerWidget {
       // Delete Selection
       _ToolButton(
         icon: Icons.delete_outline_rounded,
-        tooltip: 'Delete selected pin(s)',
+        tooltip: 'Delete selected items',
         onTap: onDelete,
         isDanger: true,
       ),
