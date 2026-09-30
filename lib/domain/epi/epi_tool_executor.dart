@@ -63,6 +63,9 @@ class EpiToolExecutor {
         case 'create_note':
           return await _executeCreateNote(action);
 
+        case 'update_note':
+          return await _executeUpdateNote(action);
+
         case 'delete_note':
           return await _executeDeleteNote(action);
 
@@ -99,6 +102,9 @@ class EpiToolExecutor {
 
         case 'create_schedule_slot':
           return await _executeCreateScheduleSlot(action);
+
+        case 'update_schedule_slot':
+          return await _executeUpdateScheduleSlot(action);
 
         case 'delete_schedule_slot':
           return await _executeDeleteScheduleSlot(action);
@@ -429,6 +435,120 @@ class EpiToolExecutor {
     );
   }
 
+  Future<EpiActionExecutionRecord> _executeUpdateNote(EpiActionCall action) async {
+    final noteId = action.parameters['note_id']?.toString();
+    if (noteId == null) throw Exception('note_id is required for update_note');
+
+    final pinDao = ref.read(pinDaoProvider);
+    final pinRepo = ref.read(pinRepositoryProvider);
+    final existing = await pinDao.getPin(noteId);
+    if (existing == null) throw Exception('Note $noteId not found');
+    if (existing.isLocked) throw Exception('Cannot modify locked note');
+
+    final prevPin = existing;
+    final currentPayload = NoteDocument.decode(existing.content ?? '');
+    var blocks = List<NoteBlock>.from(currentPayload.blocks);
+
+    final rawTitle = action.parameters['title']?.toString();
+    final title = rawTitle != null ? _stripDashes(rawTitle) : null;
+
+    final rawMarkdown = action.parameters['markdown']?.toString();
+    final markdown = rawMarkdown != null ? _stripDashes(rawMarkdown) : null;
+
+    final rawAppend = action.parameters['append_markdown']?.toString();
+    final appendMarkdown = rawAppend != null ? _stripDashes(rawAppend) : null;
+
+    final rawTags = action.parameters['tags'] ?? action.parameters['tag'];
+    final tags = rawTags is List ? rawTags.map((t) => t.toString()).join(', ') : rawTags?.toString();
+
+    final boardId = action.parameters['board_id']?.toString();
+
+    final updatedFields = <String>[];
+
+    if (markdown != null) {
+      final newBlocks = <NoteBlock>[];
+      final effectiveTitle = title ?? NoteDocument.extractTitle(existing.content ?? '');
+      if (effectiveTitle.isNotEmpty && effectiveTitle != 'Untitled Note') {
+        newBlocks.add(NoteBlock(type: BlockType.heading, text: effectiveTitle));
+      }
+      newBlocks.addAll(NoteDocument.parseLegacyMarkdown(markdown));
+      blocks = newBlocks;
+      updatedFields.add('markdown');
+      if (title != null) updatedFields.add('title');
+    } else {
+      if (title != null) {
+        if (blocks.isNotEmpty && blocks.first.type == BlockType.heading) {
+          blocks[0] = blocks.first.copyWith(text: title);
+        } else {
+          blocks.insert(0, NoteBlock(type: BlockType.heading, text: title));
+        }
+        updatedFields.add('title');
+      }
+      if (appendMarkdown != null && appendMarkdown.isNotEmpty) {
+        blocks.addAll(NoteDocument.parseLegacyMarkdown(appendMarkdown));
+        updatedFields.add('append_markdown');
+      }
+    }
+
+    final newContentJson = NoteDocument.encode(NoteDocumentPayload(
+      blocks: blocks,
+      drawing: currentPayload.drawing,
+    ));
+
+    var updated = existing.copyWith(
+      content: drift.Value(newContentJson),
+      modifiedAt: DateTime.now(),
+    );
+
+    if (tags != null) {
+      updated = updated.copyWith(tags: drift.Value(tags));
+      updatedFields.add('tags');
+    }
+
+    if (boardId != null) {
+      updated = updated.copyWith(boardId: drift.Value(boardId.isEmpty ? null : boardId));
+      updatedFields.add('board_id');
+    }
+
+    final wasNoOp = updatedFields.isEmpty ||
+        (existing.content == updated.content &&
+         existing.tags == updated.tags &&
+         existing.boardId == updated.boardId);
+
+    await pinRepo.updatePin(updated);
+
+    final finalTitle = NoteDocument.extractTitle(updated.content ?? '');
+
+    // Record in Action Log for undo
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      entityId: noteId,
+      summary: 'Updated note "$finalTitle"',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        await pinRepo.updatePin(prevPin);
+      },
+    ));
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Updated note "$finalTitle"',
+      createdEntityId: noteId,
+      entityIds: [noteId],
+      wasNoOp: wasNoOp,
+      outputData: {
+        'id': noteId,
+        'title': finalTitle,
+        'updatedFields': updatedFields,
+      },
+      timestamp: DateTime.now(),
+    );
+  }
+
   Future<EpiActionExecutionRecord> _executeDeleteNote(EpiActionCall action) async {
     final noteId = action.parameters['note_id']?.toString();
     if (noteId == null) throw Exception('note_id is required');
@@ -539,10 +659,16 @@ class EpiToolExecutor {
     }
 
     final matchingIds = results.map((n) => n.id).take(5).toList();
-    final notesData = results.take(10).map((n) => {
-      'id': n.id,
-      'title': NoteDocument.decodeBlocks(n.content ?? '').firstOrNull?.text.trim() ?? 'Untitled',
-      'tags': n.tags,
+    final notesData = results.take(10).map((n) {
+      final payload = NoteDocument.decode(n.content ?? '');
+      final title = NoteDocument.extractTitle(n.content ?? '');
+      final markdown = NoteDocument.exportToMarkdown(payload.blocks);
+      return {
+        'id': n.id,
+        'title': title,
+        'tags': n.tags,
+        'content': markdown,
+      };
     }).toList();
 
     return EpiActionExecutionRecord(
@@ -884,8 +1010,7 @@ class EpiToolExecutor {
 
     final alarmNotifier = ref.read(alarmTimerProvider.notifier);
     final activeTimer = ref.read(alarmTimerProvider).activeTimer;
-    if (activeTimer != null &&
-        activeTimer.state == TimerState.running &&
+    if (activeTimer.state == TimerState.running &&
         activeTimer.label != null &&
         activeTimer.label!.toLowerCase().trim() == label.toLowerCase().trim()) {
       return EpiActionExecutionRecord(
@@ -1090,6 +1215,103 @@ class EpiToolExecutor {
     );
   }
 
+  Future<EpiActionExecutionRecord> _executeUpdateScheduleSlot(EpiActionCall action) async {
+    final slotId = action.parameters['slot_id']?.toString();
+    if (slotId == null) throw Exception('slot_id is required for update_schedule_slot');
+
+    final timetableDao = ref.read(timetableDaoProvider);
+    final allSlots = await timetableDao.getAllSlots();
+    final existing = allSlots.where((s) => s.id == slotId).firstOrNull;
+    if (existing == null) throw Exception('Schedule slot $slotId not found');
+
+    final prevSlot = existing;
+
+    final rawTitle = action.parameters['title']?.toString();
+    final title = rawTitle != null ? _stripDashes(rawTitle) : existing.title;
+
+    final dayOfWeek = (action.parameters['day_of_week'] as num?)?.toInt() ?? existing.dayOfWeek;
+    final startTime = action.parameters['start_time']?.toString() ?? existing.startTime;
+    final endTime = action.parameters['end_time']?.toString() ?? existing.endTime;
+
+    final rawLoc = action.parameters['location'];
+    final location = rawLoc != null ? rawLoc.toString() : existing.location;
+
+    final rawNotes = action.parameters['notes'];
+    final notes = rawNotes != null ? _stripDashes(rawNotes.toString()) : existing.notes;
+
+    final updatedFields = <String>[];
+    if (rawTitle != null && rawTitle != existing.title) updatedFields.add('title');
+    if (action.parameters['day_of_week'] != null && dayOfWeek != existing.dayOfWeek) updatedFields.add('day_of_week');
+    if (action.parameters['start_time'] != null && startTime != existing.startTime) updatedFields.add('start_time');
+    if (action.parameters['end_time'] != null && endTime != existing.endTime) updatedFields.add('end_time');
+    if (rawLoc != null && location != existing.location) updatedFields.add('location');
+    if (rawNotes != null && notes != existing.notes) updatedFields.add('notes');
+
+    // Overlap conflict detection against other slots on target day
+    TimetableSlotEntity? conflictSlot;
+    for (final other in allSlots) {
+      if (other.id == slotId) continue;
+      if (other.dayOfWeek != dayOfWeek) continue;
+      if (startTime.compareTo(other.endTime) < 0 && endTime.compareTo(other.startTime) > 0) {
+        conflictSlot = other;
+        break;
+      }
+    }
+
+    final updatedSlot = existing.copyWith(
+      title: title,
+      dayOfWeek: dayOfWeek,
+      startTime: startTime,
+      endTime: endTime,
+      location: drift.Value(location),
+      notes: drift.Value(notes),
+    );
+
+    final wasNoOp = updatedFields.isEmpty;
+
+    await timetableDao.updateSlot(updatedSlot);
+
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      entityId: slotId,
+      summary: 'Updated schedule slot "$title"',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        await timetableDao.updateSlot(prevSlot);
+      },
+    ));
+
+    var msg = 'Updated schedule slot "$title" ($startTime - $endTime)';
+    if (conflictSlot != null) {
+      msg += ' (Notice: overlaps with "${conflictSlot.title}" ${conflictSlot.startTime}-${conflictSlot.endTime})';
+    }
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: msg,
+      createdEntityId: slotId,
+      entityIds: [slotId],
+      wasNoOp: wasNoOp,
+      outputData: {
+        'id': slotId,
+        'title': title,
+        'updatedFields': updatedFields,
+        if (conflictSlot != null)
+          'conflict': {
+            'title': conflictSlot.title,
+            'dayOfWeek': conflictSlot.dayOfWeek,
+            'startTime': conflictSlot.startTime,
+            'endTime': conflictSlot.endTime,
+          },
+      },
+      timestamp: DateTime.now(),
+    );
+  }
+
   Future<EpiActionExecutionRecord> _executeDeleteScheduleSlot(EpiActionCall action) async {
     final slotId = action.parameters['slot_id']?.toString();
     if (slotId == null) throw Exception('slot_id is required');
@@ -1278,7 +1500,7 @@ class EpiToolExecutor {
     final sevenDaysAgo = now.subtract(const Duration(days: 7));
 
     final completedThisWeek = allTasks.where((t) =>
-      t.status == 'done' && t.modifiedAt != null && t.modifiedAt!.isAfter(sevenDaysAgo)
+      t.status == 'done' && t.modifiedAt.isAfter(sevenDaysAgo)
     ).toList();
     final activeTasks = allTasks.where((t) => t.status != 'done').toList();
     final overdueTasks = activeTasks.where((t) => t.dueDate != null && t.dueDate!.isBefore(now)).toList();
