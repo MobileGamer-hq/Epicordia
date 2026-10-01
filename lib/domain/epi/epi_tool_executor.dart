@@ -226,6 +226,14 @@ class EpiToolExecutor {
       message: 'Created task "$title"',
       createdEntityId: newTaskId,
       entityIds: [newTaskId],
+      outputData: {
+        'id': newTaskId,
+        'title': title,
+        'status': 'todo',
+        'dueDate': dueDate?.toIso8601String(),
+        'priority': priority,
+        'type': 'task',
+      },
       timestamp: DateTime.now(),
     );
   }
@@ -283,6 +291,14 @@ class EpiToolExecutor {
       message: 'Updated task "${updated.title}"',
       createdEntityId: taskId,
       entityIds: [taskId],
+      outputData: {
+        'id': taskId,
+        'title': updated.title,
+        'status': updated.status,
+        'dueDate': updated.dueDate?.toIso8601String(),
+        'priority': updated.priority,
+        'type': 'task',
+      },
       timestamp: DateTime.now(),
     );
   }
@@ -332,6 +348,14 @@ class EpiToolExecutor {
       message: 'Marked "${existing.title}" as $status',
       createdEntityId: taskId,
       entityIds: [taskId],
+      outputData: {
+        'id': taskId,
+        'title': existing.title,
+        'status': status,
+        'dueDate': existing.dueDate?.toIso8601String(),
+        'priority': existing.priority,
+        'type': 'task',
+      },
       timestamp: DateTime.now(),
     );
   }
@@ -431,6 +455,12 @@ class EpiToolExecutor {
       message: 'Created note "$title"',
       createdEntityId: newNoteId,
       entityIds: [newNoteId],
+      outputData: {
+        'id': newNoteId,
+        'title': title,
+        'tags': tag,
+        'type': 'note',
+      },
       timestamp: DateTime.now(),
     );
   }
@@ -621,7 +651,9 @@ class EpiToolExecutor {
       'title': t.title,
       'status': t.status,
       'dueDate': t.dueDate?.toIso8601String(),
+      'priority': t.priority,
       'notes': t.notes,
+      'type': 'task',
     }).toList();
 
     String message;
@@ -668,6 +700,7 @@ class EpiToolExecutor {
         'title': title,
         'tags': n.tags,
         'content': markdown,
+        'type': 'note',
       };
     }).toList();
 
@@ -1051,6 +1084,15 @@ class EpiToolExecutor {
     }
 
     final ids = slots.map((s) => s.id).take(5).toList();
+    final timetableData = slots.take(10).map((s) => {
+      'id': s.id,
+      'title': s.title,
+      'dayOfWeek': s.dayOfWeek,
+      'startTime': s.startTime,
+      'endTime': s.endTime,
+      'location': s.location,
+      'type': 'schedule',
+    }).toList();
 
     return EpiActionExecutionRecord(
       action: action,
@@ -1061,6 +1103,7 @@ class EpiToolExecutor {
               ? 'Found 1 schedule slot'
               : 'Found ${slots.length} schedule slots',
       entityIds: ids,
+      outputData: timetableData,
       timestamp: DateTime.now(),
     );
   }
@@ -1116,7 +1159,14 @@ class EpiToolExecutor {
         action: action,
         status: ActionExecutionStatus.success,
         message: 'Updated "About Me" profile',
+        createdEntityId: aboutMePin.id,
         entityIds: [aboutMePin.id],
+        outputData: {
+          'id': aboutMePin.id,
+          'title': 'About Me',
+          'type': 'note',
+          'tags': aboutMePin.tags ?? 'Profile',
+        },
         timestamp: DateTime.now(),
       );
     } else {
@@ -1145,7 +1195,14 @@ class EpiToolExecutor {
         action: action,
         status: ActionExecutionStatus.success,
         message: 'Saved "About Me" profile',
+        createdEntityId: newId,
         entityIds: [newId],
+        outputData: {
+          'id': newId,
+          'title': 'About Me',
+          'type': 'note',
+          'tags': 'Profile',
+        },
         timestamp: DateTime.now(),
       );
     }
@@ -1211,6 +1268,15 @@ class EpiToolExecutor {
       message: 'Scheduled "$title" ($startTime - $endTime)',
       createdEntityId: newSlotId,
       entityIds: [newSlotId],
+      outputData: {
+        'id': newSlotId,
+        'title': title,
+        'dayOfWeek': dayOfWeek,
+        'startTime': startTime,
+        'endTime': endTime,
+        'location': location,
+        'type': 'schedule',
+      },
       timestamp: DateTime.now(),
     );
   }
@@ -1299,6 +1365,11 @@ class EpiToolExecutor {
       outputData: {
         'id': slotId,
         'title': title,
+        'dayOfWeek': dayOfWeek,
+        'startTime': startTime,
+        'endTime': endTime,
+        'location': location,
+        'type': 'schedule',
         'updatedFields': updatedFields,
         if (conflictSlot != null)
           'conflict': {

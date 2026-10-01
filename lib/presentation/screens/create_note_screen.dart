@@ -11,6 +11,7 @@ import '../../domain/models/note_model.dart';
 import '../../core/theme.dart';
 import '../widgets/core/link_preview_dialog.dart';
 import '../widgets/features/pen_drawing_overlay.dart';
+import '../../core/feedback_service.dart';
 import '../../data/providers.dart';
 
 class CreateNoteScreen extends ConsumerStatefulWidget {
@@ -165,11 +166,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         _isLoadingNote = false;
       });
     } else if (mounted) {
-      _titleController.addListener(_onTitleChanged);
-      _bodyController.addListener(_onBodyChanged);
-      setState(() {
-        _isLoadingNote = false;
-      });
+      FeedbackService.showError('This note has been deleted', context: context);
+      context.pop();
     }
   }
 

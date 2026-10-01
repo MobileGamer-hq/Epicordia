@@ -46,15 +46,6 @@ class ProactiveCheckinCard extends ConsumerWidget {
           // Header row with subtle check-in label and dismiss button
           Row(
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: activePrimary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
               Text(
                 "Epi's Check-in",
                 style: TextStyle(
@@ -95,34 +86,17 @@ class ProactiveCheckinCard extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
 
-          // Action Chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _ActionChip(
-                label: 'Chat with Epi',
-                icon: Icons.chat_bubble_outline_rounded,
-                isPrimary: true,
-                activePrimary: activePrimary,
-                onTap: () {
-                  ref.read(proactiveCheckinProvider.notifier).dismiss();
-                  context.push('/epi', extra: {
-                    'prompt': "Hey Epi, let's talk about what's on my radar today.",
-                  });
-                },
-              ),
-              _ActionChip(
-                label: 'View Tasks',
-                icon: Icons.checklist_rounded,
-                isPrimary: false,
-                activePrimary: activePrimary,
-                onTap: () {
-                  ref.read(proactiveCheckinProvider.notifier).dismiss();
-                  context.push('/tasks');
-                },
-              ),
-            ],
+          // Action Button
+          _ActionButton(
+            label: 'Chat with Epi',
+            icon: Icons.auto_awesome,
+            activePrimary: activePrimary,
+            onTap: () {
+              ref.read(proactiveCheckinProvider.notifier).dismiss();
+              context.push('/epi', extra: {
+                'prompt': "Hey Epi, let's talk about what's on my radar today.",
+              });
+            },
           ),
         ],
       ),
@@ -130,56 +104,47 @@ class ProactiveCheckinCard extends ConsumerWidget {
   }
 }
 
-class _ActionChip extends StatelessWidget {
+class _ActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final bool isPrimary;
   final Color activePrimary;
   final VoidCallback onTap;
 
-  const _ActionChip({
+  const _ActionButton({
     required this.label,
     required this.icon,
-    required this.isPrimary,
     required this.activePrimary,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryBg = activePrimary;
-    final secondaryBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
-    final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
-    final secondaryText = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
-
     return Material(
-      color: isPrimary ? primaryBg : secondaryBg,
-      borderRadius: BorderRadius.circular(16),
+      color: activePrimary,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: isPrimary ? null : Border.all(color: borderClr),
+            borderRadius: BorderRadius.circular(8),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
                 size: 13,
-                color: isPrimary ? Colors.white : activePrimary,
+                color: Colors.white,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isPrimary ? Colors.white : secondaryText,
+                  color: Colors.white,
                 ),
               ),
             ],

@@ -7,6 +7,7 @@ import '../../core/feedback_service.dart';
 import '../../data/providers.dart';
 import '../../data/database/database.dart';
 import '../../data/repository/task_repository.dart';
+import '../../data/repository/board_repository.dart';
 import '../../domain/models/task_subitem.dart';
 import '../../domain/models/note_model.dart';
 import '../../core/utils/task_date_formatter.dart';
@@ -14,6 +15,7 @@ import '../widgets/core/custom_circular_checkbox.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
 import '../../domain/epi/epi_chat_controller.dart';
 import '../../domain/epi/epi_models.dart';
+import '../widgets/edit_timetable_slot_dialog.dart';
 import 'package:remixicon/remixicon.dart';
 
 class EpiChatScreen extends ConsumerStatefulWidget {
@@ -103,6 +105,18 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     }
   }
 
+  Future<void> _openScheduleSlotById(String slotId) async {
+    final timetableDao = ref.read(timetableDaoProvider);
+    final allSlots = await timetableDao.getAllSlots();
+    final slot = allSlots.where((s) => s.id == slotId).firstOrNull;
+    if (!mounted) return;
+    if (slot != null) {
+      EditTimetableSlotDialog.show(context, slot: slot);
+    } else {
+      FeedbackService.showError('This schedule slot has been deleted', context: context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(epiChatProvider);
@@ -151,7 +165,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Epi',
+                    'Epi Chat',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -159,24 +173,9 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                     ),
                   ),
 
-                  Row(
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: chatState.isBackendOnline
-                              ? activeBlue
-                              : (isDark ? EpicordiaColors.warningDark : EpicordiaColors.warningLight),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        chatState.isBackendOnline ? 'Companion' : 'Connecting...',
-                        style: TextStyle(fontSize: 11, color: textSecondary),
-                      ),
-                    ],
+                  Text(
+                    chatState.isBackendOnline ? 'Active' : 'Connecting...',
+                    style: TextStyle(fontSize: 11, color: textSecondary),
                   ),
                 ],
               ),
@@ -360,39 +359,73 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                         icon = Icons.calendar_today_outlined;
                         break;
                     }
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: activeBlue.withValues(alpha: isDark ? 0.2 : 0.1),
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: activeBlue.withValues(alpha: 0.35)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(icon, size: 12, color: activeBlue),
-                          const SizedBox(width: 5),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 160),
-                            child: Text(
-                              item.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: activeBlue,
+                        onTap: () async {
+                          if (item.type == EpiAttachedItemType.task) {
+                            final task = await ref.read(taskDaoProvider).getTask(item.id);
+                            if (context.mounted) {
+                              if (task != null) {
+                                context.push('/task/${item.id}');
+                              } else {
+                                FeedbackService.showError('This task has been deleted', context: context);
+                              }
+                            }
+                          } else if (item.type == EpiAttachedItemType.note) {
+                            final pin = await ref.read(pinDaoProvider).getPin(item.id);
+                            if (context.mounted) {
+                              if (pin != null) {
+                                context.push('/note/${item.id}');
+                              } else {
+                                FeedbackService.showError('This note has been deleted', context: context);
+                              }
+                            }
+                          } else if (item.type == EpiAttachedItemType.schedule) {
+                            if (item.id == 'sched_today' || item.id == 'sched_week') {
+                              context.push('/calendar');
+                            } else {
+                              _openScheduleSlotById(item.id);
+                            }
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: activeBlue.withValues(alpha: isDark ? 0.2 : 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: activeBlue.withValues(alpha: 0.35)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(icon, size: 12, color: activeBlue),
+                              const SizedBox(width: 5),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 160),
+                                child: Text(
+                                  item.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: activeBlue,
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  setState(() => _attachedItems.removeAt(index));
+                                },
+                                child: Icon(Icons.close_rounded, size: 13, color: activeBlue),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() => _attachedItems.removeAt(index));
-                            },
-                            child: Icon(Icons.close_rounded, size: 13, color: activeBlue),
-                          ),
-                        ],
+                        ),
                       ),
                     );
                   },
@@ -630,20 +663,34 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     Color borderClr,
     Color activeBlue,
   ) {
-    // Only show chips for records that produced data
+    // Only show chips for records that produced data or created/updated entities
     final richRecords = records.where((r) {
       if (r.status != ActionExecutionStatus.success) return false;
-      if (r.outputData == null) return false;
-      final data = r.outputData;
-      if (data is List && data.isEmpty) return false;
-      if (data is Map && data.isEmpty) return false;
-      return true;
+      if (r.outputData != null) {
+        final data = r.outputData;
+        if (data is List && data.isNotEmpty) return true;
+        if (data is Map && data.isNotEmpty) return true;
+      }
+      if (r.createdEntityId != null || r.entityIds.isNotEmpty) return true;
+      return false;
     }).toList();
 
     if (richRecords.isEmpty) return const SizedBox.shrink();
 
     final chips = <Widget>[];
     final seenKeys = <String>{};
+
+    String cleanChipTitle(String raw, String tool) {
+      if (tool.contains('about_me') || tool.contains('profile') || raw.toLowerCase().contains('about me')) {
+        return 'About Me';
+      }
+      var s = raw
+          .replaceAll(RegExp(r'^(Created|Updated|Marked|Saved)\s+(task|note|schedule slot|timetable slot)?\s*', caseSensitive: false), '')
+          .replaceAll(RegExp(r'^["“”\x27]+|["“”\x27]+$'), '')
+          .replaceAll(RegExp(r'\s+profile$', caseSensitive: false), '')
+          .trim();
+      return s.isNotEmpty ? s : raw;
+    }
 
     for (final record in richRecords) {
       final tool = record.action.tool;
@@ -652,42 +699,119 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
       if (data is List) {
         for (final item in data.take(5)) {
           if (item is Map<String, dynamic>) {
-            final title = item['title'] as String? ?? item['name'] as String? ?? '';
+            final rawTitle = item['title'] as String? ?? item['name'] as String? ?? '';
+            final title = cleanChipTitle(rawTitle, tool);
             if (title.isEmpty) continue;
             final key = '${item['id'] ?? ''}_$title';
             if (seenKeys.contains(key)) continue;
             seenKeys.add(key);
 
+            final explicitType = item['type']?.toString().toLowerCase();
             IconData icon;
-            if (tool.contains('task')) {
+            if (tool.contains('task') || explicitType == 'task') {
               icon = Icons.check_circle_outline_rounded;
-            } else if (tool.contains('note')) {
-              icon = Icons.description_outlined;
-            } else if (tool.contains('board') || tool.contains('project')) {
+            } else if (tool.contains('schedule') || tool.contains('timetable') || explicitType == 'schedule') {
+              icon = Icons.calendar_today_outlined;
+            } else if (tool.contains('board') || tool.contains('project') || explicitType == 'board') {
               icon = Icons.folder_outlined;
             } else {
-              icon = Icons.calendar_today_outlined;
+              icon = Icons.description_outlined;
             }
 
-            chips.add(_buildResultChip(title, icon, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue, extraData: item));
+            chips.add(_EpiInteractiveResultChip(
+              title: title,
+              defaultIcon: icon,
+              isDark: isDark,
+              cardBg: cardBg,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              borderClr: borderClr,
+              activeBlue: activeBlue,
+              tool: tool,
+              extraData: item,
+            ));
           }
         }
       } else if (data is Map<String, dynamic>) {
-        final title = data['title'] as String? ?? data['name'] as String? ?? '';
+        final rawTitle = data['title'] as String? ?? data['name'] as String? ?? '';
+        final title = cleanChipTitle(rawTitle, tool);
         if (title.isNotEmpty) {
           final key = '${data['id'] ?? ''}_$title';
           if (seenKeys.contains(key)) continue;
           seenKeys.add(key);
 
+          final explicitType = data['type']?.toString().toLowerCase();
           IconData icon;
+          if (tool.contains('task') || explicitType == 'task') {
+            icon = Icons.check_circle_outline_rounded;
+          } else if (tool.contains('schedule') || tool.contains('timetable') || explicitType == 'schedule') {
+            icon = Icons.calendar_today_outlined;
+          } else if (tool.contains('board') || tool.contains('project') || explicitType == 'board') {
+            icon = Icons.folder_outlined;
+          } else {
+            icon = Icons.description_outlined;
+          }
+
+          chips.add(_EpiInteractiveResultChip(
+            title: title,
+            defaultIcon: icon,
+            isDark: isDark,
+            cardBg: cardBg,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            borderClr: borderClr,
+            activeBlue: activeBlue,
+            tool: tool,
+            extraData: data,
+          ));
+        }
+      } else if (record.createdEntityId != null || record.entityIds.isNotEmpty) {
+        final entityId = record.createdEntityId ?? record.entityIds.firstOrNull;
+        final rawTitle = record.action.parameters['title']?.toString() ??
+            record.action.parameters['name']?.toString() ??
+            record.message;
+
+        final effectiveTitle = cleanChipTitle(rawTitle, tool);
+        final key = '${entityId ?? ''}_$effectiveTitle';
+        if (!seenKeys.contains(key)) {
+          seenKeys.add(key);
+          IconData icon;
+          String inferredType;
           if (tool.contains('task')) {
             icon = Icons.check_circle_outline_rounded;
-          } else if (tool.contains('note')) {
-            icon = Icons.description_outlined;
+            inferredType = 'task';
+          } else if (tool.contains('schedule') || tool.contains('timetable')) {
+            icon = Icons.calendar_today_outlined;
+            inferredType = 'schedule';
+          } else if (tool.contains('board') || tool.contains('project')) {
+            icon = Icons.folder_outlined;
+            inferredType = 'board';
           } else {
-            icon = Icons.star_outline_rounded;
+            icon = Icons.description_outlined;
+            inferredType = 'note';
           }
-          chips.add(_buildResultChip(title, icon, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue, extraData: data));
+
+          final fallbackData = <String, dynamic>{
+            'id': entityId,
+            'title': effectiveTitle,
+            'type': inferredType,
+            if (record.action.parameters.containsKey('due_date')) 'dueDate': record.action.parameters['due_date'],
+            if (record.action.parameters.containsKey('priority')) 'priority': record.action.parameters['priority'],
+            if (record.action.parameters.containsKey('status')) 'status': record.action.parameters['status'],
+          };
+
+          chips.add(_EpiInteractiveResultChip(
+            title: effectiveTitle,
+            defaultIcon: icon,
+            isDark: isDark,
+            cardBg: cardBg,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            borderClr: borderClr,
+            activeBlue: activeBlue,
+            tool: tool,
+            extraData: fallbackData,
+          ));
         }
       }
     }
@@ -702,87 +826,6 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
         children: chips,
       ),
     );
-  }
-
-  Widget _buildResultChip(
-    String title,
-    IconData icon,
-    bool isDark,
-    Color cardBg,
-    Color textPrimary,
-    Color textSecondary,
-    Color borderClr,
-    Color activeBlue, {
-    Map<String, dynamic>? extraData,
-  }) {
-    final dueDate = extraData?['dueDate'] as String?;
-    final status = extraData?['status'] as String?;
-    final priority = extraData?['priority'] as String?;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark
-            ? EpicordiaColors.surfaceSunkenDark
-            : EpicordiaColors.surfaceSunkenLight,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderClr),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: activeBlue.withValues(alpha: 0.8)),
-          const SizedBox(width: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 200),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: textPrimary,
-                  ),
-                ),
-                if (dueDate != null || status != null || priority != null)
-                  Text(
-                    [
-                      ?status,
-                      ?priority,
-                      if (dueDate != null) _formatDueDateShort(dueDate),
-                    ].join(' · '),
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: textSecondary,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDueDateShort(String isoDate) {
-    try {
-      final dt = DateTime.parse(isoDate).toLocal();
-      final now = DateTime.now();
-      final diff = dt.difference(DateTime(now.year, now.month, now.day)).inDays;
-      if (diff == 0) return 'today';
-      if (diff == 1) return 'tomorrow';
-      if (diff == -1) return 'yesterday';
-      if (diff < 0) return '${diff.abs()}d overdue';
-      if (diff <= 7) return 'in ${diff}d';
-      return '${dt.day}/${dt.month}';
-    } catch (_) {
-      return isoDate;
-    }
   }
 
   Widget _buildActivityStatusIndicator(String statusText, bool isDark) {
@@ -1357,6 +1400,433 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${dt.month}/${dt.day}';
+  }
+}
+
+class _EpiInteractiveResultChip extends ConsumerStatefulWidget {
+  final String title;
+  final IconData defaultIcon;
+  final bool isDark;
+  final Color cardBg;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color borderClr;
+  final Color activeBlue;
+  final String tool;
+  final Map<String, dynamic>? extraData;
+
+  const _EpiInteractiveResultChip({
+    required this.title,
+    required this.defaultIcon,
+    required this.isDark,
+    required this.cardBg,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.borderClr,
+    required this.activeBlue,
+    required this.tool,
+    this.extraData,
+  });
+
+  @override
+  ConsumerState<_EpiInteractiveResultChip> createState() => _EpiInteractiveResultChipState();
+}
+
+class _EpiInteractiveResultChipState extends ConsumerState<_EpiInteractiveResultChip> {
+  String? _localStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _localStatus = widget.extraData?['status']?.toString();
+  }
+
+  void _handleTaskToggle(TaskEntity? liveTask, String taskId, String currentStatus) async {
+    String nextStatus;
+    if (currentStatus == 'todo') {
+      nextStatus = 'in_progress';
+    } else if (currentStatus == 'in_progress') {
+      nextStatus = 'done';
+    } else {
+      nextStatus = 'todo';
+    }
+
+    setState(() {
+      _localStatus = nextStatus;
+    });
+
+    final taskRepo = ref.read(taskRepositoryProvider);
+    final taskDao = ref.read(taskDaoProvider);
+    final existing = liveTask ?? await taskDao.getTask(taskId);
+    if (existing != null) {
+      setState(() {
+        _localStatus = nextStatus;
+      });
+      await taskRepo.updateTask(existing.copyWith(
+        status: nextStatus,
+        modifiedAt: DateTime.now(),
+      ));
+    } else {
+      if (mounted) {
+        FeedbackService.showError('This task has been deleted', context: context);
+      }
+    }
+  }
+
+  void _onEnterItem(BuildContext context, bool isTask, bool isNote, bool isSchedule, bool isBoard, String? id) async {
+    if (isTask) {
+      if (id != null && id.isNotEmpty) {
+        final taskDao = ref.read(taskDaoProvider);
+        final task = await taskDao.getTask(id);
+        if (context.mounted) {
+          if (task != null) {
+            context.push('/task/$id');
+          } else {
+            FeedbackService.showError('This task has been deleted', context: context);
+          }
+        }
+      } else {
+        final taskDao = ref.read(taskDaoProvider);
+        final allTasks = await taskDao.getAllTasks();
+        final match = allTasks.where((t) => t.title.trim().toLowerCase() == widget.title.trim().toLowerCase()).firstOrNull;
+        if (context.mounted) {
+          if (match != null) {
+            context.push('/task/${match.id}');
+          } else {
+            FeedbackService.showError('This task has been deleted', context: context);
+          }
+        }
+      }
+    } else if (isNote) {
+      if (id != null && id.isNotEmpty) {
+        final pinDao = ref.read(pinDaoProvider);
+        final pin = await pinDao.getPin(id);
+        if (context.mounted) {
+          if (pin != null) {
+            context.push('/note/$id');
+          } else {
+            FeedbackService.showError('This note has been deleted', context: context);
+          }
+        }
+      } else {
+        final pinDao = ref.read(pinDaoProvider);
+        final allNotes = await pinDao.getAllNotes();
+        final isAboutMe = widget.title.toLowerCase().contains('about me') || widget.tool.toLowerCase().contains('about_me');
+        final match = allNotes.where((n) {
+          if (isAboutMe && (n.tags != null && n.tags!.toLowerCase().contains('profile'))) return true;
+          final b = NoteDocument.decodeBlocks(n.content ?? '');
+          if (b.isNotEmpty) {
+            final firstText = b.first.text.trim().toLowerCase();
+            if (isAboutMe && (firstText == 'about me' || firstText == '# about me')) {
+              return true;
+            }
+            if (firstText.contains(widget.title.trim().toLowerCase())) {
+              return true;
+            }
+          }
+          return false;
+        }).firstOrNull;
+        if (context.mounted) {
+          if (match != null) {
+            context.push('/note/${match.id}');
+          } else {
+            FeedbackService.showError('This note has been deleted', context: context);
+          }
+        }
+      }
+    } else if (isSchedule) {
+      if (id != null && id.isNotEmpty) {
+        final timetableDao = ref.read(timetableDaoProvider);
+        final allSlots = await timetableDao.getAllSlots();
+        final slot = allSlots.where((s) => s.id == id).firstOrNull;
+        if (context.mounted) {
+          if (slot != null) {
+            EditTimetableSlotDialog.show(context, slot: slot);
+          } else {
+            FeedbackService.showError('This schedule slot has been deleted', context: context);
+          }
+        }
+      } else {
+        context.push('/calendar');
+      }
+    } else if (isBoard) {
+      if (id != null && id.isNotEmpty) {
+        final boardRepo = ref.read(boardRepositoryProvider);
+        final board = await boardRepo.getBoard(id);
+        if (context.mounted) {
+          if (board != null) {
+            context.push('/board/$id');
+          } else {
+            FeedbackService.showError('This board has been deleted', context: context);
+          }
+        }
+      } else {
+        FeedbackService.showError('This board has been deleted', context: context);
+      }
+    } else {
+      FeedbackService.showError('This item has been deleted', context: context);
+    }
+  }
+
+  String _formatDueDateShort(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate).toLocal();
+      final now = DateTime.now();
+      final diff = dt.difference(DateTime(now.year, now.month, now.day)).inDays;
+      if (diff == 0) return 'today';
+      if (diff == 1) return 'tomorrow';
+      if (diff == -1) return 'yesterday';
+      if (diff < 0) return '${diff.abs()}d overdue';
+      if (diff <= 7) return 'in ${diff}d';
+      return '${dt.day}/${dt.month}';
+    } catch (_) {
+      return isoDate;
+    }
+  }
+
+  String _formatDayOfWeek(int day) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    if (day >= 1 && day <= 7) return days[day - 1];
+    return 'Day $day';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final extraData = widget.extraData;
+    final id = extraData?['id']?.toString();
+    final tool = widget.tool.toLowerCase();
+    final explicitType = extraData?['type']?.toString().toLowerCase();
+
+    final isTask = explicitType == 'task' || tool.contains('task');
+    final isBoard = explicitType == 'board' || tool.contains('board') || tool.contains('project');
+    final isSchedule = explicitType == 'schedule' || tool.contains('schedule') || tool.contains('timetable');
+    final isNote = explicitType == 'note' ||
+        tool.contains('note') ||
+        tool.contains('about_me') ||
+        tool.contains('profile') ||
+        widget.title.toLowerCase().contains('about me') ||
+        (!isTask && !isSchedule && !isBoard);
+
+    if (isTask && id != null && id.isNotEmpty) {
+      final taskDao = ref.watch(taskDaoProvider);
+      return StreamBuilder<TaskEntity?>(
+        stream: taskDao.watchTask(id),
+        builder: (context, snapshot) {
+          final liveTask = snapshot.data;
+          final currentTitle = liveTask?.title ?? widget.title;
+          final currentStatus = liveTask?.status ?? _localStatus ?? extraData?['status']?.toString() ?? 'todo';
+          final dueDate = liveTask?.dueDate?.toIso8601String() ?? extraData?['dueDate'] as String?;
+          final priority = liveTask?.priority ?? extraData?['priority'];
+
+          return _buildChip(
+            context: context,
+            title: currentTitle,
+            isTask: true,
+            isNote: false,
+            isSchedule: false,
+            isBoard: false,
+            id: id,
+            status: currentStatus,
+            dueDate: dueDate,
+            priority: priority,
+            extraData: extraData,
+            onTaskToggle: () => _handleTaskToggle(liveTask, id, currentStatus),
+          );
+        },
+      );
+    }
+
+    return _buildChip(
+      context: context,
+      title: widget.title,
+      isTask: isTask,
+      isNote: isNote,
+      isSchedule: isSchedule,
+      isBoard: isBoard,
+      id: id,
+      status: _localStatus ?? extraData?['status']?.toString(),
+      dueDate: extraData?['dueDate'] as String?,
+      priority: extraData?['priority'],
+      extraData: extraData,
+      onTaskToggle: isTask && id != null
+          ? () => _handleTaskToggle(null, id, _localStatus ?? 'todo')
+          : null,
+    );
+  }
+
+  Widget _buildChip({
+    required BuildContext context,
+    required String title,
+    required bool isTask,
+    required bool isNote,
+    required bool isSchedule,
+    required bool isBoard,
+    required String? id,
+    String? status,
+    String? dueDate,
+    dynamic priority,
+    Map<String, dynamic>? extraData,
+    VoidCallback? onTaskToggle,
+  }) {
+    final isDark = widget.isDark;
+    final activeBlue = widget.activeBlue;
+    final borderClr = widget.borderClr;
+    final textPrimary = widget.textPrimary;
+    final textSecondary = widget.textSecondary;
+
+    final inProgressClr = const Color(0xFFF59E0B);
+    final successClr = isDark ? EpicordiaColors.successDark : EpicordiaColors.successLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
+    final isCompleted = status == 'done';
+    final isInProgress = status == 'in_progress';
+
+    // Subtitle construction - omit status string for tasks as requested!
+    final metaParts = <String>[];
+
+    if (isTask) {
+      if (priority != null) {
+        if (priority == 2 || priority == '2' || priority == 'high' || priority == 'High') {
+          metaParts.add('High Priority');
+        } else if (priority == 1 || priority == '1' || priority == 'medium' || priority == 'Medium') {
+          metaParts.add('Medium Priority');
+        }
+      }
+      if (dueDate != null) {
+        metaParts.add(_formatDueDateShort(dueDate));
+      }
+    } else if (isSchedule) {
+      final dayOfWeek = extraData?['dayOfWeek'] ?? extraData?['day_of_week'];
+      final startTime = extraData?['startTime'] ?? extraData?['start_time'];
+      final endTime = extraData?['endTime'] ?? extraData?['end_time'];
+      final location = extraData?['location'] as String?;
+
+      if (dayOfWeek is num) {
+        metaParts.add(_formatDayOfWeek(dayOfWeek.toInt()));
+      }
+      if (startTime != null && endTime != null) {
+        metaParts.add('$startTime - $endTime');
+      } else if (startTime != null) {
+        metaParts.add(startTime.toString());
+      }
+      if (location != null && location.trim().isNotEmpty) {
+        metaParts.add(location.trim());
+      }
+    } else if (isNote) {
+      final tags = extraData?['tags'] as String?;
+      if (tags != null && tags.trim().isNotEmpty) {
+        metaParts.add(tags.trim());
+      }
+    } else if (isBoard) {
+      metaParts.add('Board');
+    }
+
+    // Leading widget
+    Widget leadingWidget;
+    if (isTask) {
+      leadingWidget = GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTaskToggle,
+        child: Container(
+          width: 19,
+          height: 19,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isCompleted
+                ? successClr
+                : isInProgress
+                    ? inProgressClr.withValues(alpha: 0.15)
+                    : Colors.transparent,
+            border: Border.all(
+              color: isCompleted
+                  ? successClr
+                  : isInProgress
+                      ? inProgressClr
+                      : borderStrong,
+              width: isInProgress ? 2 : 1.5,
+            ),
+          ),
+          child: isCompleted
+              ? const Icon(Icons.check, size: 12, color: Colors.white)
+              : isInProgress
+                  ? Icon(Icons.play_arrow_rounded, size: 12, color: inProgressClr)
+                  : null,
+        ),
+      );
+    } else {
+      leadingWidget = Icon(
+        isNote && widget.defaultIcon == Icons.calendar_today_outlined
+            ? Icons.description_outlined
+            : widget.defaultIcon,
+        size: 14,
+        color: activeBlue.withValues(alpha: 0.85),
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _onEnterItem(context, isTask, isNote, isSchedule, isBoard, id),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? EpicordiaColors.surfaceSunkenDark
+                : EpicordiaColors.surfaceSunkenLight,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderClr),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              leadingWidget,
+              const SizedBox(width: 7),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 220),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: isCompleted ? textSecondary : textPrimary,
+                        decoration: isCompleted ? TextDecoration.lineThrough : null,
+                        decorationColor: textSecondary,
+                      ),
+                    ),
+                    if (metaParts.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1),
+                        child: Text(
+                          metaParts.join(' · '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 5),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 9,
+                color: textSecondary.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

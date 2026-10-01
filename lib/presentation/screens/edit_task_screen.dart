@@ -9,6 +9,7 @@ import '../../data/repository/task_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/providers.dart';
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 import '../../domain/models/task_subitem.dart';
 import '../../domain/services/device_reminder_service.dart';
 import '../../domain/services/notification_service.dart';
@@ -93,6 +94,9 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
         _alsoAddToReminders = task.osReminderId != null;
         _saveStatus = 'Saved';
       });
+    } else if (mounted) {
+      FeedbackService.showError('This task has been deleted', context: context);
+      context.pop();
     }
     _isLoadingTask = false;
   }
