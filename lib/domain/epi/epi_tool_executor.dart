@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../data/database/database.dart';
 import '../../data/providers.dart';
@@ -127,6 +128,10 @@ class EpiToolExecutor {
         case 'wipe_thread':
         case 'clear_chat_history':
           return await _executeWipeThread(action);
+
+        case 'open_screen':
+        case 'navigate_to':
+          return await _executeOpenScreen(context, action);
 
         default:
           return EpiActionExecutionRecord(
@@ -1651,5 +1656,174 @@ class EpiToolExecutor {
     );
 
     return result ?? false;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // SCREEN NAVIGATION
+  // ──────────────────────────────────────────────────────────────────────────
+
+  Future<EpiActionExecutionRecord> _executeOpenScreen(BuildContext context, EpiActionCall action) async {
+    final rawScreen = action.parameters['screen']?.toString().toLowerCase().trim() ?? 'today';
+    final itemId = action.parameters['item_id']?.toString().trim();
+    final itemTitle = action.parameters['item_title']?.toString().toLowerCase().trim();
+
+    String targetRoute = '/';
+    String screenDisplayName = 'Dashboard';
+
+    switch (rawScreen) {
+      case 'notes':
+      case 'note_detail':
+      case 'note':
+        if (itemId != null && itemId.isNotEmpty) {
+          targetRoute = '/note/$itemId';
+          screenDisplayName = 'Note';
+        } else if (itemTitle != null && itemTitle.isNotEmpty) {
+          final pinDao = ref.read(pinDaoProvider);
+          final notes = await pinDao.getAllNotes();
+          final match = notes.where((n) {
+            if (n.isLocked) return false;
+            final t = NoteDocument.extractTitle(n.content ?? '').toLowerCase();
+            return t.contains(itemTitle);
+          }).firstOrNull;
+          if (match != null) {
+            final title = NoteDocument.extractTitle(match.content ?? '');
+            targetRoute = '/note/${match.id}';
+            screenDisplayName = 'Note "$title"';
+          } else {
+            targetRoute = '/notes';
+            screenDisplayName = 'Notes';
+          }
+        } else {
+          targetRoute = '/notes';
+          screenDisplayName = 'Notes';
+        }
+        break;
+
+      case 'tasks':
+      case 'task_detail':
+      case 'task':
+        if (itemId != null && itemId.isNotEmpty) {
+          targetRoute = '/task/$itemId';
+          screenDisplayName = 'Task';
+        } else if (itemTitle != null && itemTitle.isNotEmpty) {
+          final taskDao = ref.read(taskDaoProvider);
+          final tasks = await taskDao.getAllTasks();
+          final match = tasks.where((t) => t.title.toLowerCase().contains(itemTitle)).firstOrNull;
+          if (match != null) {
+            targetRoute = '/task/${match.id}';
+            screenDisplayName = 'Task "${match.title}"';
+          } else {
+            targetRoute = '/tasks';
+            screenDisplayName = 'Tasks';
+          }
+        } else {
+          targetRoute = '/tasks';
+          screenDisplayName = 'Tasks';
+        }
+        break;
+
+      case 'task_focus':
+      case 'focus':
+        if (itemId != null && itemId.isNotEmpty) {
+          targetRoute = '/task/$itemId/focus';
+          screenDisplayName = 'Task Focus Mode';
+        } else {
+          targetRoute = '/tasks';
+          screenDisplayName = 'Tasks';
+        }
+        break;
+
+      case 'calendar':
+      case 'timetable':
+      case 'schedule':
+        targetRoute = '/calendar';
+        screenDisplayName = 'Calendar';
+        break;
+
+      case 'boards':
+      case 'board_detail':
+      case 'board':
+      case 'projects':
+      case 'project':
+        if (itemId != null && itemId.isNotEmpty) {
+          targetRoute = '/board/$itemId';
+          screenDisplayName = 'Board';
+        } else {
+          targetRoute = '/boards';
+          screenDisplayName = 'Boards';
+        }
+        break;
+
+      case 'settings':
+        targetRoute = '/settings';
+        screenDisplayName = 'Settings';
+        break;
+
+      case 'report':
+      case 'productivity':
+      case 'stats':
+        targetRoute = '/report';
+        screenDisplayName = 'Productivity Report';
+        break;
+
+      case 'alarms':
+      case 'timers':
+      case 'sessions':
+        targetRoute = '/alarms';
+        screenDisplayName = 'Alarms and Timers';
+        break;
+
+      case 'inbox':
+      case 'activity':
+        targetRoute = '/inbox';
+        screenDisplayName = 'Activity Inbox';
+        break;
+
+      case 'today':
+      case 'dashboard':
+      case 'home':
+        targetRoute = '/';
+        screenDisplayName = 'Today Dashboard';
+        break;
+
+      case 'create_note':
+        targetRoute = '/create/note';
+        screenDisplayName = 'Create Note';
+        break;
+
+      case 'create_task':
+        targetRoute = '/create/task';
+        screenDisplayName = 'Create Task';
+        break;
+
+      case 'create_board':
+        targetRoute = '/create/board';
+        screenDisplayName = 'Create Board';
+        break;
+
+      case 'create_alarm':
+        targetRoute = '/create/alarm';
+        screenDisplayName = 'Create Alarm';
+        break;
+
+      default:
+        targetRoute = '/';
+        screenDisplayName = 'Dashboard';
+        break;
+    }
+
+    // Schedule navigation on next frame if context is mounted
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        context.push(targetRoute);
+      }
+    });
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Opening $screenDisplayName',
+      timestamp: DateTime.now(),
+    );
   }
 }
