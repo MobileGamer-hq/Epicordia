@@ -8,6 +8,7 @@ import 'core/widgets/widget_service.dart';
 import 'core/widgets/widget_deep_link_handler.dart';
 import 'presentation/widgets/app_lock_wrapper.dart';
 import 'presentation/widgets/alarm_ringing_wrapper.dart';
+import 'presentation/widgets/layout/floating_epi_chat.dart';
 import 'domain/services/notification_service.dart';
 import 'data/providers.dart';
 import 'data/repository/task_repository.dart';
@@ -73,7 +74,9 @@ class _EpicordiaAppState extends ConsumerState<EpicordiaApp> {
       builder: (context, child) {
         return AppLockWrapper(
           child: AlarmRingingWrapper(
-            child: child ?? const SizedBox.shrink(),
+            child: FloatingEpiChatOverlay(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },

@@ -12,6 +12,7 @@ import '../../core/theme.dart';
 import '../widgets/core/link_preview_dialog.dart';
 import '../widgets/features/pen_drawing_overlay.dart';
 import '../../core/feedback_service.dart';
+import '../../core/utils/markdown_text_editing_controller.dart';
 import '../../data/providers.dart';
 
 class CreateNoteScreen extends ConsumerStatefulWidget {
@@ -24,7 +25,7 @@ class CreateNoteScreen extends ConsumerStatefulWidget {
 
 class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
   final _titleController = TextEditingController();
-  final _bodyController = TextEditingController();
+  final _bodyController = MarkdownTextEditingController();
   final _bodyFocusNode = FocusNode();
 
   NoteDrawingData _drawingData = const NoteDrawingData();

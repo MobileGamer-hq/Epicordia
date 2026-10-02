@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
+import '../../../core/router.dart';
 import '../../../core/theme.dart';
 import '../../../core/feedback_service.dart';
 import '../../../core/utils/markdown_formatter.dart';
@@ -44,7 +45,7 @@ class ItemInteractionDialogs {
     final exportText = NoteDocument.exportToMarkdown(blocks);
 
     showGeneralDialog(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       barrierDismissible: true,
       barrierLabel: 'Note Details',
       barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -227,9 +228,9 @@ class ItemInteractionDialogs {
                               icon: note.boardId != null ? Icons.push_pin_rounded : Icons.push_pin_outlined,
                               label: note.boardId != null ? 'Pinned' : 'Pin',
                               color: note.boardId != null ? activeBlue : null,
-                              onTap: () {
+                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                showPinToBoardModal(context: context, ref: ref, note: note);
+                                showPinToBoardModal(context: rootNavigatorKey.currentContext ?? context, ref: ref, note: note);
                               },
                             ),
                             _ActionButton(
@@ -253,7 +254,7 @@ class ItemInteractionDialogs {
                               label: 'Edit',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                context.push('/note/${note.id}');
+                                ref.read(routerProvider).push('/note/${note.id}');
                               },
                             ),
                             _ActionButton(
@@ -262,12 +263,10 @@ class ItemInteractionDialogs {
                               color: EpicordiaColors.errorLight,
                               onTap: () async {
                                 Navigator.of(ctx).pop();
-                                final confirm = await _showDeleteConfirmDialog(context, 'Note');
+                                final confirm = await _showDeleteConfirmDialog(rootNavigatorKey.currentContext ?? context, 'Note');
                                 if (confirm == true) {
                                   await ref.read(pinRepositoryProvider).deletePin(note.id);
-                                  if (context.mounted) {
-                                    FeedbackService.showSuccess('Note deleted');
-                                  }
+                                  FeedbackService.showSuccess('Note deleted');
                                 }
                               },
                             ),
@@ -297,7 +296,7 @@ class ItemInteractionDialogs {
     final isInProgress = task.status == 'in_progress';
 
     showGeneralDialog(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       barrierDismissible: true,
       barrierLabel: 'Task Details',
       barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -632,7 +631,7 @@ class ItemInteractionDialogs {
                               color: activeBlue,
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                context.push('/task/${task.id}/focus');
+                                ref.read(routerProvider).push('/task/${task.id}/focus');
                               },
                             ),
                             _ActionButton(
@@ -666,7 +665,7 @@ class ItemInteractionDialogs {
                               label: 'Edit',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                context.push('/task/${task.id}');
+                                ref.read(routerProvider).push('/task/${task.id}');
                               },
                             ),
                             _ActionButton(
@@ -675,12 +674,10 @@ class ItemInteractionDialogs {
                               color: EpicordiaColors.errorLight,
                               onTap: () async {
                                 Navigator.of(ctx).pop();
-                                final confirm = await _showDeleteConfirmDialog(context, 'Task');
+                                final confirm = await _showDeleteConfirmDialog(rootNavigatorKey.currentContext ?? context, 'Task');
                                 if (confirm == true) {
                                   await ref.read(taskRepositoryProvider).deleteTask(task.id);
-                                  if (context.mounted) {
-                                    FeedbackService.showSuccess('Task deleted');
-                                  }
+                                  FeedbackService.showSuccess('Task deleted');
                                 }
                               },
                             ),
@@ -719,7 +716,7 @@ class ItemInteractionDialogs {
     }
 
     showGeneralDialog(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       barrierDismissible: true,
       barrierLabel: 'Schedule Details',
       barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -799,7 +796,7 @@ class ItemInteractionDialogs {
                           TextButton.icon(
                             onPressed: () {
                               Navigator.of(ctx).pop();
-                              context.push('/epi', extra: {
+                              ref.read(routerProvider).push('/epi', extra: {
                                 'prompt': 'Help me prepare for my schedule session: "${slot.title}" ($dayName ${slot.startTime}-${slot.endTime})',
                               });
                             },
@@ -921,7 +918,7 @@ class ItemInteractionDialogs {
                               label: 'Edit',
                               onTap: () {
                                 Navigator.of(ctx).pop();
-                                EditTimetableSlotDialog.show(context, slot: slot);
+                                EditTimetableSlotDialog.show(rootNavigatorKey.currentContext ?? context, slot: slot);
                               },
                             ),
                             _ActionButton(
@@ -930,12 +927,10 @@ class ItemInteractionDialogs {
                               color: EpicordiaColors.errorLight,
                               onTap: () async {
                                 Navigator.of(ctx).pop();
-                                final confirm = await _showDeleteConfirmDialog(context, 'Schedule event');
+                                final confirm = await _showDeleteConfirmDialog(rootNavigatorKey.currentContext ?? context, 'Schedule event');
                                 if (confirm == true) {
                                   await ref.read(timetableDaoProvider).deleteSlot(slot.id);
-                                  if (context.mounted) {
-                                    FeedbackService.showSuccess('Schedule event deleted');
-                                  }
+                                  FeedbackService.showSuccess('Schedule event deleted');
                                 }
                               },
                             ),
@@ -961,7 +956,7 @@ class ItemInteractionDialogs {
     required List<DoubleTapMenuItem> items,
   }) {
     showGeneralDialog(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       barrierDismissible: true,
       barrierLabel: 'Action Menu',
       barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -1087,7 +1082,7 @@ class ItemInteractionDialogs {
 
   static Future<bool?> _showDeleteConfirmDialog(BuildContext context, String itemType) {
     return showDialog<bool>(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       builder: (ctx) => AlertDialog(
         title: Text('Delete $itemType'),
         content: Text('Are you sure you want to delete this $itemType? This action cannot be undone.'),
@@ -1113,7 +1108,7 @@ class ItemInteractionDialogs {
     required PinEntity note,
   }) {
     showModalBottomSheet(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;

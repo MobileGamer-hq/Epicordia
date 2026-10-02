@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -26,8 +27,11 @@ import '../domain/models/in_app_alarm_model.dart';
 import '../presentation/screens/create_alarm_screen.dart';
 import '../presentation/screens/epi_chat_screen.dart';
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     redirect: (context, state) async {
       final prefs = await SharedPreferences.getInstance();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../core/feedback_service.dart';
 import '../../data/providers.dart';
@@ -21,11 +22,17 @@ import 'package:remixicon/remixicon.dart';
 class EpiChatScreen extends ConsumerStatefulWidget {
   final String? initialBoardContext;
   final String? initialPrompt;
+  final bool isEmbedded;
+  final VoidCallback? onClose;
+  final VoidCallback? onExpand;
 
   const EpiChatScreen({
     super.key,
     this.initialBoardContext,
     this.initialPrompt,
+    this.isEmbedded = false,
+    this.onClose,
+    this.onExpand,
   });
 
   @override
@@ -117,6 +124,10 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     }
   }
 
+  void _pushRoute(String route, {Object? extra}) {
+    ref.read(routerProvider).push(route, extra: extra);
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(epiChatProvider);
@@ -140,75 +151,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
       if (next != null) _scrollToBottom();
     });
 
-    return Scaffold(
-      backgroundColor: bgApp,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
-        child: AppBar(
-          backgroundColor: bgApp,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/');
-              }
-            },
-          ),
-          titleSpacing: 0,
-          title: Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Epi Chat',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: textPrimary,
-                    ),
-                  ),
-
-                  Text(
-                    chatState.isBackendOnline ? 'Active' : 'Connecting...',
-                    style: TextStyle(fontSize: 11, color: textSecondary),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Remix.history_line, size: 20),
-              tooltip: 'Past chats',
-              color: textSecondary,
-              onPressed: () => _showHistorySheet(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
-            ),
-            IconButton(
-              icon: const Icon(Remix.arrow_go_back_line, size: 20),
-              tooltip: 'Undo last action',
-              color: textSecondary,
-              onPressed: _handleUndo,
-            ),
-            IconButton(
-              icon: const Icon(Remix.add_large_line, size: 20),
-              tooltip: 'New chat',
-              color: textSecondary,
-              onPressed: () {
-                ref.read(epiChatProvider.notifier).clearChat();
-                setState(() => _attachedItems.clear());
-              },
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
+    final chatBody = Column(
           children: [
             // Error banner if any
             if (chatState.error != null)
@@ -368,7 +311,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                             final task = await ref.read(taskDaoProvider).getTask(item.id);
                             if (context.mounted) {
                               if (task != null) {
-                                context.push('/task/${item.id}');
+                                _pushRoute('/task/${item.id}');
                               } else {
                                 FeedbackService.showError('This task has been deleted', context: context);
                               }
@@ -377,14 +320,14 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                             final pin = await ref.read(pinDaoProvider).getPin(item.id);
                             if (context.mounted) {
                               if (pin != null) {
-                                context.push('/note/${item.id}');
+                                _pushRoute('/note/${item.id}');
                               } else {
                                 FeedbackService.showError('This note has been deleted', context: context);
                               }
                             }
                           } else if (item.type == EpiAttachedItemType.schedule) {
                             if (item.id == 'sched_today' || item.id == 'sched_week') {
-                              context.push('/calendar');
+                              _pushRoute('/calendar');
                             } else {
                               _openScheduleSlotById(item.id);
                             }
@@ -503,7 +446,180 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
               ),
             ),
           ],
+        );
+
+    if (widget.isEmbedded) {
+      return Material(
+        color: cardBg,
+        child: Column(
+          children: [
+            Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: borderClr)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: activeBlue.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.auto_awesome, size: 16, color: activeBlue),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Epi Chat',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: chatState.isBackendOnline ? const Color(0xFF10B981) : Colors.amber,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                chatState.isBackendOnline ? 'Active' : 'Connecting...',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 10.5, color: textSecondary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Remix.add_large_line, size: 18),
+                    tooltip: 'New chat',
+                    color: textSecondary,
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      ref.read(epiChatProvider.notifier).clearChat();
+                      setState(() => _attachedItems.clear());
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.open_in_full_rounded, size: 17),
+                    tooltip: 'Full screen',
+                    color: textSecondary,
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(),
+                    onPressed: widget.onExpand ?? () => ref.read(routerProvider).push('/epi'),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 19),
+                    tooltip: 'Close',
+                    color: textSecondary,
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(),
+                    onPressed: widget.onClose,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: chatBody),
+          ],
         ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: bgApp,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: AppBar(
+          backgroundColor: bgApp,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Epi Chat',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                    ),
+                  ),
+
+                  Text(
+                    chatState.isBackendOnline ? 'Active' : 'Connecting...',
+                    style: TextStyle(fontSize: 11, color: textSecondary),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Remix.history_line, size: 20),
+              tooltip: 'Past chats',
+              color: textSecondary,
+              onPressed: () => _showHistorySheet(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
+            ),
+            IconButton(
+              icon: const Icon(Remix.arrow_go_back_line, size: 20),
+              tooltip: 'Undo last action',
+              color: textSecondary,
+              onPressed: _handleUndo,
+            ),
+            IconButton(
+              icon: const Icon(Remix.add_large_line, size: 20),
+              tooltip: 'New chat',
+              color: textSecondary,
+              onPressed: () {
+                ref.read(epiChatProvider.notifier).clearChat();
+                setState(() => _attachedItems.clear());
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        child: chatBody,
       ),
     );
   }
@@ -876,7 +992,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     }
 
     showModalBottomSheet(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -976,7 +1092,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     }
 
     showModalBottomSheet(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1064,7 +1180,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     if (!mounted) return;
 
     showModalBottomSheet(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1256,7 +1372,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     if (!mounted) return;
 
     showModalBottomSheet(
-      context: context,
+      context: rootNavigatorKey.currentContext ?? context,
       backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1480,7 +1596,7 @@ class _EpiInteractiveResultChipState extends ConsumerState<_EpiInteractiveResult
         final task = await taskDao.getTask(id);
         if (context.mounted) {
           if (task != null) {
-            context.push('/task/$id');
+            ref.read(routerProvider).push('/task/$id');
           } else {
             FeedbackService.showError('This task has been deleted', context: context);
           }
@@ -1491,7 +1607,7 @@ class _EpiInteractiveResultChipState extends ConsumerState<_EpiInteractiveResult
         final match = allTasks.where((t) => t.title.trim().toLowerCase() == widget.title.trim().toLowerCase()).firstOrNull;
         if (context.mounted) {
           if (match != null) {
-            context.push('/task/${match.id}');
+            ref.read(routerProvider).push('/task/${match.id}');
           } else {
             FeedbackService.showError('This task has been deleted', context: context);
           }
@@ -1503,7 +1619,7 @@ class _EpiInteractiveResultChipState extends ConsumerState<_EpiInteractiveResult
         final pin = await pinDao.getPin(id);
         if (context.mounted) {
           if (pin != null) {
-            context.push('/note/$id');
+            ref.read(routerProvider).push('/note/$id');
           } else {
             FeedbackService.showError('This note has been deleted', context: context);
           }
@@ -1528,7 +1644,7 @@ class _EpiInteractiveResultChipState extends ConsumerState<_EpiInteractiveResult
         }).firstOrNull;
         if (context.mounted) {
           if (match != null) {
-            context.push('/note/${match.id}');
+            ref.read(routerProvider).push('/note/${match.id}');
           } else {
             FeedbackService.showError('This note has been deleted', context: context);
           }
@@ -1541,13 +1657,13 @@ class _EpiInteractiveResultChipState extends ConsumerState<_EpiInteractiveResult
         final slot = allSlots.where((s) => s.id == id).firstOrNull;
         if (context.mounted) {
           if (slot != null) {
-            EditTimetableSlotDialog.show(context, slot: slot);
+            EditTimetableSlotDialog.show(rootNavigatorKey.currentContext ?? context, slot: slot);
           } else {
             FeedbackService.showError('This schedule slot has been deleted', context: context);
           }
         }
       } else {
-        context.push('/calendar');
+        ref.read(routerProvider).push('/calendar');
       }
     } else if (isBoard) {
       if (id != null && id.isNotEmpty) {
@@ -1555,7 +1671,7 @@ class _EpiInteractiveResultChipState extends ConsumerState<_EpiInteractiveResult
         final board = await boardRepo.getBoard(id);
         if (context.mounted) {
           if (board != null) {
-            context.push('/board/$id');
+            ref.read(routerProvider).push('/board/$id');
           } else {
             FeedbackService.showError('This board has been deleted', context: context);
           }
@@ -1886,7 +2002,7 @@ class _EpiChatTaskCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(14),
               onTap: () {
                 ItemInteractionDialogs.showTaskDetailDialog(
-                  context: context,
+                  context: rootNavigatorKey.currentContext ?? context,
                   ref: ref,
                   task: task,
                   boardTitle: task.boardId ?? 'Inbox',
@@ -2137,7 +2253,7 @@ class _EpiChatNoteCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(14),
               onTap: () {
                 ItemInteractionDialogs.showNoteDetailDialog(
-                  context: context,
+                  context: rootNavigatorKey.currentContext ?? context,
                   ref: ref,
                   note: note,
                   boardTitle: note.boardId ?? '',

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
+import '../../../domain/epi/floating_epi_chat_provider.dart';
 import '../layout/navigation_item.dart';
 import '../core/epicordia_brand.dart';
 import '../../screens/search_screen.dart';
@@ -776,7 +778,7 @@ class _SidebarItem extends StatelessWidget {
 }
 
 // ── Quick Access Item Widget (Distinct non-tab styling for Popup Menu items) ─
-class _QuickAccessItem extends StatelessWidget {
+class _QuickAccessItem extends ConsumerWidget {
   final NavigationItem item;
   final bool isActive;
   final bool isExpanded;
@@ -788,21 +790,33 @@ class _QuickAccessItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isChatOpen = ref.watch(floatingEpiChatProvider);
+    final isEpi = item.route == '/epi';
+    final effectiveActive = isEpi ? (isActive || isChatOpen) : isActive;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
     final textSecondary = isDark
         ? EpicordiaColors.textSecondaryDark
         : EpicordiaColors.textSecondaryLight;
     final chipBg = isDark
-        ? (isActive ? EpicordiaColors.surfaceSunkenDark : Colors.transparent)
-        : (isActive ? EpicordiaColors.blue50.withValues(alpha: 0.6) : Colors.transparent);
+        ? (effectiveActive ? EpicordiaColors.surfaceSunkenDark : Colors.transparent)
+        : (effectiveActive ? EpicordiaColors.blue50.withValues(alpha: 0.6) : Colors.transparent);
+
+    void handleTap() {
+      if (isEpi) {
+        ref.read(floatingEpiChatProvider.notifier).toggle();
+      } else {
+        context.go(item.route);
+      }
+    }
 
     if (!isExpanded) {
       return Tooltip(
         message: item.label,
         child: InkWell(
-          onTap: () => context.go(item.route),
+          onTap: handleTap,
           borderRadius: BorderRadius.circular(10),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
@@ -815,7 +829,7 @@ class _QuickAccessItem extends StatelessWidget {
             child: Icon(
               item.icon,
               size: 20,
-              color: isActive ? activeColor : textSecondary,
+              color: effectiveActive ? activeColor : textSecondary,
             ),
           ),
         ),
@@ -823,7 +837,7 @@ class _QuickAccessItem extends StatelessWidget {
     }
 
     return InkWell(
-      onTap: () => context.go(item.route),
+      onTap: handleTap,
       borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -838,7 +852,7 @@ class _QuickAccessItem extends StatelessWidget {
             Icon(
               item.icon,
               size: 18,
-              color: isActive ? activeColor : textSecondary,
+              color: effectiveActive ? activeColor : textSecondary,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -846,13 +860,13 @@ class _QuickAccessItem extends StatelessWidget {
                 item.label,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive ? activeColor : textSecondary,
+                  fontWeight: effectiveActive ? FontWeight.w600 : FontWeight.w400,
+                  color: effectiveActive ? activeColor : textSecondary,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (isActive) ...[
+            if (effectiveActive) ...[
               Container(
                 width: 6,
                 height: 6,

@@ -26,6 +26,27 @@ class EpiApiService {
 
   EpiApiService(this.ref);
 
+  static String _formatOffset(Duration offset) {
+    final sign = offset.isNegative ? '-' : '+';
+    final hours = offset.inHours.abs().toString().padLeft(2, '0');
+    final minutes = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
+    return '$sign$hours:$minutes';
+  }
+
+  static String _formatHumanReadableLocalTime(DateTime dt) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    final dayName = days[dt.weekday - 1];
+    final monthName = months[dt.month - 1];
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$dayName, $monthName ${dt.day}, ${dt.year} at $hour12:$minute $period';
+  }
+
   /// Builds the local device context snapshot for Epi.
   /// 
   /// CRITICAL PRIVACY INVARIANT:
@@ -261,9 +282,15 @@ class EpiApiService {
       if (noteContextList.length >= 10) break;
     }
 
+    final offsetStr = _formatOffset(now.timeZoneOffset);
+    final localIso = '${now.toIso8601String()}$offsetStr';
+    final humanReadable = _formatHumanReadableLocalTime(now);
+
     return {
-      'currentTime': now.toUtc().toIso8601String(),
-      'userTimezone': DateTime.now().timeZoneName,
+      'currentTime': localIso,
+      'formattedLocalTime': humanReadable,
+      'userTimezone': now.timeZoneName.isNotEmpty ? now.timeZoneName : offsetStr,
+      'timeZoneOffset': offsetStr,
       'userName': userName,
       'boards': boardSummaries,
       'overdueCount': overdueCount,

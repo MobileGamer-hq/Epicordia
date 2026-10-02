@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../data/database/database.dart';
 import '../../data/providers.dart';
@@ -1618,9 +1619,10 @@ class EpiToolExecutor {
   Future<bool> _showConfirmationDialog(BuildContext context, EpiActionCall action) async {
     final title = action.parameters['title']?.toString() ?? 'this item';
     final tool = action.tool.replaceAll('_', ' ');
+    final targetContext = rootNavigatorKey.currentContext ?? context;
 
     final result = await showDialog<bool>(
-      context: context,
+      context: targetContext,
       barrierDismissible: false,
       builder: (ctx) {
         return AlertDialog(
@@ -1812,11 +1814,9 @@ class EpiToolExecutor {
         break;
     }
 
-    // Schedule navigation on next frame if context is mounted
+    // Schedule navigation on next frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        context.push(targetRoute);
-      }
+      ref.read(routerProvider).push(targetRoute);
     });
 
     return EpiActionExecutionRecord(
