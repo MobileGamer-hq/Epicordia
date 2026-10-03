@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/router.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../data/database/database.dart';
@@ -16,6 +15,7 @@ import '../../presentation/notifiers/alarm_timer_provider.dart';
 import 'epi_models.dart';
 import 'epi_action_log.dart';
 import '../../data/repository/board_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'epi_chat_controller.dart';
 
 final epiToolExecutorProvider = Provider<EpiToolExecutor>((ref) {
@@ -55,6 +55,15 @@ class EpiToolExecutor {
 
         case 'update_task':
           return await _executeUpdateTask(action);
+
+        case 'remove_subtask':
+          return await _executeRemoveSubtask(action);
+
+        case 'update_subtask':
+          return await _executeUpdateSubtask(action);
+
+        case 'keep_overdue_task':
+          return await _executeKeepOverdueTask(action);
 
         case 'set_task_status':
           return await _executeSetTaskStatus(action);
@@ -255,13 +264,37 @@ class EpiToolExecutor {
 
     final prevTask = existing;
 
+    final payload = TaskSubitem.decodeNotes(existing.notes);
+    String? newNotesString;
+    if (action.parameters['notes'] != null || action.parameters['subtasks'] != null) {
+      final newUserNotes = action.parameters['notes'] != null
+          ? _stripDashes(action.parameters['notes']!.toString())
+          : payload.userNotes;
+
+      List<TaskSubitem> updatedSubitems = payload.subitems;
+      if (action.parameters['subtasks'] is List) {
+        final rawList = (action.parameters['subtasks'] as List)
+            .map((e) => _stripDashes(e.toString()))
+            .toList();
+        final nowMs = DateTime.now().millisecondsSinceEpoch;
+        updatedSubitems = [
+          for (var i = 0; i < rawList.length; i++)
+            TaskSubitem(id: '${nowMs}_$i', title: rawList[i], isDone: false)
+        ];
+      }
+      newNotesString = TaskSubitem.encodeNotes(
+        userNotes: newUserNotes,
+        subitems: updatedSubitems,
+      );
+    } else {
+      newNotesString = existing.notes;
+    }
+
     final updated = existing.copyWith(
       title: action.parameters['title'] != null
           ? _stripDashes(action.parameters['title']!.toString())
           : existing.title,
-      notes: action.parameters['notes'] != null
-          ? drift.Value(_stripDashes(action.parameters['notes']!.toString()))
-          : drift.Value(existing.notes),
+      notes: drift.Value(newNotesString),
       priority: (action.parameters['priority'] as num?)?.toInt() ?? existing.priority,
       boardId: action.parameters['board_id'] != null
           ? drift.Value(action.parameters['board_id']?.toString())
@@ -305,6 +338,186 @@ class EpiToolExecutor {
         'priority': updated.priority,
         'type': 'task',
       },
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeRemoveSubtask(EpiActionCall action) async {
+    final taskId = action.parameters['task_id']?.toString();
+    final subtaskTitle = action.parameters['subtask_title']?.toString();
+    final subtaskIndex = (action.parameters['subtask_index'] as num?)?.toInt();
+    if (taskId == null) throw Exception('task_id is required for remove_subtask');
+    if (subtaskTitle == null && subtaskIndex == null) {
+      throw Exception('subtask_title or subtask_index is required');
+    }
+
+    final taskDao = ref.read(taskDaoProvider);
+    final taskRepo = ref.read(taskRepositoryProvider);
+    final existing = await taskDao.getTask(taskId);
+    if (existing == null) throw Exception('Task $taskId not found');
+
+    final payload = TaskSubitem.decodeNotes(existing.notes);
+    final subitems = List<TaskSubitem>.from(payload.subitems);
+    int removeIndex = -1;
+
+    if (subtaskIndex != null && subtaskIndex >= 0 && subtaskIndex < subitems.length) {
+      removeIndex = subtaskIndex;
+    } else if (subtaskTitle != null) {
+      final target = subtaskTitle.toLowerCase().trim();
+      removeIndex = subitems.indexWhere(
+        (s) => s.title.toLowerCase().trim() == target || s.title.toLowerCase().contains(target),
+      );
+    }
+
+    if (removeIndex == -1) {
+      return EpiActionExecutionRecord(
+        action: action,
+        status: ActionExecutionStatus.failed,
+        message: 'Subtask "${subtaskTitle ?? ''}" not found on "${existing.title}"',
+        createdEntityId: taskId,
+        entityIds: [taskId],
+        timestamp: DateTime.now(),
+      );
+    }
+
+    final removedItem = subitems.removeAt(removeIndex);
+    final newNotes = TaskSubitem.encodeNotes(
+      userNotes: payload.userNotes,
+      subitems: subitems,
+    );
+
+    final prevTask = existing;
+    await taskRepo.updateTask(existing.copyWith(
+      notes: drift.Value(newNotes),
+      modifiedAt: DateTime.now(),
+    ));
+
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      entityId: taskId,
+      summary: 'Removed subtask "${removedItem.title}" from "${existing.title}"',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        await taskRepo.updateTask(prevTask);
+      },
+    ));
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Removed subtask "${removedItem.title}" from "${existing.title}"',
+      createdEntityId: taskId,
+      entityIds: [taskId],
+      outputData: {
+        'id': taskId,
+        'title': existing.title,
+        'removedSubtask': removedItem.title,
+        'remainingSubtasks': subitems.map((s) => s.title).toList(),
+      },
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeUpdateSubtask(EpiActionCall action) async {
+    final taskId = action.parameters['task_id']?.toString();
+    final subtaskTitle = action.parameters['subtask_title']?.toString();
+    final newTitle = action.parameters['new_title']?.toString();
+    final isCompleted = action.parameters['is_completed'] as bool?;
+
+    if (taskId == null) throw Exception('task_id is required for update_subtask');
+    if (subtaskTitle == null) throw Exception('subtask_title is required');
+
+    final taskDao = ref.read(taskDaoProvider);
+    final taskRepo = ref.read(taskRepositoryProvider);
+    final existing = await taskDao.getTask(taskId);
+    if (existing == null) throw Exception('Task $taskId not found');
+
+    final payload = TaskSubitem.decodeNotes(existing.notes);
+    final subitems = List<TaskSubitem>.from(payload.subitems);
+    final target = subtaskTitle.toLowerCase().trim();
+    final index = subitems.indexWhere(
+      (s) => s.title.toLowerCase().trim() == target || s.title.toLowerCase().contains(target),
+    );
+
+    if (index == -1) {
+      return EpiActionExecutionRecord(
+        action: action,
+        status: ActionExecutionStatus.failed,
+        message: 'Subtask "$subtaskTitle" not found on "${existing.title}"',
+        createdEntityId: taskId,
+        entityIds: [taskId],
+        timestamp: DateTime.now(),
+      );
+    }
+
+    final currentItem = subitems[index];
+    final updatedItem = TaskSubitem(
+      id: currentItem.id,
+      title: newTitle != null ? _stripDashes(newTitle) : currentItem.title,
+      isDone: isCompleted ?? currentItem.isDone,
+    );
+    subitems[index] = updatedItem;
+
+    final newNotes = TaskSubitem.encodeNotes(
+      userNotes: payload.userNotes,
+      subitems: subitems,
+    );
+
+    final prevTask = existing;
+    await taskRepo.updateTask(existing.copyWith(
+      notes: drift.Value(newNotes),
+      modifiedAt: DateTime.now(),
+    ));
+
+    ref.read(epiActionLogProvider.notifier).recordAction(EpiLogEntry(
+      id: action.id,
+      tool: action.tool,
+      tier: action.tier,
+      parameters: action.parameters,
+      entityId: taskId,
+      summary: 'Updated subtask "${updatedItem.title}" on "${existing.title}"',
+      timestamp: DateTime.now(),
+      undoAction: () async {
+        await taskRepo.updateTask(prevTask);
+      },
+    ));
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Updated subtask "${updatedItem.title}" on "${existing.title}"',
+      createdEntityId: taskId,
+      entityIds: [taskId],
+      outputData: {
+        'id': taskId,
+        'title': existing.title,
+        'subtask': updatedItem.title,
+        'isDone': updatedItem.isDone,
+      },
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeKeepOverdueTask(EpiActionCall action) async {
+    final taskId = action.parameters['task_id']?.toString();
+    if (taskId == null) throw Exception('task_id is required for keep_overdue_task');
+
+    final prefs = await SharedPreferences.getInstance();
+    final dismissed = prefs.getStringList('dismissed_overdue_tasks') ?? [];
+    if (!dismissed.contains(taskId)) {
+      dismissed.add(taskId);
+      await prefs.setStringList('dismissed_overdue_tasks', dismissed);
+    }
+
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Noted: Keeping overdue task.',
+      createdEntityId: taskId,
+      entityIds: [taskId],
       timestamp: DateTime.now(),
     );
   }
@@ -416,6 +629,12 @@ class EpiToolExecutor {
     final tag = action.parameters['tag']?.toString() ?? 'General';
     final boardId = action.parameters['board_id']?.toString();
 
+    final isJournal = action.parameters['is_journal'] == true ||
+        tag.toLowerCase().contains('journal');
+    final effectiveTag = isJournal
+        ? (tag.toLowerCase().contains('journal') ? tag : (tag.isEmpty || tag == 'General' ? 'Journal' : '$tag, Journal'))
+        : tag;
+
     final allBlocks = <NoteBlock>[];
     if (title.isNotEmpty) {
       allBlocks.add(NoteBlock(type: BlockType.heading, text: title));
@@ -435,7 +654,8 @@ class EpiToolExecutor {
       type: 'note',
       boardId: boardId != null && boardId.isNotEmpty ? drift.Value(boardId) : const drift.Value.absent(),
       content: drift.Value(contentJson),
-      tags: drift.Value(tag),
+      tags: drift.Value(effectiveTag),
+      entryDate: isJournal ? drift.Value(DateTime.now()) : const drift.Value.absent(),
       isLocked: const drift.Value(false), // STRICT RULE: never locked
     );
 
@@ -539,6 +759,20 @@ class EpiToolExecutor {
     if (tags != null) {
       updated = updated.copyWith(tags: drift.Value(tags));
       updatedFields.add('tags');
+    }
+
+    final isJournal = action.parameters['is_journal'] == true ||
+        (tags != null && tags.toLowerCase().contains('journal'));
+    if (isJournal) {
+      final existingTags = updated.tags ?? '';
+      final newTags = existingTags.toLowerCase().contains('journal')
+          ? existingTags
+          : (existingTags.isEmpty ? 'Journal' : '$existingTags, Journal');
+      updated = updated.copyWith(
+        tags: drift.Value(newTags),
+        entryDate: updated.entryDate == null ? drift.Value(DateTime.now()) : drift.Value(updated.entryDate),
+      );
+      updatedFields.add('is_journal');
     }
 
     if (boardId != null) {
@@ -856,6 +1090,12 @@ class EpiToolExecutor {
       message: 'Added ${newSubitems.length} ${newSubitems.length == 1 ? 'subtask' : 'subtasks'} to "${existing.title}"',
       createdEntityId: taskId,
       entityIds: [taskId],
+      outputData: {
+        'id': taskId,
+        'title': existing.title,
+        'subtasksCount': newSubitems.length,
+        'type': 'task',
+      },
       timestamp: DateTime.now(),
     );
   }

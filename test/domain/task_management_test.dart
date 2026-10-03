@@ -134,11 +134,11 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('Default values are autoDelete: true, hours: 24', () {
+    test('Default values are autoDelete: true, hours: 168 (1 week)', () {
       final container = ProviderContainer();
       final state = container.read(taskSettingsProvider);
       expect(state.autoDeleteCompleted, isTrue);
-      expect(state.autoDeleteHours, 24);
+      expect(state.autoDeleteHours, 168);
     });
 
     test('Can toggle autoDelete and change retention hours', () async {
@@ -235,7 +235,7 @@ void main() {
       final taskDao = container.read(taskDaoProvider);
 
       final now = DateTime.now();
-      final oldModified = now.subtract(const Duration(hours: 30));
+      final oldModified = now.subtract(const Duration(hours: 200));
 
       await taskDao.insertTask(
         TasksCompanion.insert(
@@ -260,6 +260,11 @@ void main() {
 
       final all = await taskDao.getAllTasks();
       expect(all, isEmpty);
+    });
+
+    test('taskSettingsProvider defaults to 168 hours (1 week)', () {
+      final settings = container.read(taskSettingsProvider);
+      expect(settings.autoDeleteHours, 168);
     });
   });
 

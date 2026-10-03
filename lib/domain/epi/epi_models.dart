@@ -74,6 +74,7 @@ class EpiToolExecutionResult {
 class EpiChatResponse {
   final String reply;
   final List<EpiActionCall> actions;
+  final List<EpiActionCall> executedActions;
   final EpiResponseStatus status;
   final String sessionId;
   final String modelUsed;
@@ -81,6 +82,7 @@ class EpiChatResponse {
   const EpiChatResponse({
     required this.reply,
     required this.actions,
+    this.executedActions = const [],
     this.status = EpiResponseStatus.finalResponse,
     required this.sessionId,
     required this.modelUsed,
@@ -88,6 +90,11 @@ class EpiChatResponse {
 
   factory EpiChatResponse.fromJson(Map<String, dynamic> json) {
     final actionsList = (json['actions'] as List<dynamic>?)
+            ?.map((e) => EpiActionCall.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    final executedList = (json['executedActions'] as List<dynamic>?)
             ?.map((e) => EpiActionCall.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -100,6 +107,7 @@ class EpiChatResponse {
     return EpiChatResponse(
       reply: json['reply'] as String? ?? '',
       actions: actionsList,
+      executedActions: executedList,
       status: parsedStatus,
       sessionId: json['sessionId'] as String? ?? '',
       modelUsed: json['modelUsed'] as String? ?? '',
@@ -318,6 +326,7 @@ class EpiStreamEvent {
   final EpiActionCall? action;
   final String? fullReply;
   final List<EpiActionCall>? finalActions;
+  final List<EpiActionCall>? executedActions;
   final EpiResponseStatus? status;
   final String? modelUsed;
   final String? errorMessage;
@@ -329,6 +338,7 @@ class EpiStreamEvent {
     this.action,
     this.fullReply,
     this.finalActions,
+    this.executedActions,
     this.status,
     this.modelUsed,
     this.errorMessage,

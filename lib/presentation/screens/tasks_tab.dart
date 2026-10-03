@@ -320,193 +320,209 @@ class _TasksTabState extends ConsumerState<TasksTab> {
         {};
 
     return ResponsiveScaffold(
-      child: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Row(
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Row(
                     children: [
-                      Text(
-                        'Tasks',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: textPrimary,
-                          letterSpacing: -0.3,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tasks',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: textPrimary,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Track your action items, to-dos & deadlines',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Track your action items, to-dos & deadlines',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: textSecondary,
-                        ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                // Search + filters + Sort
+                Container(
+                  color: bgApp,
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                  child: Column(
+                    children: [
+                      // Search bar & Sort trigger
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              style: TextStyle(color: textPrimary),
+                              decoration: InputDecoration(
+                                hintText: 'Filter tasks by name, tag, or board...',
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  size: 18,
+                                  color: textTertiary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () => _showSortBottomSheet(context),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getSortCriterionIcon(_selectedSort),
+                                    size: 18,
+                                    color: activeBlue,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    _sortDirection == SortDirection.ascending
+                                        ? Icons.arrow_upward_rounded
+                                        : Icons.arrow_downward_rounded,
+                                    size: 16,
+                                    color: activeBlue,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+
+                      const SizedBox(height: 14),
+                      // Filter chips & Active Sort Indicator
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: _filters.map((f) {
+                                  final selected = _selectedFilter == f;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: GestureDetector(
+                                      onTap: () => setState(() => _selectedFilter = f),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 150),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: selected
+                                              ? activeBlue
+                                              : (isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: selected ? activeBlue : borderStrong,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          f,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                            color: selected ? Colors.white : textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
               ],
             ),
           ),
+          ...tasksAsync.when(
+            loading: () => [
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
+            error: (err, stack) => [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text('Error: $err')),
+              ),
+            ],
+            data: (tasks) {
+              final now = DateTime.now();
+              final startOfToday = DateTime(now.year, now.month, now.day);
+              final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
 
-          const SizedBox(height: 16),
-          // Search + filters + Sort
-          Container(
-            color: bgApp,
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-            child: Column(
-              children: [
-                // Search bar & Sort trigger
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        style: TextStyle(color: textPrimary),
-                        decoration: InputDecoration(
-                          hintText: 'Filter tasks by name, tag, or board...',
-                          prefixIcon: Icon(
-                            Icons.search,
-                            size: 18,
-                            color: textTertiary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => _showSortBottomSheet(context),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _getSortCriterionIcon(_selectedSort),
-                              size: 18,
-                              color: activeBlue,
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              _sortDirection == SortDirection.ascending
-                                  ? Icons.arrow_upward_rounded
-                                  : Icons.arrow_downward_rounded,
-                              size: 16,
-                              color: activeBlue,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              // 1. Search Query
+              final query = _searchController.text.trim().toLowerCase();
+              var filtered = tasks.where((task) {
+                if (query.isEmpty) return true;
+                final matchesTitle = task.title.toLowerCase().contains(query);
+                final matchesNotes = (task.notes ?? '').toLowerCase().contains(query);
+                return matchesTitle || matchesNotes;
+              }).toList();
 
-                const SizedBox(height: 14),
-                // Filter chips & Active Sort Indicator
-                Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: _filters.map((f) {
-                            final selected = _selectedFilter == f;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: GestureDetector(
-                                onTap: () => setState(() => _selectedFilter = f),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: selected
-                                        ? activeBlue
-                                        : (isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: selected ? activeBlue : borderStrong,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    f,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                                      color: selected ? Colors.white : textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-          // Task list
-          Expanded(
-            child: SelectionArea(
-              child: tasksAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Error: $err')),
-                data: (tasks) {
-                  final now = DateTime.now();
-                  final startOfToday = DateTime(now.year, now.month, now.day);
-                  final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+              // 2. Chip Filter
+              if (_selectedFilter == 'In Progress') {
+                filtered = filtered.where((t) => t.status == 'in_progress').toList();
+              } else if (_selectedFilter == 'Due Today') {
+                filtered = filtered.where((t) {
+                  return t.dueDate != null &&
+                      t.dueDate!.isAfter(startOfToday) &&
+                      t.dueDate!.isBefore(endOfToday);
+                }).toList();
+              } else if (_selectedFilter == 'Overdue') {
+                filtered = filtered.where((t) {
+                  return t.status != 'done' &&
+                      t.dueDate != null &&
+                      t.dueDate!.isBefore(startOfToday);
+                }).toList();
+              } else if (_selectedFilter == 'Boards') {
+                filtered = filtered.where((t) => t.boardId != null).toList();
+                filtered.sort((a, b) {
+                  final titleA = boardsMap[a.boardId]?.title ?? '';
+                  final titleB = boardsMap[b.boardId]?.title ?? '';
+                  return titleA.compareTo(titleB);
+                });
+              }
 
-                  // 1. Search Query
-                  final query = _searchController.text.trim().toLowerCase();
-                  var filtered = tasks.where((task) {
-                    if (query.isEmpty) return true;
-                    final matchesTitle = task.title.toLowerCase().contains(query);
-                    final matchesNotes = (task.notes ?? '').toLowerCase().contains(query);
-                    return matchesTitle || matchesNotes;
-                  }).toList();
+              // 3. Apply Selected Sorting Criterion & Direction
+              final sortedTasks = _applySorting(filtered);
 
-                  // 2. Chip Filter
-                  if (_selectedFilter == 'In Progress') {
-                    filtered = filtered.where((t) => t.status == 'in_progress').toList();
-                  } else if (_selectedFilter == 'Due Today') {
-                    filtered = filtered.where((t) {
-                      return t.dueDate != null &&
-                          t.dueDate!.isAfter(startOfToday) &&
-                          t.dueDate!.isBefore(endOfToday);
-                    }).toList();
-                  } else if (_selectedFilter == 'Overdue') {
-                    filtered = filtered.where((t) {
-                      return t.status != 'done' &&
-                          t.dueDate != null &&
-                          t.dueDate!.isBefore(startOfToday);
-                    }).toList();
-                  } else if (_selectedFilter == 'Boards') {
-                    filtered = filtered.where((t) => t.boardId != null).toList();
-                    filtered.sort((a, b) {
-                      final titleA = boardsMap[a.boardId]?.title ?? '';
-                      final titleB = boardsMap[b.boardId]?.title ?? '';
-                      return titleA.compareTo(titleB);
-                    });
-                  }
-
-                  // 3. Apply Selected Sorting Criterion & Direction
-                  final sortedTasks = _applySorting(filtered);
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+              return [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                  sliver: SliverList.separated(
                     itemCount: sortedTasks.length + 1,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
@@ -528,10 +544,10 @@ class _TasksTabState extends ConsumerState<TasksTab> {
                         dueFormatted: TaskDateFormatter.formatDueDate(task.dueDate),
                       );
                     },
-                  );
-                },
-              ),
-            ),
+                  ),
+                ),
+              ];
+            },
           ),
         ],
       ),

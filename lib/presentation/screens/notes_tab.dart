@@ -76,203 +76,224 @@ class _NotesTabState extends ConsumerState<NotesTab> {
         {};
 
     return ResponsiveScaffold(
-      child: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
                     children: [
-                      Text(
-                        'Notes',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: textPrimary,
-                          letterSpacing: -0.3,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Notes',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: textPrimary,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Capture thoughts, lists, and quick ideas',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Capture thoughts, lists, and quick ideas',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: textSecondary,
+                      // View Mode Switcher (Bare toggle icon matching Boards tab)
+                      IconButton(
+                        icon: Icon(
+                          _viewMode == NoteViewMode.list
+                              ? Icons.view_list
+                              : (_viewMode == NoteViewMode.grid ? Icons.grid_view : Icons.view_headline),
+                          color: textPrimary,
+                          size: 22,
                         ),
+                        tooltip: 'Toggle View Mode',
+                        onPressed: () {
+                          setState(() {
+                            if (_viewMode == NoteViewMode.list) {
+                              _viewMode = NoteViewMode.grid;
+                            } else if (_viewMode == NoteViewMode.grid) {
+                              _viewMode = NoteViewMode.detailed;
+                            } else {
+                              _viewMode = NoteViewMode.list;
+                            }
+                          });
+                        },
                       ),
                     ],
                   ),
                 ),
-                // View Mode Switcher (Bare toggle icon matching Boards tab)
-                IconButton(
-                  icon: Icon(
-                    _viewMode == NoteViewMode.list
-                        ? Icons.view_list
-                        : (_viewMode == NoteViewMode.grid ? Icons.grid_view : Icons.view_headline),
-                    color: textPrimary,
-                    size: 22,
+
+                const SizedBox(height: 12),
+                // Search + filters
+                Container(
+                  color: bgApp,
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _searchController,
+                        style: TextStyle(color: textPrimary),
+                        decoration: InputDecoration(
+                          hintText: 'Search across all notes...',
+                          prefixIcon: Icon(
+                            Icons.search,
+                            size: 18,
+                            color: textTertiary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _filters.map((f) {
+                            final selected = _selectedFilter == f;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () => setState(() => _selectedFilter = f),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? activeBlue
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: selected
+                                          ? activeBlue
+                                          : borderStrong,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    f,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: selected
+                                            ? Colors.white
+                                            : textSecondary),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ),
-                  tooltip: 'Toggle View Mode',
-                  onPressed: () {
-                    setState(() {
-                      if (_viewMode == NoteViewMode.list) {
-                        _viewMode = NoteViewMode.grid;
-                      } else if (_viewMode == NoteViewMode.grid) {
-                        _viewMode = NoteViewMode.detailed;
-                      } else {
-                        _viewMode = NoteViewMode.list;
-                      }
-                    });
-                  },
                 ),
               ],
             ),
           ),
+          ...notesAsync.when(
+            loading: () => [
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
+            error: (err, stack) => [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text('Error: $err')),
+              ),
+            ],
+            data: (notes) {
+              // 1. Search Filter
+              final query = _searchController.text.trim().toLowerCase();
+              var filtered = notes.where((note) {
+                if (query.isEmpty) return true;
+                final title = NoteDocument.extractTitle(note.content ?? '').toLowerCase();
+                final body = NoteDocument.extractPlainText(note.content ?? '').toLowerCase();
+                return title.contains(query) || body.contains(query);
+              }).toList();
 
-          const SizedBox(height: 12),
-          // Search + filters
-          Container(
-            color: bgApp,
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  style: TextStyle(color: textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Search across all notes...',
-                    prefixIcon: Icon(
-                      Icons.search,
-                      size: 18,
-                      color: textTertiary,
+              // 2. Chip Filter
+              if (_selectedFilter == 'Recent') {
+                filtered.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+              } else if (_selectedFilter == 'Pinned') {
+                filtered = filtered.where((n) => n.boardId != null).toList();
+              } else if (_selectedFilter == 'Journal') {
+                filtered = filtered.where((n) {
+                  final t = (n.tags ?? n.colorTag ?? '').toLowerCase();
+                  return t.contains('journal');
+                }).toList();
+              } else if (_selectedFilter == 'Ideas') {
+                filtered = filtered.where((n) {
+                  final t = (n.tags ?? n.colorTag ?? '').toLowerCase();
+                  final c = (n.content ?? '').toLowerCase();
+                  return t.contains('idea') || c.contains('idea') || c.contains('thought');
+                }).toList();
+              } else if (_selectedFilter == 'Locked') {
+                filtered = filtered.where((n) => n.isLocked).toList();
+              }
+
+              if (_viewMode == NoteViewMode.grid) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                final gridCrossAxisCount = screenWidth >= 1000
+                    ? 4
+                    : (screenWidth >= 600 ? 3 : 2);
+
+                return [
+                  if (filtered.isNotEmpty)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      sliver: SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: gridCrossAxisCount,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.95,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final note = filtered[index];
+                            final boardTitle = nBoardTitle(note.boardId, boardsMap);
+                            return InteractiveNoteCard(
+                              note: note,
+                              boardTitle: boardTitle,
+                              timeFormatted: _formatModified(note.modifiedAt),
+                            );
+                          },
+                          childCount: filtered.length,
+                        ),
+                      ),
+                    ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                    sliver: SliverToBoxAdapter(
+                      child: _CreateNoteButton(
+                        onTap: () => context.push('/create/note'),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _filters.map((f) {
-                      final selected = _selectedFilter == f;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selectedFilter = f),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? activeBlue
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: selected
-                                    ? activeBlue
-                                    : borderStrong,
-                              ),
-                            ),
-                            child: Text(
-                              f,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: selected
-                                      ? Colors.white
-                                      : textSecondary),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-          // Notes list / grid / detailed
-          Expanded(
-            child: SelectionArea(
-              child: notesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Error: $err')),
-                data: (notes) {
-                  // 1. Search Filter
-                  final query = _searchController.text.trim().toLowerCase();
-                  var filtered = notes.where((note) {
-                    if (query.isEmpty) return true;
-                    final title = NoteDocument.extractTitle(note.content ?? '').toLowerCase();
-                    final body = NoteDocument.extractPlainText(note.content ?? '').toLowerCase();
-                    return title.contains(query) || body.contains(query);
-                  }).toList();
+                ];
+              }
 
-                  // 2. Chip Filter
-                  if (_selectedFilter == 'Recent') {
-                    filtered.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
-                  } else if (_selectedFilter == 'Pinned') {
-                    filtered = filtered.where((n) => n.boardId != null).toList();
-                  } else if (_selectedFilter == 'Journal') {
-                    filtered = filtered.where((n) {
-                      final t = (n.tags ?? n.colorTag ?? '').toLowerCase();
-                      return t.contains('journal');
-                    }).toList();
-                  } else if (_selectedFilter == 'Ideas') {
-                    filtered = filtered.where((n) {
-                      final t = (n.tags ?? n.colorTag ?? '').toLowerCase();
-                      final c = (n.content ?? '').toLowerCase();
-                      return t.contains('idea') || c.contains('idea') || c.contains('thought');
-                    }).toList();
-                  } else if (_selectedFilter == 'Locked') {
-                    filtered = filtered.where((n) => n.isLocked).toList();
-                  }
-
-                  if (_viewMode == NoteViewMode.grid) {
-                    final screenWidth = MediaQuery.of(context).size.width;
-                    final gridCrossAxisCount = screenWidth >= 1000
-                        ? 4
-                        : (screenWidth >= 600 ? 3 : 2);
-
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                      children: [
-                        if (filtered.isNotEmpty)
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: gridCrossAxisCount,
-                              crossAxisSpacing: 10,
-                              mainAxisSpacing: 10,
-                              childAspectRatio: 0.95,
-                            ),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final note = filtered[index];
-                              final boardTitle = nBoardTitle(note.boardId, boardsMap);
-                              return InteractiveNoteCard(
-                                note: note,
-                                boardTitle: boardTitle,
-                                timeFormatted: _formatModified(note.modifiedAt),
-                              );
-                            },
-                          ),
-                        _CreateNoteButton(
-                          onTap: () => context.push('/create/note'),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+              return [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                  sliver: SliverList.separated(
                     itemCount: filtered.length + 1,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
@@ -291,10 +312,10 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                         isExpanded: _viewMode == NoteViewMode.detailed,
                       );
                     },
-                  );
-                },
-              ),
-            ),
+                  ),
+                ),
+              ];
+            },
           ),
         ],
       ),

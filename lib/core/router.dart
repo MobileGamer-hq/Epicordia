@@ -26,6 +26,7 @@ import '../presentation/screens/task_focus_screen.dart';
 import '../domain/models/in_app_alarm_model.dart';
 import '../presentation/screens/create_alarm_screen.dart';
 import '../presentation/screens/epi_chat_screen.dart';
+import '../domain/epi/epi_models.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -101,9 +102,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               (state.extra is Map ? (state.extra as Map)['boardTitle'] as String? : null);
           final initialPrompt = state.uri.queryParameters['prompt'] ??
               (state.extra is Map ? (state.extra as Map)['prompt'] as String? : null);
+          final initialAttachedItems = state.extra is Map
+              ? (state.extra as Map)['attachedItems'] as List<EpiAttachedItem>?
+              : (state.extra is List<EpiAttachedItem>
+                  ? state.extra as List<EpiAttachedItem>
+                  : null);
           return EpiChatScreen(
             initialBoardContext: boardContext,
             initialPrompt: initialPrompt,
+            initialAttachedItems: initialAttachedItems,
           );
         },
       ),

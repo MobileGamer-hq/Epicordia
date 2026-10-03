@@ -7,7 +7,7 @@ class TaskSettingsState {
 
   const TaskSettingsState({
     this.autoDeleteCompleted = true,
-    this.autoDeleteHours = 24,
+    this.autoDeleteHours = 168,
   });
 
   TaskSettingsState copyWith({
@@ -71,7 +71,7 @@ class TaskSettingsNotifier extends Notifier<TaskSettingsState> {
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final autoDelete = prefs.getBool(_keyAutoDelete) ?? true;
-    final hours = prefs.getInt(_keyRetentionHours) ?? 24;
+    final hours = prefs.getInt(_keyRetentionHours) ?? 168;
     state = TaskSettingsState(
       autoDeleteCompleted: autoDelete,
       autoDeleteHours: hours,

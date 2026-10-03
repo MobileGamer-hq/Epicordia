@@ -49,8 +49,9 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
     final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
     final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
 
-    return ResponsiveScaffold(
+    final headerAndSearch = SliverToBoxAdapter(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with Title & View Mode Toggle
           Padding(
@@ -125,30 +126,52 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
               ),
             ),
           ),
-          Expanded(
-            child: StreamBuilder(
-              stream: boardsAsync,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final allBoards = snapshot.data ?? [];
-                final boards = _searchQuery.isEmpty
-                    ? allBoards
-                    : allBoards.where((b) => b.title.toLowerCase().contains(_searchQuery)).toList();
-
-                if (boards.isEmpty) {
-                  return _EmptyBoardsState();
-                }
-
-                return _isGrid
-                    ? _GridView(boards: boards)
-                    : _ListView(boards: boards);
-              },
-            ),
-          ),
         ],
+      ),
+    );
+
+    return ResponsiveScaffold(
+      child: StreamBuilder(
+        stream: boardsAsync,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CustomScrollView(
+              slivers: [
+                headerAndSearch,
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+            );
+          }
+
+          final allBoards = snapshot.data ?? [];
+          final boards = _searchQuery.isEmpty
+              ? allBoards
+              : allBoards.where((b) => b.title.toLowerCase().contains(_searchQuery)).toList();
+
+          if (boards.isEmpty) {
+            return CustomScrollView(
+              slivers: [
+                headerAndSearch,
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyBoardsState(),
+                ),
+              ],
+            );
+          }
+
+          return CustomScrollView(
+            slivers: [
+              headerAndSearch,
+              _isGrid
+                  ? _GridView(boards: boards)
+                  : _ListView(boards: boards),
+            ],
+          );
+        },
       ),
     );
   }
@@ -213,27 +236,31 @@ class _GridView extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
 
-    return GridView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.all(20),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: width > 500 ? 3 : 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.0,
-      ),
-      itemCount: boards.length,
-      itemBuilder: (context, index) {
-        final board = boards[index];
-        final colors = [
-          const Color(0xFF8B9DC3),
-          const Color(0xFFA8B4C8),
-          const Color(0xFF6B7FA0),
-          const Color(0xFF9EAAC4),
-        ];
-        final color = colors[index % colors.length];
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: width > 500 ? 3 : 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.0,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final board = boards[index];
+            final colors = [
+              const Color(0xFF8B9DC3),
+              const Color(0xFFA8B4C8),
+              const Color(0xFF6B7FA0),
+              const Color(0xFF9EAAC4),
+            ];
+            final color = colors[index % colors.length];
 
-        return _BoardGridCard(board: board, color: color);
-      },
+            return _BoardGridCard(board: board, color: color);
+          },
+          childCount: boards.length,
+        ),
+      ),
     );
   }
 }
@@ -331,14 +358,16 @@ class _ListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return SliverPadding(
       padding: const EdgeInsets.all(20),
-      itemCount: boards.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final board = boards[index];
-        return _CollapsibleBoardListCard(board: board);
-      },
+      sliver: SliverList.separated(
+        itemCount: boards.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final board = boards[index];
+          return _CollapsibleBoardListCard(board: board);
+        },
+      ),
     );
   }
 }

@@ -22,6 +22,7 @@ import 'package:remixicon/remixicon.dart';
 class EpiChatScreen extends ConsumerStatefulWidget {
   final String? initialBoardContext;
   final String? initialPrompt;
+  final List<EpiAttachedItem>? initialAttachedItems;
   final bool isEmbedded;
   final VoidCallback? onClose;
   final VoidCallback? onExpand;
@@ -30,6 +31,7 @@ class EpiChatScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialBoardContext,
     this.initialPrompt,
+    this.initialAttachedItems,
     this.isEmbedded = false,
     this.onClose,
     this.onExpand,
@@ -48,6 +50,9 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialAttachedItems != null && widget.initialAttachedItems!.isNotEmpty) {
+      _attachedItems.addAll(widget.initialAttachedItems!);
+    }
     if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _handleSend(widget.initialPrompt!.trim());
@@ -176,18 +181,20 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
 
             // Message list
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                itemCount: chatState.messages.length + (chatState.statusText != null ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index < chatState.messages.length) {
-                    final message = chatState.messages[index];
-                    return _buildMessageItem(message, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue);
-                  }
-                  return _buildActivityStatusIndicator(chatState.statusText!, isDark);
-                },
-              ),
+              child: chatState.messages.isEmpty && chatState.statusText == null
+                  ? _buildEmptyGreeting(isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue)
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      itemCount: chatState.messages.length + (chatState.statusText != null ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index < chatState.messages.length) {
+                          final message = chatState.messages[index];
+                          return _buildMessageItem(message, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue);
+                        }
+                        return _buildActivityStatusIndicator(chatState.statusText!, isDark);
+                      },
+                    ),
             ),
 
             // Context & Action Pills Row
@@ -706,66 +713,116 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     );
   }
 
-  /// Subtle timeline of intermediate tool steps: spinning when running, check when done.
-  Widget _buildTimelineTile(List<EpiTimelineStep> steps, bool isWorking, bool isDark) {
-    final dullColor = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+  Widget _buildEmptyGreeting(
+    bool isDark,
+    Color cardBg,
+    Color textPrimary,
+    Color textSecondary,
+    Color borderClr,
+    Color activeBlue,
+  ) {
+    final suggestions = const [
+      'What can you do?',
+      'I feel overwhelmed, help me figure out what is urgent',
+      'Help me prepare for my exam next week',
+      'Help me track my monthly expenses',
+      'Help me build a workout schedule',
+      'Help me stick to a daily reading habit',
+      'I have a business idea, let us think through it',
+      'Remind me to call my mum every Sunday',
+    ];
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: steps.map((step) {
-          final isRunning = step.status == EpiTimelineStepStatus.running;
-          final isSuccess = step.status == EpiTimelineStepStatus.success;
-          final isCancelled = step.status == EpiTimelineStepStatus.cancelled;
-
-          final Color stepColor = isRunning
-              ? dullColor.withValues(alpha: 0.6)
-              : isSuccess
-                  ? dullColor.withValues(alpha: 0.75)
-                  : dullColor.withValues(alpha: 0.5);
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 3),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isRunning)
-                  SizedBox(
-                    width: 10,
-                    height: 10,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.2,
-                      valueColor: AlwaysStoppedAnimation<Color>(stepColor),
-                    ),
-                  )
-                else
-                  Icon(
-                    isSuccess
-                        ? Icons.check_rounded
-                        : isCancelled
-                            ? Icons.remove_circle_outline_rounded
-                            : Icons.error_outline_rounded,
-                    size: 11,
-                    color: stepColor,
-                  ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    step.title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: stepColor,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: activeBlue.withValues(alpha: 0.12),
+              ),
+              child: Icon(Icons.auto_awesome, color: activeBlue, size: 24),
             ),
-          );
-        }).toList(),
+            const SizedBox(height: 14),
+            Text(
+              'Talk things through with Epi',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'From studying and habits to budgeting and daily overwhelm, I am here to help you get your thoughts organized.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: suggestions.map((s) {
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => _handleSend(s),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? EpicordiaColors.surfaceSunkenDark
+                            : EpicordiaColors.surfaceSunkenLight,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: borderClr),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded, size: 13, color: activeBlue),
+                          const SizedBox(width: 7),
+                          Flexible(
+                            child: Text(
+                              s,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                                color: textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  /// Subtle collapsible timeline of intermediate tool steps: spinning when running, check when done.
+  Widget _buildTimelineTile(List<EpiTimelineStep> steps, bool isWorking, bool isDark) {
+    return _CollapsibleActionTimeline(
+      steps: steps,
+      isWorking: isWorking,
+      isDark: isDark,
     );
   }
 
@@ -794,14 +851,45 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     if (richRecords.isEmpty) return const SizedBox.shrink();
 
     final chips = <Widget>[];
-    final seenKeys = <String>{};
+    final seenIds = <String>{};
+    final seenTitles = <String>{};
+
+    bool registerIfNew({
+      required String? id,
+      required String title,
+      required String type,
+    }) {
+      final cleanId = id?.trim();
+      final normTitle = title.trim().toLowerCase();
+
+      // If we already rendered this entity by ID, skip
+      if (cleanId != null && cleanId.isNotEmpty && seenIds.contains(cleanId)) {
+        return false;
+      }
+
+      // If we already rendered an entity with the exact same title and type, skip
+      if (normTitle.isNotEmpty) {
+        if (seenTitles.contains(normTitle) || seenTitles.contains('$type:$normTitle')) {
+          return false;
+        }
+      }
+
+      if (cleanId != null && cleanId.isNotEmpty) {
+        seenIds.add(cleanId);
+      }
+      if (normTitle.isNotEmpty) {
+        seenTitles.add(normTitle);
+        seenTitles.add('$type:$normTitle');
+      }
+      return true;
+    }
 
     String cleanChipTitle(String raw, String tool) {
       if (tool.contains('about_me') || tool.contains('profile') || raw.toLowerCase().contains('about me')) {
         return 'About Me';
       }
       var s = raw
-          .replaceAll(RegExp(r'^(Created|Updated|Marked|Saved)\s+(task|note|schedule slot|timetable slot)?\s*', caseSensitive: false), '')
+          .replaceAll(RegExp(r'^(Created|Updated|Marked|Saved|Added(\s+\d+)?\s+subtasks?\s+to)\s+(task|note|schedule slot|timetable slot)?\s*', caseSensitive: false), '')
           .replaceAll(RegExp(r'^["“”\x27]+|["“”\x27]+$'), '')
           .replaceAll(RegExp(r'\s+profile$', caseSensitive: false), '')
           .trim();
@@ -818,17 +906,25 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
             final rawTitle = item['title'] as String? ?? item['name'] as String? ?? '';
             final title = cleanChipTitle(rawTitle, tool);
             if (title.isEmpty) continue;
-            final key = '${item['id'] ?? ''}_$title';
-            if (seenKeys.contains(key)) continue;
-            seenKeys.add(key);
 
             final explicitType = item['type']?.toString().toLowerCase();
+            final String itemType = (tool.contains('task') || explicitType == 'task')
+                ? 'task'
+                : (tool.contains('schedule') || tool.contains('timetable') || explicitType == 'schedule')
+                    ? 'schedule'
+                    : (tool.contains('board') || tool.contains('project') || explicitType == 'board')
+                        ? 'board'
+                        : 'note';
+
+            final id = item['id']?.toString();
+            if (!registerIfNew(id: id, title: title, type: itemType)) continue;
+
             IconData icon;
-            if (tool.contains('task') || explicitType == 'task') {
+            if (itemType == 'task') {
               icon = Icons.check_circle_outline_rounded;
-            } else if (tool.contains('schedule') || tool.contains('timetable') || explicitType == 'schedule') {
+            } else if (itemType == 'schedule') {
               icon = Icons.calendar_today_outlined;
-            } else if (tool.contains('board') || tool.contains('project') || explicitType == 'board') {
+            } else if (itemType == 'board') {
               icon = Icons.folder_outlined;
             } else {
               icon = Icons.description_outlined;
@@ -852,34 +948,41 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
         final rawTitle = data['title'] as String? ?? data['name'] as String? ?? '';
         final title = cleanChipTitle(rawTitle, tool);
         if (title.isNotEmpty) {
-          final key = '${data['id'] ?? ''}_$title';
-          if (seenKeys.contains(key)) continue;
-          seenKeys.add(key);
-
           final explicitType = data['type']?.toString().toLowerCase();
-          IconData icon;
-          if (tool.contains('task') || explicitType == 'task') {
-            icon = Icons.check_circle_outline_rounded;
-          } else if (tool.contains('schedule') || tool.contains('timetable') || explicitType == 'schedule') {
-            icon = Icons.calendar_today_outlined;
-          } else if (tool.contains('board') || tool.contains('project') || explicitType == 'board') {
-            icon = Icons.folder_outlined;
-          } else {
-            icon = Icons.description_outlined;
-          }
+          final String itemType = (tool.contains('task') || explicitType == 'task')
+              ? 'task'
+              : (tool.contains('schedule') || tool.contains('timetable') || explicitType == 'schedule')
+                  ? 'schedule'
+                  : (tool.contains('board') || tool.contains('project') || explicitType == 'board')
+                      ? 'board'
+                      : 'note';
 
-          chips.add(_EpiInteractiveResultChip(
-            title: title,
-            defaultIcon: icon,
-            isDark: isDark,
-            cardBg: cardBg,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            borderClr: borderClr,
-            activeBlue: activeBlue,
-            tool: tool,
-            extraData: data,
-          ));
+          final id = data['id']?.toString();
+          if (registerIfNew(id: id, title: title, type: itemType)) {
+            IconData icon;
+            if (itemType == 'task') {
+              icon = Icons.check_circle_outline_rounded;
+            } else if (itemType == 'schedule') {
+              icon = Icons.calendar_today_outlined;
+            } else if (itemType == 'board') {
+              icon = Icons.folder_outlined;
+            } else {
+              icon = Icons.description_outlined;
+            }
+
+            chips.add(_EpiInteractiveResultChip(
+              title: title,
+              defaultIcon: icon,
+              isDark: isDark,
+              cardBg: cardBg,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              borderClr: borderClr,
+              activeBlue: activeBlue,
+              tool: tool,
+              extraData: data,
+            ));
+          }
         }
       } else if (record.createdEntityId != null || record.entityIds.isNotEmpty) {
         final entityId = record.createdEntityId ?? record.entityIds.firstOrNull;
@@ -888,23 +991,27 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
             record.message;
 
         final effectiveTitle = cleanChipTitle(rawTitle, tool);
-        final key = '${entityId ?? ''}_$effectiveTitle';
-        if (!seenKeys.contains(key)) {
-          seenKeys.add(key);
+        String inferredType;
+        if (tool.contains('task')) {
+          inferredType = 'task';
+        } else if (tool.contains('schedule') || tool.contains('timetable')) {
+          inferredType = 'schedule';
+        } else if (tool.contains('board') || tool.contains('project')) {
+          inferredType = 'board';
+        } else {
+          inferredType = 'note';
+        }
+
+        if (registerIfNew(id: entityId, title: effectiveTitle, type: inferredType)) {
           IconData icon;
-          String inferredType;
-          if (tool.contains('task')) {
+          if (inferredType == 'task') {
             icon = Icons.check_circle_outline_rounded;
-            inferredType = 'task';
-          } else if (tool.contains('schedule') || tool.contains('timetable')) {
+          } else if (inferredType == 'schedule') {
             icon = Icons.calendar_today_outlined;
-            inferredType = 'schedule';
-          } else if (tool.contains('board') || tool.contains('project')) {
+          } else if (inferredType == 'board') {
             icon = Icons.folder_outlined;
-            inferredType = 'board';
           } else {
             icon = Icons.description_outlined;
-            inferredType = 'note';
           }
 
           final fallbackData = <String, dynamic>{
@@ -2310,6 +2417,155 @@ class _EpiChatNoteCard extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _CollapsibleActionTimeline extends StatefulWidget {
+  final List<EpiTimelineStep> steps;
+  final bool isWorking;
+  final bool isDark;
+
+  const _CollapsibleActionTimeline({
+    required this.steps,
+    required this.isWorking,
+    required this.isDark,
+  });
+
+  @override
+  State<_CollapsibleActionTimeline> createState() => _CollapsibleActionTimelineState();
+}
+
+class _CollapsibleActionTimelineState extends State<_CollapsibleActionTimeline> {
+  bool _isExpanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final dullColor = widget.isDark
+        ? EpicordiaColors.textTertiaryDark
+        : EpicordiaColors.textTertiaryLight;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Collapsible header
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isExpanded
+                        ? Icons.keyboard_arrow_down_rounded
+                        : Icons.keyboard_arrow_right_rounded,
+                    size: 14,
+                    color: dullColor.withValues(alpha: 0.8),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Actions (${widget.steps.length})',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: dullColor.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isExpanded) ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(widget.steps.length, (index) {
+                  final step = widget.steps[index];
+                  final isLast = index == widget.steps.length - 1;
+                  final isRunning = step.status == EpiTimelineStepStatus.running;
+                  final isSuccess = step.status == EpiTimelineStepStatus.success;
+                  final isCancelled = step.status == EpiTimelineStepStatus.cancelled;
+
+                  final Color stepColor = isRunning
+                      ? dullColor.withValues(alpha: 0.6)
+                      : isSuccess
+                          ? dullColor.withValues(alpha: 0.75)
+                          : dullColor.withValues(alpha: 0.5);
+
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Timeline track with dot/icon and connecting vertical line
+                        SizedBox(
+                          width: 14,
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 2),
+                              if (isRunning)
+                                SizedBox(
+                                  width: 10,
+                                  height: 10,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(stepColor),
+                                  ),
+                                )
+                              else
+                                Icon(
+                                  isSuccess
+                                      ? Icons.check_rounded
+                                      : isCancelled
+                                          ? Icons.remove_circle_outline_rounded
+                                          : Icons.error_outline_rounded,
+                                  size: 11,
+                                  color: stepColor,
+                                ),
+                              if (!isLast)
+                                Expanded(
+                                  child: Container(
+                                    width: 1.2,
+                                    margin: const EdgeInsets.symmetric(vertical: 2),
+                                    color: dullColor.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        // Timeline content
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: isLast ? 2 : 6),
+                            child: Text(
+                              step.title,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: stepColor,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

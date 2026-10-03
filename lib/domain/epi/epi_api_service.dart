@@ -6,6 +6,7 @@ import '../../data/database/database.dart';
 import '../../data/providers.dart';
 import '../../domain/models/note_model.dart';
 import '../../domain/models/task_subitem.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'epi_models.dart';
 
 final epiApiServiceProvider = Provider<EpiApiService>((ref) {
@@ -221,6 +222,9 @@ class EpiApiService {
     final isCasualGreeting = (attachedItems == null || attachedItems.isEmpty) &&
         (meaningfulTokens.isEmpty || meaningfulTokens.every((t) => greetingWords.contains(t)));
 
+    final prefs = await SharedPreferences.getInstance();
+    final dismissedOverdue = prefs.getStringList('dismissed_overdue_tasks') ?? [];
+
     final taskContextList = <Map<String, dynamic>>[];
     final maxTasks = isCasualGreeting ? 0 : (hasSpecificQueryMatches ? 10 : 15);
 
@@ -233,6 +237,11 @@ class EpiApiService {
 
       if (hasSpecificQueryMatches && item.score < 2) continue;
 
+      final isOverdueWeek = t.status.toLowerCase() != 'done' &&
+          t.dueDate != null &&
+          now.difference(t.dueDate!).inDays >= 7 &&
+          !dismissedOverdue.contains(t.id);
+
       taskContextList.add({
         'id': t.id,
         'title': t.title,
@@ -243,6 +252,7 @@ class EpiApiService {
         'boardTitle': t.boardId != null ? (boardMap[t.boardId] ?? 'Board') : 'Unsorted',
         'subtasks': subtasksFormatted,
         'notes': decodedNotes.userNotes,
+        if (isOverdueWeek) 'overdueNotice': '[OVERDUE > 1 WEEK: Propose deletion once to user]',
         if (item.score >= 20) 'isRelevantMatch': true,
       });
 
@@ -487,6 +497,10 @@ class EpiApiService {
                           ?.map((e) => EpiActionCall.fromJson(e as Map<String, dynamic>))
                           .toList() ??
                       [];
+                  final executedList = (json['executedActions'] as List<dynamic>?)
+                          ?.map((e) => EpiActionCall.fromJson(e as Map<String, dynamic>))
+                          .toList() ??
+                      [];
                   final rawStatus = json['status'] as String? ?? 'final_response';
                   final parsedStatus = rawStatus == 'requires_tools'
                       ? EpiResponseStatus.requiresTools
@@ -495,6 +509,7 @@ class EpiApiService {
                     type: EpiStreamEventType.done,
                     fullReply: json['reply'] as String?,
                     finalActions: actionsList,
+                    executedActions: executedList,
                     status: parsedStatus,
                     modelUsed: json['modelUsed'] as String?,
                   );
@@ -537,6 +552,7 @@ class EpiApiService {
         type: EpiStreamEventType.done,
         fullReply: res.reply,
         finalActions: res.actions,
+        executedActions: res.executedActions,
         status: res.status,
         modelUsed: res.modelUsed,
       );

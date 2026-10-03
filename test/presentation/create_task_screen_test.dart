@@ -36,7 +36,7 @@ void main() {
 
     // Verify Add subtasks button is present
     expect(find.text('Add subtasks'), findsOneWidget);
-    expect(find.text('Break down with Epi'), findsOneWidget);
+    expect(find.text('Ask Epi'), findsOneWidget);
 
     // Initially schedule options are hidden (zero bloat)
     expect(find.text('Active Days'), findsNothing);

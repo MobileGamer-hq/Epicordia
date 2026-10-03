@@ -304,6 +304,33 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
                   }
                 }
               }
+              if (event.executedActions != null) {
+                for (final a in event.executedActions!) {
+                  final isAlreadyAdded = allExecutionRecords.any((r) => r.action.id == a.id);
+                  if (!isAlreadyAdded) {
+                    final query = a.parameters['query']?.toString() ?? '';
+                    final title = a.tool == 'google_search' && query.isNotEmpty
+                        ? 'Searched Google for "$query"'
+                        : _friendlyToolName(a.tool);
+                    final stepId = a.id;
+                    _addTimelineStep(
+                      assistantMsgId,
+                      EpiTimelineStep(
+                        id: stepId,
+                        title: title,
+                        status: EpiTimelineStepStatus.success,
+                        timestamp: DateTime.now(),
+                      ),
+                    );
+                    allExecutionRecords.add(EpiActionExecutionRecord(
+                      action: a,
+                      status: ActionExecutionStatus.success,
+                      message: title,
+                      timestamp: DateTime.now(),
+                    ));
+                  }
+                }
+              }
               break;
 
             case EpiStreamEventType.error:
@@ -594,6 +621,14 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
         return 'Creating task';
       case 'update_task':
         return 'Updating task';
+      case 'remove_subtask':
+        return 'Removing subtask';
+      case 'update_subtask':
+        return 'Updating subtask';
+      case 'keep_overdue_task':
+        return 'Keeping overdue task';
+      case 'google_search':
+        return 'Searching Google';
       case 'delete_task':
         return 'Deleting task';
       case 'set_task_status':

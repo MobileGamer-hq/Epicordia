@@ -18,6 +18,7 @@ import '../../../domain/models/task_subitem.dart';
 import '../edit_timetable_slot_dialog.dart';
 import 'link_preview_dialog.dart';
 import 'custom_circular_checkbox.dart';
+import '../../../domain/epi/epi_models.dart';
 
 class ItemInteractionDialogs {
   /// Displays a floating detail popup for a Note over a blurred background.
@@ -391,9 +392,15 @@ class ItemInteractionDialogs {
                           TextButton.icon(
                             onPressed: () {
                               Navigator.of(ctx).pop();
+                              final attached = EpiAttachedItem(
+                                id: task.id,
+                                type: EpiAttachedItemType.task,
+                                title: task.title,
+                                preview: task.notes,
+                              );
                               context.push('/epi', extra: {
                                 if (boardTitle.isNotEmpty) 'boardTitle': boardTitle,
-                                'prompt': 'Help me break down this task into smaller actionable steps: "${task.title}"',
+                                'attachedItems': [attached],
                               });
                             },
                             icon: Icon(Icons.auto_awesome, size: 14, color: activeBlue),

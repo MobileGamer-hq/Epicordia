@@ -15,6 +15,7 @@ import '../../domain/services/device_reminder_service.dart';
 import '../../domain/services/notification_service.dart';
 import '../widgets/timer_picker_popover.dart';
 import '../widgets/core/custom_circular_checkbox.dart';
+import '../../domain/epi/epi_models.dart';
 
 class EditTaskScreen extends ConsumerStatefulWidget {
   final String taskId;
@@ -436,10 +437,17 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                                 await _autoSave();
                                 if (context.mounted) {
                                   final title = _titleController.text.trim();
-                                  final prompt = title.isNotEmpty
-                                      ? 'Help me break down this task into smaller actionable steps: "$title"'
-                                      : 'Help me break down this task into smaller steps';
-                                  context.push('/epi', extra: {'prompt': prompt});
+                                  final attached = EpiAttachedItem(
+                                    id: widget.taskId,
+                                    type: EpiAttachedItemType.task,
+                                    title: title.isNotEmpty ? title : 'Task',
+                                    preview: _notesController.text.trim().isNotEmpty
+                                        ? _notesController.text.trim()
+                                        : null,
+                                  );
+                                  context.push('/epi', extra: {
+                                    'attachedItems': [attached],
+                                  });
                                 }
                               },
                               icon: Icon(Icons.auto_awesome, size: 14, color: activeBlue),
@@ -541,15 +549,22 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                               await _autoSave();
                               if (context.mounted) {
                                 final title = _titleController.text.trim();
-                                final prompt = title.isNotEmpty
-                                    ? 'Help me break down this task into smaller actionable steps: "$title"'
-                                    : 'Help me break down this task into smaller steps';
-                                context.push('/epi', extra: {'prompt': prompt});
+                                final attached = EpiAttachedItem(
+                                  id: widget.taskId,
+                                  type: EpiAttachedItemType.task,
+                                  title: title.isNotEmpty ? title : 'Task',
+                                  preview: _notesController.text.trim().isNotEmpty
+                                      ? _notesController.text.trim()
+                                      : null,
+                                );
+                                context.push('/epi', extra: {
+                                  'attachedItems': [attached],
+                                });
                               }
                             },
                             icon: Icon(Icons.auto_awesome, size: 16, color: activeBlue),
                             label: Text(
-                              'Break down with Epi',
+                              'Ask Epi',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: activeBlue,
