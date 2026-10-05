@@ -16,6 +16,10 @@
 		<string>Epicordia requires access to your camera to take photos and attach them directly to your notes and board pins.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Epicordia uses your location when requested to attach location details to notes or board pins.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Epicordia uses your microphone to transcribe your voice messages to Epi.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Epicordia uses on-device speech recognition to transcribe your voice accurately and privately.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>

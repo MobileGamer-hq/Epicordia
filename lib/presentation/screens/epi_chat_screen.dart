@@ -17,7 +17,11 @@ import '../widgets/core/item_interaction_dialogs.dart';
 import '../../domain/epi/epi_chat_controller.dart';
 import '../../domain/epi/epi_models.dart';
 import '../widgets/edit_timetable_slot_dialog.dart';
+import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:remixicon/remixicon.dart';
+import '../../domain/services/speech_recognition_service.dart';
+import '../widgets/permission_explanation_dialog.dart';
 
 class EpiChatScreen extends ConsumerStatefulWidget {
   final String? initialBoardContext;
@@ -41,15 +45,23 @@ class EpiChatScreen extends ConsumerStatefulWidget {
   ConsumerState<EpiChatScreen> createState() => _EpiChatScreenState();
 }
 
-class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
+class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
+    with SingleTickerProviderStateMixin {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
   final List<EpiAttachedItem> _attachedItems = [];
+  late final AnimationController _pulseController;
+  String _textBeforeSpeech = '';
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
     if (widget.initialAttachedItems != null && widget.initialAttachedItems!.isNotEmpty) {
       _attachedItems.addAll(widget.initialAttachedItems!);
     }
@@ -69,6 +81,10 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
 
   @override
   void dispose() {
+    _pulseController.dispose();
+    try {
+      ref.read(speechRecognitionProvider.notifier).stopListening();
+    } catch (_) {}
     _textController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -87,7 +103,115 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     });
   }
 
+  Future<void> _toggleSpeechInput() async {
+    final speechState = ref.read(speechRecognitionProvider);
+    final speechNotifier = ref.read(speechRecognitionProvider.notifier);
+
+    if (speechState.isListening) {
+      await speechNotifier.stopListening();
+      return;
+    }
+
+    if (!speechState.isInitialized) {
+      final proceed = await PermissionExplanationDialog.show(
+        context: context,
+        title: 'Voice Input',
+        description:
+            'Epicordia uses on-device speech recognition to transcribe your voice completely offline. No audio or transcripts ever leave your device.',
+        icon: Icons.mic_rounded,
+      );
+      if (!proceed) return;
+    }
+
+    HapticFeedback.lightImpact();
+    _textBeforeSpeech = _textController.text.trim();
+
+    final started = await speechNotifier.startListening(
+      onResult: (words, isFinal) {
+        if (!mounted) return;
+        final base = _textBeforeSpeech;
+        final newText = base.isEmpty ? words : '$base $words';
+        _textController.text = newText;
+        _textController.selection = TextSelection.fromPosition(
+          TextPosition(offset: newText.length),
+        );
+      },
+    );
+
+    if (!started && mounted) {
+      final current = ref.read(speechRecognitionProvider);
+      if (current.errorMessage != null && current.errorMessage!.isNotEmpty) {
+        FeedbackService.showError(current.errorMessage!, context: context);
+      }
+    }
+  }
+
+  Widget _buildSpeechMicButton(
+    SpeechRecognitionState speechState,
+    bool isDark,
+    Color activeBlue,
+    Color textSecondary,
+  ) {
+    final isListening = speechState.isListening;
+
+    if (isListening) {
+      return AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, child) {
+          final scale = 1.0 + (_pulseController.value * 0.12);
+          return Transform.scale(
+            scale: scale,
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: Material(
+                color: Colors.redAccent,
+                shape: const CircleBorder(),
+                elevation: 2,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _toggleSpeechInput,
+                  child: const Center(
+                    child: Icon(
+                      Remix.mic_fill,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: _toggleSpeechInput,
+          child: Center(
+            child: Icon(
+              Remix.mic_line,
+              size: 20,
+              color: textSecondary.withValues(alpha: 0.85),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _handleSend([String? textOverride]) {
+    if (ref.read(speechRecognitionProvider).isListening) {
+      ref.read(speechRecognitionProvider.notifier).stopListening();
+    }
+
     final rawText = textOverride ?? _textController.text;
     if (rawText.trim().isEmpty) return;
 
@@ -136,6 +260,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(epiChatProvider);
+    final speechState = ref.watch(speechRecognitionProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgApp = isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceAppLight;
@@ -154,6 +279,11 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
     });
     ref.listen(epiChatProvider.select((s) => s.statusText), (prev, next) {
       if (next != null) _scrollToBottom();
+    });
+    ref.listen<String?>(speechRecognitionProvider.select((s) => s.errorMessage), (prev, next) {
+      if (next != null && next.isNotEmpty && mounted) {
+        FeedbackService.showError(next, context: context);
+      }
     });
 
     final chatBody = Column(
@@ -382,6 +512,59 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                 ),
               ),
 
+            // Live speech listening status banner
+            if (speechState.isListening)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: (isDark ? EpicordiaColors.blue900 : EpicordiaColors.blue100).withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: activeBlue.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Listening offline... Speak your prompt',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => ref.read(speechRecognitionProvider.notifier).stopListening(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: activeBlue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: activeBlue,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Bottom Pill Input Bar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
@@ -403,7 +586,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                         maxLines: 4,
                         style: TextStyle(fontSize: 14, color: textPrimary),
                         decoration: InputDecoration(
-                          hintText: "Talk with Epi...",
+                          hintText: speechState.isListening ? "Listening (offline)..." : "Talk with Epi...",
                           hintStyle: TextStyle(
                             fontSize: 14,
                             color: textSecondary.withValues(alpha: 0.75),
@@ -415,6 +598,16 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                         ),
                         onSubmitted: (_) => _handleSend(),
+                      ),
+                    ),
+                    // Speech Mic Button
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: _buildSpeechMicButton(
+                        speechState,
+                        isDark,
+                        activeBlue,
+                        textSecondary,
                       ),
                     ),
                     Padding(
@@ -646,23 +839,40 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
         child: Align(
           alignment: Alignment.centerRight,
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 320),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(4),
-              ),
-              border: Border.all(color: borderClr),
-            ),
-            child: Text(
-              message.text,
-              style: TextStyle(color: textPrimary, fontSize: 14, height: 1.35),
-            ),
-          ),
+              constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 10, 6),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(4),
+                    ),
+                    border: Border.all(color: borderClr),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Text(
+                      message.text,
+                      style: TextStyle(color: textPrimary, fontSize: 14, height: 1.35),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                _CopyMessageButton(
+                  text: message.text,
+                  color: textSecondary.withValues(alpha: 0.65),
+                  activeColor: activeBlue,
+                ),
+              ]
+            )
+          )
         ),
       );
     }
@@ -705,6 +915,22 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen> {
                 // Rich output chips for queried/created entities
                 if (!message.isWorking && message.actionRecords.isNotEmpty)
                   _buildRichOutputChips(message.actionRecords, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue),
+
+                // Copy button at the bottom of the reply
+                if (!message.isWorking && !message.isStreaming && message.text.trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _CopyMessageButton(
+                          text: message.text,
+                          color: textSecondary.withValues(alpha: 0.65),
+                          activeColor: activeBlue,
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -2565,6 +2791,74 @@ class _CollapsibleActionTimelineState extends State<_CollapsibleActionTimeline> 
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _CopyMessageButton extends StatefulWidget {
+  final String text;
+  final Color color;
+  final Color activeColor;
+
+  const _CopyMessageButton({
+    required this.text,
+    required this.color,
+    required this.activeColor,
+  });
+
+  @override
+  State<_CopyMessageButton> createState() => _CopyMessageButtonState();
+}
+
+class _CopyMessageButtonState extends State<_CopyMessageButton> {
+  bool _copied = false;
+  Timer? _resetTimer;
+
+  @override
+  void dispose() {
+    _resetTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleCopy() async {
+    if (widget.text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: widget.text));
+    HapticFeedback.selectionClick();
+
+    if (!mounted) return;
+    setState(() => _copied = true);
+
+    _resetTimer?.cancel();
+    _resetTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) {
+        setState(() => _copied = false);
+      }
+    });
+
+    FeedbackService.showSuccess('Copied to clipboard', context: context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _handleCopy,
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+            child: Icon(
+              _copied ? Remix.check_line : Remix.file_copy_line,
+              key: ValueKey<bool>(_copied),
+              size: 15,
+              color: _copied ? (Colors.green[600] ?? widget.activeColor) : widget.color,
+            ),
+          ),
+        ),
       ),
     );
   }
