@@ -20,6 +20,10 @@ import '../widgets/edit_timetable_slot_dialog.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../domain/models/chat_attachment_model.dart';
+import '../../domain/services/image_attachment_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/services/speech_recognition_service.dart';
 import '../widgets/permission_explanation_dialog.dart';
 
@@ -51,6 +55,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
   final List<EpiAttachedItem> _attachedItems = [];
+  ChatAttachment? _attachedImage;
   late final AnimationController _pulseController;
   String _textBeforeSpeech = '';
 
@@ -207,13 +212,209 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
     );
   }
 
+  Future<void> _handleImageAttachment(
+    Color cardBg,
+    Color textPrimary,
+    Color textSecondary,
+    Color borderClr,
+    Color activeBlue,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final noticeShown = prefs.getBool('epi_image_privacy_notice_shown') ?? false;
+
+    if (!noticeShown && mounted) {
+      final accepted = await showDialog<bool>(
+        context: rootNavigatorKey.currentContext ?? context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: cardBg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: [
+              Icon(Icons.privacy_tip_outlined, color: activeBlue),
+              const SizedBox(width: 8),
+              Text('Privacy Notice', style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'Photos attached to Epi are processed strictly on-demand to analyze their content (reading lists, notes, or schedules). Images are never stored on any server or used for training.',
+            style: TextStyle(color: textSecondary, fontSize: 13.5, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Got it', style: TextStyle(color: activeBlue, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      if (accepted == true) {
+        await prefs.setBool('epi_image_privacy_notice_shown', true);
+      } else {
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: rootNavigatorKey.currentContext ?? context,
+      backgroundColor: cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        ImageSource? selectedSource;
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final cardColor = borderClr.withValues(alpha: 0.35);
+            final selectedColor = activeBlue.withValues(alpha: 0.15);
+            final selectedBorder = activeBlue;
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Title row ──
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Row(
+                        children: [
+                          const Spacer(),
+                          Text(
+                            'Upload Photo',
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(ctx),
+                            child: Icon(Remix.close_line, size: 22, color: textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ── Option cards ──
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setModalState(() => selectedSource = ImageSource.camera),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(vertical: 22),
+                              decoration: BoxDecoration(
+                                color: selectedSource == ImageSource.camera ? selectedColor : cardColor,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: selectedSource == ImageSource.camera ? selectedBorder : Colors.transparent,
+                                  width: 1.8,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Remix.camera_line, size: 32, color: activeBlue),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Take a Picture',
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setModalState(() => selectedSource = ImageSource.gallery),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(vertical: 22),
+                              decoration: BoxDecoration(
+                                color: selectedSource == ImageSource.gallery ? selectedColor : cardColor,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: selectedSource == ImageSource.gallery ? selectedBorder : Colors.transparent,
+                                  width: 1.8,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Remix.gallery_line, size: 32, color: activeBlue),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Gallery',
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // ── Upload button ──
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: selectedSource == null
+                            ? null
+                            : () async {
+                                Navigator.pop(ctx);
+                                final attachment = await ImageAttachmentService.pickAndCompressImage(selectedSource!);
+                                if (attachment != null && mounted) {
+                                  setState(() => _attachedImage = attachment);
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: activeBlue,
+                          disabledBackgroundColor: activeBlue.withValues(alpha: 0.35),
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Upload',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _handleSend([String? textOverride]) {
     if (ref.read(speechRecognitionProvider).isListening) {
       ref.read(speechRecognitionProvider.notifier).stopListening();
     }
 
     final rawText = textOverride ?? _textController.text;
-    if (rawText.trim().isEmpty) return;
+    final imageToSend = _attachedImage;
+
+    if (rawText.trim().isEmpty && imageToSend == null) return;
 
     final textToSend = rawText.trim();
 
@@ -221,11 +422,15 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
       _textController.clear();
     }
     final attachedSnapshot = List<EpiAttachedItem>.from(_attachedItems);
-    setState(() => _attachedItems.clear());
+    setState(() {
+      _attachedItems.clear();
+      _attachedImage = null;
+    });
 
     ref.read(epiChatProvider.notifier).sendMessage(
       textToSend,
       context,
+      attachment: imageToSend,
       attachedItems: attachedSnapshot,
     );
     _scrollToBottom();
@@ -565,6 +770,56 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                 ),
               ),
 
+            // Image Attachment Preview Staging Area
+            if (_attachedImage != null)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderClr),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        _attachedImage!.bytes,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _attachedImage!.fileName,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _attachedImage!.formattedSize,
+                            style: TextStyle(fontSize: 11, color: textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      color: textSecondary,
+                      onPressed: () => setState(() => _attachedImage = null),
+                    ),
+                  ],
+                ),
+              ),
+
             // Bottom Pill Input Bar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
@@ -578,6 +833,11 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                 ),
                 child: Row(
                   children: [
+                    IconButton(
+                      icon: Icon(Remix.add_fill, size: 20, color: textSecondary.withValues(alpha: 0.85)),
+                      tooltip: 'Attach Image',
+                      onPressed: () => _handleImageAttachment(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _textController,
@@ -595,21 +855,22 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                         ),
                         onSubmitted: (_) => _handleSend(),
                       ),
                     ),
-                    // Speech Mic Button
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: _buildSpeechMicButton(
-                        speechState,
-                        isDark,
-                        activeBlue,
-                        textSecondary,
-                      ),
-                    ),
+                    // // Speech Mic Button
+                    // Padding(
+                    //   padding: const EdgeInsets.only(right: 4),
+                    //   child: _buildSpeechMicButton(
+                    //     speechState,
+                    //     isDark,
+                    //     activeBlue,
+                    //     textSecondar
+                    //     y,
+                    //   ),
+                    // ),
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: SizedBox(
@@ -839,40 +1100,59 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
         child: Align(
           alignment: Alignment.centerRight,
           child: Container(
-              constraints: const BoxConstraints(maxWidth: 320),
+            constraints: const BoxConstraints(maxWidth: 320),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 320),
-                  padding: const EdgeInsets.fromLTRB(16, 10, 10, 6),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(4),
-                    ),
-                    border: Border.all(color: borderClr),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Text(
-                      message.text,
-                      style: TextStyle(color: textPrimary, fontSize: 14, height: 1.35),
+                if (message.attachment != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 200, maxWidth: 280),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderClr),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Image.memory(
+                        message.attachment!.bytes,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                ],
+                if (message.text.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 10, 6),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(4),
+                      ),
+                      border: Border.all(color: borderClr),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Text(
+                        message.text,
+                        style: TextStyle(color: textPrimary, fontSize: 14, height: 1.35),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 3),
-                _CopyMessageButton(
-                  text: message.text,
-                  color: textSecondary.withValues(alpha: 0.65),
-                  activeColor: activeBlue,
-                ),
-              ]
-            )
-          )
+                if (message.text.isNotEmpty)
+                  _CopyMessageButton(
+                    text: message.text,
+                    color: textSecondary.withValues(alpha: 0.65),
+                    activeColor: activeBlue,
+                  ),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -912,10 +1192,6 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                     ),
                   ),
 
-                // Rich output chips for queried/created entities
-                if (!message.isWorking && message.actionRecords.isNotEmpty)
-                  _buildRichOutputChips(message.actionRecords, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue),
-
                 // Copy button at the bottom of the reply
                 if (!message.isWorking && !message.isStreaming && message.text.trim().isNotEmpty)
                   Padding(
@@ -931,6 +1207,12 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                       ],
                     ),
                   ),
+
+                // Rich output chips for queried/created entities
+                if (!message.isWorking && message.actionRecords.isNotEmpty)
+                  _buildRichOutputChips(message.actionRecords, isDark, cardBg, textPrimary, textSecondary, borderClr, activeBlue),
+
+
               ],
             ),
           ),

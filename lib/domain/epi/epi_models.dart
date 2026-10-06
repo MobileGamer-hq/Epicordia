@@ -1,3 +1,5 @@
+import '../models/chat_attachment_model.dart';
+
 class EpiActionCall {
   final String id;
   final String tool;
@@ -282,6 +284,7 @@ class EpiChatMessage {
   final String? modelUsed;
   final bool isStreaming;
   final bool isWorking;
+  final ChatAttachment? attachment;
 
   const EpiChatMessage({
     required this.id,
@@ -293,6 +296,7 @@ class EpiChatMessage {
     this.modelUsed,
     this.isStreaming = false,
     this.isWorking = false,
+    this.attachment,
   });
 
   EpiChatMessage copyWith({
@@ -302,6 +306,7 @@ class EpiChatMessage {
     String? modelUsed,
     bool? isStreaming,
     bool? isWorking,
+    ChatAttachment? attachment,
   }) {
     return EpiChatMessage(
       id: id,
@@ -313,6 +318,7 @@ class EpiChatMessage {
       modelUsed: modelUsed ?? this.modelUsed,
       isStreaming: isStreaming ?? this.isStreaming,
       isWorking: isWorking ?? this.isWorking,
+      attachment: attachment ?? this.attachment,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../models/chat_attachment_model.dart';
 import 'epi_models.dart';
 import 'epi_api_service.dart';
 import 'epi_tool_executor.dart';
@@ -167,16 +168,18 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
   Future<void> sendMessage(
     String text,
     BuildContext context, {
+    ChatAttachment? attachment,
     List<EpiAttachedItem>? attachedItems,
   }) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || state.isLoading) return;
+    if ((trimmed.isEmpty && attachment == null) || state.isLoading) return;
 
     final userMsg = EpiChatMessage(
       id: const Uuid().v4(),
       text: trimmed,
       isUser: true,
       timestamp: DateTime.now(),
+      attachment: attachment,
     );
 
     final assistantMsgId = const Uuid().v4();
@@ -202,7 +205,9 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
       final existing = await repo.getConversations();
       final hasConv = existing.any((c) => c.id == state.sessionId);
       if (!hasConv) {
-        final title = trimmed.length > 30 ? '${trimmed.substring(0, 30)}...' : trimmed;
+        final title = trimmed.isNotEmpty
+            ? (trimmed.length > 30 ? '${trimmed.substring(0, 30)}...' : trimmed)
+            : 'Image Attachment';
         await repo.saveConversation(EpiConversation(
           id: state.sessionId,
           title: title,
@@ -261,6 +266,7 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
         final stream = apiService.streamChat(
           message: trimmed,
           sessionId: state.sessionId,
+          attachment: turn == 0 ? attachment : null,
           attachedItems: turn == 0 ? attachedItems : null,
           toolResults: pendingToolResults,
           inFlightToolCalls: inFlightToolCalls,

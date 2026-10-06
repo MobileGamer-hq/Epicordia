@@ -9,11 +9,11 @@
 		<key>NSRemindersUsageDescription</key>
 		<string>Epicordia syncs task reminders directly to your iOS Reminders app upon request.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Epicordia requires access to your photo library to allow you to attach images to your notes and board pins.</string>
+		<string>Epicordia uses your photo library to let you attach photos and read lists or notes from them.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Epicordia requires permission to save generated or edited images to your photo library.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>Epicordia requires access to your camera to take photos and attach them directly to your notes and board pins.</string>
+		<string>Epicordia uses your camera so you can take photos of lists, notes, or documents for Epi to read.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Epicordia uses your location when requested to attach location details to notes or board pins.</string>
 		<key>NSMicrophoneUsageDescription</key>

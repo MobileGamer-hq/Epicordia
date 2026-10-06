@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../../domain/models/note_model.dart';
 import '../../domain/models/task_subitem.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/chat_attachment_model.dart';
 import 'epi_models.dart';
 
 final epiApiServiceProvider = Provider<EpiApiService>((ref) {
@@ -320,6 +321,7 @@ class EpiApiService {
   Future<EpiChatResponse> sendMessage({
     required String message,
     required String sessionId,
+    ChatAttachment? attachment,
     List<EpiAttachedItem>? attachedItems,
     List<EpiToolExecutionResult>? toolResults,
     List<EpiActionCall>? inFlightToolCalls,
@@ -330,6 +332,7 @@ class EpiApiService {
         endpoint: baseUrl,
         message: message,
         sessionId: sessionId,
+        attachment: attachment,
         attachedItems: attachedItems,
         toolResults: toolResults,
         inFlightToolCalls: inFlightToolCalls,
@@ -341,6 +344,7 @@ class EpiApiService {
         endpoint: mainEndpoint,
         message: message,
         sessionId: sessionId,
+        attachment: attachment,
         attachedItems: attachedItems,
         toolResults: toolResults,
         inFlightToolCalls: inFlightToolCalls,
@@ -351,6 +355,7 @@ class EpiApiService {
         endpoint: backupEndpoint,
         message: message,
         sessionId: sessionId,
+        attachment: attachment,
         attachedItems: attachedItems,
         toolResults: toolResults,
         inFlightToolCalls: inFlightToolCalls,
@@ -362,6 +367,7 @@ class EpiApiService {
     required String endpoint,
     required String message,
     required String sessionId,
+    ChatAttachment? attachment,
     List<EpiAttachedItem>? attachedItems,
     List<EpiToolExecutionResult>? toolResults,
     List<EpiActionCall>? inFlightToolCalls,
@@ -379,6 +385,11 @@ class EpiApiService {
       'sessionId': sessionId,
       'userId': 'epicordia_user',
       'context': contextSnapshot,
+      if (attachment != null)
+        'image': {
+          'base64': attachment.base64Data,
+          'mimeType': attachment.mimeType,
+        },
       if (toolResults != null) 'toolResults': toolResults.map((t) => t.toJson()).toList(),
       if (inFlightToolCalls != null) 'inFlightToolCalls': inFlightToolCalls.map((a) => a.toJson()).toList(),
     });
@@ -406,6 +417,7 @@ class EpiApiService {
   Stream<EpiStreamEvent> streamChat({
     required String message,
     required String sessionId,
+    ChatAttachment? attachment,
     List<EpiAttachedItem>? attachedItems,
     List<EpiToolExecutionResult>? toolResults,
     List<EpiActionCall>? inFlightToolCalls,
@@ -429,6 +441,11 @@ class EpiApiService {
       'sessionId': sessionId,
       'userId': 'epicordia_user',
       'context': contextSnapshot,
+      if (attachment != null)
+        'image': {
+          'base64': attachment.base64Data,
+          'mimeType': attachment.mimeType,
+        },
       if (toolResults != null) 'toolResults': toolResults.map((t) => t.toJson()).toList(),
       if (inFlightToolCalls != null) 'inFlightToolCalls': inFlightToolCalls.map((a) => a.toJson()).toList(),
     });
