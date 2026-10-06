@@ -278,23 +278,13 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                     // ── Title row ──
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: Row(
-                        children: [
-                          const Spacer(),
-                          Text(
-                            'Upload Photo',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () => Navigator.pop(ctx),
-                            child: Icon(Remix.close_line, size: 22, color: textSecondary),
-                          ),
-                        ],
+                      child: Text(
+                        'Upload Photo',
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     // ── Option cards ──
@@ -302,8 +292,13 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                       children: [
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setModalState(() => selectedSource = ImageSource.camera),
-                            child: AnimatedContainer(
+                            onTap: () async {
+            Navigator.pop(ctx);
+            final attachment = await ImageAttachmentService.pickAndCompressImage(ImageSource.camera);
+            if (attachment != null && mounted) {
+              setState(() => _attachedImage = attachment);
+            }},
+          child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(vertical: 22),
                               decoration: BoxDecoration(
@@ -335,7 +330,13 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                         const SizedBox(width: 14),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setModalState(() => selectedSource = ImageSource.gallery),
+                            // onTap: () => setModalState(() => selectedSource = ImageSource.gallery),
+                            onTap: () async {
+            Navigator.pop(ctx);
+            final attachment = await ImageAttachmentService.pickAndCompressImage(ImageSource.gallery);
+            if (attachment != null && mounted) {
+              setState(() => _attachedImage = attachment);
+            }},
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(vertical: 22),
@@ -350,7 +351,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Remix.gallery_line, size: 32, color: activeBlue),
+                                  Icon(Remix.image_circle_line, size: 32, color: activeBlue),
                                   const SizedBox(height: 10),
                                   Text(
                                     'Gallery',
@@ -367,35 +368,35 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    // ── Upload button ──
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: selectedSource == null
-                            ? null
-                            : () async {
-                                Navigator.pop(ctx);
-                                final attachment = await ImageAttachmentService.pickAndCompressImage(selectedSource!);
-                                if (attachment != null && mounted) {
-                                  setState(() => _attachedImage = attachment);
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: activeBlue,
-                          disabledBackgroundColor: activeBlue.withValues(alpha: 0.35),
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Upload',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 70),
+                    // // ── Upload button ──
+                    // SizedBox(
+                    //   width: double.infinity,
+                    //   height: 48,
+                    //   child: ElevatedButton(
+                    //     onPressed: selectedSource == null
+                    //         ? null
+                    //         : () async {
+                    //             Navigator.pop(ctx);
+                    //             final attachment = await ImageAttachmentService.pickAndCompressImage(selectedSource!);
+                    //             if (attachment != null && mounted) {
+                    //               setState(() => _attachedImage = attachment);
+                    //             }
+                    //           },
+                    //     style: ElevatedButton.styleFrom(
+                    //       backgroundColor: activeBlue,
+                    //       disabledBackgroundColor: activeBlue.withValues(alpha: 0.35),
+                    //       foregroundColor: Colors.white,
+                    //       disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
+                    //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    //       elevation: 0,
+                    //     ),
+                    //     child: const Text(
+                    //       'Upload',
+                    //       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
