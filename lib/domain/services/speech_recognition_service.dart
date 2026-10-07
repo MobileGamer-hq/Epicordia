@@ -78,7 +78,10 @@ class SpeechRecognitionNotifier extends Notifier<SpeechRecognitionState> {
         isInitialized: true,
         isAvailable: available,
         hasPermission: hasPerm,
-        clearError: true,
+        errorMessage: available
+            ? null
+            : 'Speech recognition unavailable. Please ensure Google Speech Services (Android) or Dictation (iOS) is enabled in device Settings.',
+        clearError: available,
       );
 
       return available;
@@ -251,7 +254,7 @@ class SpeechRecognitionNotifier extends Notifier<SpeechRecognitionState> {
         return 'Microphone permission is required for voice input.';
       case 'error_audio_error':
       case 'error_audio':
-        return 'Could not access the microphone.';
+        return 'Could not access microphone. On Android, check Settings > Apps > Google App > Permissions > Microphone.';
       case 'error_busy':
       case 'error_recognizer_busy':
         return 'Speech recognizer is busy. Try again in a moment.';
@@ -259,7 +262,7 @@ class SpeechRecognitionNotifier extends Notifier<SpeechRecognitionState> {
       case 'error_network_timeout':
       case 'error_server':
       case 'error_server_disconnected':
-        return 'Voice input is unavailable right now. Download an offline speech pack in your device settings to use it offline.';
+        return 'Voice input is unavailable offline. Download an offline speech pack in Android Settings > System > Languages > Offline speech recognition.';
       case 'error_language_unavailable':
       case 'error_language_not_supported':
         return 'Your language isn\'t available for speech recognition on this device.';

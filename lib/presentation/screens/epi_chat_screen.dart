@@ -861,17 +861,16 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                         onSubmitted: (_) => _handleSend(),
                       ),
                     ),
-                    // // Speech Mic Button
-                    // Padding(
-                    //   padding: const EdgeInsets.only(right: 4),
-                    //   child: _buildSpeechMicButton(
-                    //     speechState,
-                    //     isDark,
-                    //     activeBlue,
-                    //     textSecondar
-                    //     y,
-                    //   ),
-                    // ),
+                    // Speech Mic Button
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: _buildSpeechMicButton(
+                        speechState,
+                        isDark,
+                        activeBlue,
+                        textSecondary,
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: SizedBox(
