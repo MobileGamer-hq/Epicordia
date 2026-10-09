@@ -208,10 +208,31 @@ class EpiToolExecutor {
     final newTaskId = DateTime.now().millisecondsSinceEpoch.toString();
     final taskRepo = ref.read(taskRepositoryProvider);
 
+    final rawSubtasks = action.parameters['subtasks'];
+    final subitems = <TaskSubitem>[];
+    if (rawSubtasks is List) {
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      for (var i = 0; i < rawSubtasks.length; i++) {
+        final s = rawSubtasks[i];
+        if (s != null && s.toString().trim().isNotEmpty) {
+          subitems.add(TaskSubitem(
+            id: '${nowMs}_$i',
+            title: _stripDashes(s.toString().trim()),
+            isDone: false,
+          ));
+        }
+      }
+    }
+
+    final effectiveNotes = TaskSubitem.encodeNotes(
+      userNotes: notes,
+      subitems: subitems,
+    );
+
     final companion = TasksCompanion.insert(
       id: newTaskId,
       title: title,
-      notes: notes != null && notes.isNotEmpty ? drift.Value(notes) : const drift.Value.absent(),
+      notes: effectiveNotes.isNotEmpty ? drift.Value(effectiveNotes) : const drift.Value.absent(),
       boardId: boardId != null && boardId.isNotEmpty ? drift.Value(boardId) : const drift.Value.absent(),
       dueDate: dueDate != null ? drift.Value(dueDate) : const drift.Value.absent(),
       scheduledDate: scheduledDate != null ? drift.Value(scheduledDate) : const drift.Value.absent(),

@@ -6,6 +6,7 @@ import '../../../domain/epi/floating_epi_chat_provider.dart';
 import '../layout/navigation_item.dart';
 import '../core/epicordia_brand.dart';
 import '../../screens/search_screen.dart';
+import '../tutorial/spotlight_tour_overlay.dart';
 
 /// Helper to trigger global search screen overlay
 void _showSearchOverlay(BuildContext context) {
@@ -52,43 +53,52 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         final w = constraints.maxWidth;
         final theme = Theme.of(context);
 
+        Widget scaffoldContent;
+
         // ── Mobile (<600px): Bottom navigation & Top AppBar ──────────
         if (w < 600) {
-          return Scaffold(
+          scaffoldContent = Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
             appBar: widget.appBar,
             body: SafeArea(child: SelectionArea(child: widget.child)),
             bottomNavigationBar: const _MobileBottomNav(),
           );
+        } else {
+          // ── Desktop & Tablet (>=600px): Expandable Sidebar + Main Content SafeArea
+          final isDesktop = w >= 1024;
+          final isExpanded = _isSidebarExpanded ?? isDesktop;
+
+          scaffoldContent = Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: Row(
+              children: [
+                _ExpandableSidebar(
+                  isExpanded: isExpanded,
+                  onToggleExpand: () {
+                    setState(() {
+                      _isSidebarExpanded = !isExpanded;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: SafeArea(
+                    top: true,
+                    bottom: true,
+                    left: false,
+                    right: true,
+                    child: SelectionArea(child: widget.child),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
-        // ── Desktop & Tablet (>=600px): Expandable Sidebar + Main Content SafeArea
-        final isDesktop = w >= 1024;
-        final isExpanded = _isSidebarExpanded ?? isDesktop;
-
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          body: Row(
-            children: [
-              _ExpandableSidebar(
-                isExpanded: isExpanded,
-                onToggleExpand: () {
-                  setState(() {
-                    _isSidebarExpanded = !isExpanded;
-                  });
-                },
-              ),
-              Expanded(
-                child: SafeArea(
-                  top: true,
-                  bottom: true,
-                  left: false,
-                  right: true,
-                  child: SelectionArea(child: widget.child),
-                ),
-              ),
-            ],
-          ),
+        return Stack(
+          children: [
+            scaffoldContent,
+            const SpotlightTourOverlay(),
+          ],
         );
       },
     );

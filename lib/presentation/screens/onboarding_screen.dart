@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme.dart';
 import '../../domain/state/journaling_provider.dart';
 import '../widgets/core/epicordia_brand.dart';
+import '../../core/tutorial_provider.dart';
+import '../widgets/tutorial/feature_walkthrough_dialog.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -52,7 +54,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       reminderMinute: _journalTime.minute,
     );
 
-    if (mounted) context.go('/');
+    final tutorialState = ref.read(tutorialProvider);
+    final tutorialNotifier = ref.read(tutorialProvider.notifier);
+
+    if (mounted) {
+      if (tutorialState.mode == TutorialMode.slides || tutorialState.mode == TutorialMode.hybrid) {
+        await FeatureWalkthroughDialog.show(
+          context,
+          onFinish: () {
+            if (tutorialState.mode == TutorialMode.hybrid || tutorialState.mode == TutorialMode.spotlight) {
+              tutorialNotifier.startSpotlightTour();
+            }
+            if (mounted) context.go('/');
+          },
+        );
+      } else {
+        if (tutorialState.mode == TutorialMode.spotlight) {
+          tutorialNotifier.startSpotlightTour();
+        }
+        context.go('/');
+      }
+    }
   }
 
   void _nextStep() {

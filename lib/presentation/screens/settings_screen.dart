@@ -15,6 +15,8 @@ import '../notifiers/alarm_settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/state/journaling_provider.dart';
 import '../../core/task_settings_provider.dart';
+import '../../core/tutorial_provider.dart';
+import '../widgets/tutorial/feature_walkthrough_dialog.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -344,6 +346,105 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // ── App Tutorial & Onboarding ────────────────────────
+            const _SectionHeader(icon: Icons.school_outlined, label: 'App Tutorial & Feature Tour'),
+            const SizedBox(height: 10),
+            _Card(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final tutorialState = ref.watch(tutorialProvider);
+                  final tutorialNotifier = ref.read(tutorialProvider.notifier);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tutorial Mode Preference',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Choose your preferred tutorial experience when testing or onboarding.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _SegmentedToggle(
+                        options: const ['Slides', 'Spotlight', 'Hybrid'],
+                        selected: tutorialState.mode == TutorialMode.slides
+                            ? 'Slides'
+                            : (tutorialState.mode == TutorialMode.spotlight ? 'Spotlight' : 'Hybrid'),
+                        onSelect: (val) {
+                          if (val == 'Slides') tutorialNotifier.setTutorialMode(TutorialMode.slides);
+                          if (val == 'Spotlight') tutorialNotifier.setTutorialMode(TutorialMode.spotlight);
+                          if (val == 'Hybrid') tutorialNotifier.setTutorialMode(TutorialMode.hybrid);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, color: EpicordiaColors.borderSubtleLight),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                if (tutorialState.mode == TutorialMode.spotlight) {
+                                  tutorialNotifier.startSpotlightTour();
+                                  context.go('/');
+                                } else {
+                                  FeatureWalkthroughDialog.show(
+                                    context,
+                                    onFinish: () {
+                                      if (tutorialState.mode == TutorialMode.hybrid) {
+                                        tutorialNotifier.startSpotlightTour();
+                                        context.go('/');
+                                      }
+                                    },
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.play_circle_outline, size: 20),
+                              label: const Text('Replay Feature Tour'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                side: BorderSide(
+                                  color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight,
+                                ),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => context.go('/onboarding'),
+                              icon: const Icon(Icons.restart_alt_rounded, size: 20),
+                              label: const Text('Replay Setup'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                side: BorderSide(
+                                  color: isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight,
+                                ),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
