@@ -1,5 +1,6 @@
 import 'package:device_calendar_plus/device_calendar_plus.dart';
 import 'package:flutter/foundation.dart';
+import '../models/task_subitem.dart';
 
 class DeviceCalendarService {
   final DeviceCalendar _plugin;
@@ -47,13 +48,14 @@ class DeviceCalendarService {
 
     final start = startDate;
     final end = endDate ?? startDate.add(const Duration(hours: 1));
+    final formattedDescription = TaskSubitem.formatNotesForDisplay(notes);
 
     try {
       if (existingEventId != null && existingEventId.isNotEmpty) {
         await _plugin.updateEvent(
           instanceId: existingEventId,
           title: title,
-          description: notes,
+          description: formattedDescription,
           startDate: start,
           endDate: end,
         );
@@ -62,7 +64,7 @@ class DeviceCalendarService {
         final eventId = await _plugin.createEvent(
           calendarId: calendarId,
           title: title,
-          description: notes,
+          description: formattedDescription,
           startDate: start,
           endDate: end,
         );

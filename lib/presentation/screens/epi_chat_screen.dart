@@ -16,6 +16,7 @@ import '../widgets/core/custom_circular_checkbox.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
 import '../../domain/epi/epi_chat_controller.dart';
 import '../../domain/epi/epi_models.dart';
+import '../../domain/epi/floating_epi_chat_provider.dart';
 import '../widgets/edit_timetable_slot_dialog.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
@@ -26,6 +27,9 @@ import '../../domain/services/image_attachment_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/services/speech_recognition_service.dart';
 import '../widgets/permission_explanation_dialog.dart';
+import '../notifiers/alarm_timer_provider.dart';
+import '../../domain/models/in_app_timer_model.dart';
+import '../widgets/timer_picker_popover.dart';
 
 class EpiChatScreen extends ConsumerStatefulWidget {
   final String? initialBoardContext;
@@ -62,6 +66,13 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
   @override
   void initState() {
     super.initState();
+    if (!widget.isEmbedded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(isFullScreenEpiActiveProvider.notifier).state = true;
+        }
+      });
+    }
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -86,6 +97,11 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
 
   @override
   void dispose() {
+    if (!widget.isEmbedded) {
+      Future.microtask(() {
+        ref.read(isFullScreenEpiActiveProvider.notifier).state = false;
+      });
+    }
     _pulseController.dispose();
     try {
       ref.read(speechRecognitionProvider.notifier).stopListening();
@@ -492,6 +508,9 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
       }
     });
 
+    final alarmState = ref.watch(alarmTimerProvider);
+    final activeTimer = alarmState.activeTimer;
+
     final chatBody = Column(
           children: [
             // Error banner if any
@@ -513,6 +532,18 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                     ),
                   ],
                 ),
+              ),
+
+            // Active Timer & Focus Session Countdown Banner
+            if (activeTimer.state != TimerState.idle)
+              _buildActiveTimerBanner(
+                activeTimer,
+                isDark,
+                cardBg,
+                textPrimary,
+                textSecondary,
+                borderClr,
+                activeBlue,
               ),
 
             // Message list
@@ -575,6 +606,18 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                     textSecondary: textSecondary,
                     activeBlue: activeBlue,
                     onTap: () => _showSchedulePicker(cardBg, textPrimary, textSecondary, borderClr, activeBlue),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildPillButton(
+                    icon: Icons.timer_outlined,
+                    label: '+ Timer',
+                    isDark: isDark,
+                    cardBg: cardBg,
+                    borderClr: borderClr,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    activeBlue: activeBlue,
+                    onTap: () => TimerPickerPopover.show(context, taskTitle: 'Focus Session'),
                   ),
                   const SizedBox(width: 8),
                   _buildPillButton(
@@ -1325,6 +1368,237 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
     );
   }
 
+  Widget _buildActiveTimerBanner(
+    InAppTimer timer,
+    bool isDark,
+    Color cardBg,
+    Color textPrimary,
+    Color textSecondary,
+    Color borderClr,
+    Color activeBlue,
+  ) {
+    final isRunning = timer.state == TimerState.running;
+    final isPaused = timer.state == TimerState.paused;
+    final isFinished = timer.state == TimerState.finished;
+
+    final statusColor = isRunning
+        ? (isDark ? Colors.greenAccent : Colors.green.shade700)
+        : isPaused
+            ? (isDark ? Colors.amberAccent : Colors.orange.shade800)
+            : (isDark ? Colors.lightBlueAccent : Colors.blue.shade700);
+
+    final statusText = isRunning
+        ? 'RUNNING'
+        : isPaused
+            ? 'PAUSED'
+            : 'FINISHED';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  timer.linkedTaskId != null
+                      ? Icons.center_focus_strong_rounded
+                      : Icons.timer_outlined,
+                  size: 16,
+                  color: statusColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  timer.label ?? 'Focus Timer',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isRunning)
+                      Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.only(right: 5),
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                timer.formattedRemaining,
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  color: isFinished ? statusColor : textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '/ ${timer.totalDuration.inMinutes} min',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: timer.progressFraction,
+              minHeight: 5,
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.08),
+              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (isRunning)
+                OutlinedButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(alarmTimerProvider.notifier).pauseTimer();
+                  },
+                  icon: const Icon(Icons.pause_rounded, size: 16),
+                  label: const Text('Pause'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: textPrimary,
+                    side: BorderSide(color: borderClr),
+                  ),
+                )
+              else if (isPaused)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(alarmTimerProvider.notifier).resumeTimer();
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded, size: 16),
+                  label: const Text('Resume'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: activeBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              const SizedBox(width: 6),
+              OutlinedButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  ref.read(alarmTimerProvider.notifier).resetTimer();
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Reset'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: textPrimary,
+                  side: BorderSide(color: borderClr),
+                ),
+              ),
+              const SizedBox(width: 6),
+              OutlinedButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  ref.read(alarmTimerProvider.notifier).stopTimer();
+                },
+                icon: const Icon(Icons.stop_rounded, size: 16),
+                label: const Text('Stop'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: Colors.redAccent,
+                  side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                ),
+              ),
+              if (timer.linkedTaskId != null) ...[
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () {
+                    context.push('/task/${timer.linkedTaskId}/focus');
+                  },
+                  icon: const Icon(Icons.center_focus_strong_rounded, size: 16),
+                  label: const Text('Focus'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: activeBlue,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Subtle collapsible timeline of intermediate tool steps: spinning when running, check when done.
   Widget _buildTimelineTile(List<EpiTimelineStep> steps, bool isWorking, bool isDark) {
     return _CollapsibleActionTimeline(
@@ -1344,9 +1618,13 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
     Color borderClr,
     Color activeBlue,
   ) {
-    // Only show chips for records that produced data or created/updated entities
+    // Only show chips for records that produced data or created/updated entities or timers
     final richRecords = records.where((r) {
       if (r.status != ActionExecutionStatus.success) return false;
+      final tool = r.action.tool;
+      if (tool == 'set_timer' || tool == 'pause_timer' || tool == 'resume_timer' || tool == 'stop_timer' || tool == 'cancel_timer') {
+        return true;
+      }
       if (r.outputData != null) {
         final data = r.outputData;
         if (data is List && data.isNotEmpty) return true;
@@ -1370,12 +1648,9 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
       final cleanId = id?.trim();
       final normTitle = title.trim().toLowerCase();
 
-      // If we already rendered this entity by ID, skip
       if (cleanId != null && cleanId.isNotEmpty && seenIds.contains(cleanId)) {
         return false;
       }
-
-      // If we already rendered an entity with the exact same title and type, skip
       if (normTitle.isNotEmpty) {
         if (seenTitles.contains(normTitle) || seenTitles.contains('$type:$normTitle')) {
           return false;
@@ -1407,6 +1682,19 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
     for (final record in richRecords) {
       final tool = record.action.tool;
       final data = record.outputData;
+
+      if (tool == 'set_timer' || tool == 'pause_timer' || tool == 'resume_timer' || tool == 'stop_timer' || tool == 'cancel_timer') {
+        chips.add(_EpiTimerActionCard(
+          record: record,
+          isDark: isDark,
+          cardBg: cardBg,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          borderClr: borderClr,
+          activeBlue: activeBlue,
+        ));
+        continue;
+      }
 
       if (data is List) {
         for (final item in data.take(5)) {
@@ -3141,6 +3429,180 @@ class _CopyMessageButtonState extends State<_CopyMessageButton> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EpiTimerActionCard extends ConsumerWidget {
+  final EpiActionExecutionRecord record;
+  final bool isDark;
+  final Color cardBg;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color borderClr;
+  final Color activeBlue;
+
+  const _EpiTimerActionCard({
+    required this.record,
+    required this.isDark,
+    required this.cardBg,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.borderClr,
+    required this.activeBlue,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final alarmState = ref.watch(alarmTimerProvider);
+    final activeTimer = alarmState.activeTimer;
+
+    final label = record.action.parameters['label']?.toString() ?? 'Focus Session';
+    final durationNum = (record.action.parameters['duration_minutes'] as num?)?.toInt() ?? 25;
+    final taskId = record.action.parameters['task_id']?.toString();
+
+    final isThisTimerActive = activeTimer.state != TimerState.idle &&
+        (activeTimer.label?.toLowerCase().trim() == label.toLowerCase().trim() ||
+         (taskId != null && activeTimer.linkedTaskId == taskId));
+
+    final isRunning = isThisTimerActive && activeTimer.state == TimerState.running;
+    final isPaused = isThisTimerActive && activeTimer.state == TimerState.paused;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isThisTimerActive ? activeBlue.withValues(alpha: 0.5) : borderClr),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                taskId != null ? Icons.center_focus_strong_rounded : Icons.timer_outlined,
+                size: 18,
+                color: activeBlue,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isThisTimerActive)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isRunning
+                        ? Colors.green.withValues(alpha: 0.15)
+                        : (isPaused ? Colors.orange.withValues(alpha: 0.15) : Colors.blue.withValues(alpha: 0.15)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    isRunning ? 'RUNNING' : (isPaused ? 'PAUSED' : 'FINISHED'),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isRunning ? Colors.green : (isPaused ? Colors.orange : Colors.blue),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (isThisTimerActive) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  activeTimer.formattedRemaining,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: activeBlue,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isRunning)
+                      IconButton(
+                        icon: const Icon(Icons.pause_rounded, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(alarmTimerProvider.notifier).pauseTimer();
+                        },
+                      )
+                    else if (isPaused)
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(alarmTimerProvider.notifier).resumeTimer();
+                        },
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.stop_rounded, size: 20, color: Colors.redAccent),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(alarmTimerProvider.notifier).stopTimer();
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: activeTimer.progressFraction,
+                minHeight: 4,
+                backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                valueColor: AlwaysStoppedAnimation<Color>(activeBlue),
+              ),
+            ),
+          ] else ...[
+            Text(
+              'Focus timer set for $durationNum minutes',
+              style: TextStyle(fontSize: 12, color: textSecondary),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                ref.read(alarmTimerProvider.notifier).startTimer(
+                  duration: Duration(minutes: durationNum),
+                  label: label,
+                  taskId: taskId,
+                );
+              },
+              icon: const Icon(Icons.play_arrow_rounded, size: 16),
+              label: const Text('Start Timer'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                visualDensity: VisualDensity.compact,
+                foregroundColor: activeBlue,
+                side: BorderSide(color: borderClr),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

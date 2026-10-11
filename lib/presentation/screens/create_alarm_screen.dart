@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
 import '../../domain/models/in_app_alarm_model.dart';
+import '../../domain/services/device_timer_alarm_service.dart';
+import '../notifiers/alarm_settings_provider.dart';
 import '../notifiers/alarm_timer_provider.dart';
 
 class CreateAlarmScreen extends ConsumerStatefulWidget {
@@ -79,9 +81,11 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
     }
   }
 
-  void _saveAlarm() {
+  void _saveAlarm() async {
     final titleText = _labelController.text.trim();
     final alarmTitle = titleText.isEmpty ? 'Morning Wakeup' : titleText;
+
+    final useSystem = ref.read(alarmSettingsProvider);
 
     if (widget.alarmToEdit != null) {
       final updated = widget.alarmToEdit!.copyWith(
@@ -93,19 +97,36 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
         vibrate: _vibrateEnabled,
         isEnabled: true,
       );
-      ref.read(alarmTimerProvider.notifier).updateAlarm(updated);
+      await ref.read(alarmTimerProvider.notifier).updateAlarm(updated);
+      if (useSystem) {
+        await ref.read(deviceTimerAlarmServiceProvider).createAlarm(
+          hour: _calculated24Hour,
+          minute: _selectedMinute,
+          title: alarmTitle,
+          repeatDays: _selectedRepeatDays..sort(),
+        );
+      }
     } else {
-      final newAlarm = InAppAlarm(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: alarmTitle,
-        hour: _calculated24Hour,
-        minute: _selectedMinute,
-        repeatDays: _selectedRepeatDays..sort(),
-        isEnabled: true,
-        ringtone: _selectedSound,
-        vibrate: _vibrateEnabled,
-      );
-      ref.read(alarmTimerProvider.notifier).addAlarm(newAlarm);
+      if (useSystem) {
+        await ref.read(deviceTimerAlarmServiceProvider).createAlarm(
+          hour: _calculated24Hour,
+          minute: _selectedMinute,
+          title: alarmTitle,
+          repeatDays: _selectedRepeatDays..sort(),
+        );
+      } else {
+        final newAlarm = InAppAlarm(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: alarmTitle,
+          hour: _calculated24Hour,
+          minute: _selectedMinute,
+          repeatDays: _selectedRepeatDays..sort(),
+          isEnabled: true,
+          ringtone: _selectedSound,
+          vibrate: _vibrateEnabled,
+        );
+        await ref.read(alarmTimerProvider.notifier).addAlarm(newAlarm);
+      }
     }
 
     HapticFeedback.mediumImpact();

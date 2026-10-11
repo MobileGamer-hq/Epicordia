@@ -87,6 +87,15 @@ class _FloatingEpiChatOverlayState extends ConsumerState<FloatingEpiChatOverlay>
       }
     });
 
+    // Always hide if full-screen Epi Chat is active
+    final isFullScreenEpi = ref.watch(isFullScreenEpiActiveProvider);
+    if (isFullScreenEpi) {
+      if (_controller.value > 0) {
+        _controller.value = 0.0;
+      }
+      return widget.child;
+    }
+
     // Check whether current route should hide the floating chat (e.g. Full screen epi, onboarding, focus)
     final router = ref.watch(routerProvider);
     final currentRoute = router.routerDelegate.currentConfiguration.uri.path;
@@ -252,6 +261,10 @@ class _FloatingEpiChatOverlayState extends ConsumerState<FloatingEpiChatOverlay>
                                       ref
                                           .read(floatingEpiChatProvider.notifier)
                                           .collapse();
+                                      ref
+                                          .read(isFullScreenEpiActiveProvider.notifier)
+                                          .state = true;
+                                      _controller.value = 0.0;
                                       ref.read(routerProvider).push('/epi');
                                     },
                                   ),

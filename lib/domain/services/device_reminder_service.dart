@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:in_app_reminder/in_app_reminder.dart';
 
+import '../models/task_subitem.dart';
+
 class DeviceReminderService {
   /// Check whether native reminders integration is supported on the current platform (iOS).
   bool get isSupported => defaultTargetPlatform == TargetPlatform.iOS;
@@ -15,9 +17,10 @@ class DeviceReminderService {
     if (!isSupported) return null;
 
     try {
+      final formattedNotes = TaskSubitem.formatNotesForDisplay(notes);
       final success = await InAppReminder.addReminder(
         title: title,
-        notes: notes,
+        notes: formattedNotes,
         dateTime: dueDate,
       );
       return success ? 'ios_synced' : null;

@@ -76,6 +76,49 @@ class TaskSubitem {
     // Legacy plain text notes: return as user notes with no subitems
     return TaskNotesPayload(userNotes: trimmed, subitems: const []);
   }
+
+  /// Formats raw `task.notes` (which may be JSON or plain text) into clean, human-readable
+  /// text suitable for push notifications, device reminders, and calendar descriptions.
+  static String? formatNotesForDisplay(String? rawNotes) {
+    if (rawNotes == null || rawNotes.trim().isEmpty) return null;
+
+    final decoded = decodeNotes(rawNotes);
+    final userNotes = decoded.userNotes?.trim();
+    final subitems = decoded.subitems;
+
+    final StringBuffer buffer = StringBuffer();
+    if (userNotes != null && userNotes.isNotEmpty) {
+      buffer.write(userNotes);
+    }
+
+    if (subitems.isNotEmpty) {
+      if (buffer.isNotEmpty) {
+        buffer.writeln();
+        buffer.writeln();
+      }
+      final completedCount = decoded.completedCount;
+      final totalCount = decoded.totalCount;
+      buffer.writeln('Subtasks ($completedCount/$totalCount done):');
+      for (int i = 0; i < subitems.length; i++) {
+        final sub = subitems[i];
+        final checkMark = sub.isDone ? '✓' : '☐';
+        buffer.write('$checkMark ${sub.title}');
+        if (i < subitems.length - 1) {
+          buffer.writeln();
+        }
+      }
+    }
+
+    final result = buffer.toString().trim();
+    if (result.isEmpty) {
+      final trimmed = rawNotes.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        return null;
+      }
+      return trimmed;
+    }
+    return result;
+  }
 }
 
 class TaskNotesPayload {

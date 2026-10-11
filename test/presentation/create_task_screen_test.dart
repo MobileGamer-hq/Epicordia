@@ -61,9 +61,9 @@ void main() {
     expect(find.text('Active Days'), findsOneWidget);
     expect(find.text('Add to Timetable Schedule'), findsOneWidget);
 
-    // Unfocus and pump out pending cursor timers
+    // Unfocus and pump out pending timers
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpWidget(const SizedBox());
-    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
   });
 }

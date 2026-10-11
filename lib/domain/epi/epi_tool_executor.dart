@@ -105,6 +105,16 @@ class EpiToolExecutor {
         case 'set_timer':
           return await _executeSetTimer(action);
 
+        case 'pause_timer':
+          return await _executePauseTimer(action);
+
+        case 'resume_timer':
+          return await _executeResumeTimer(action);
+
+        case 'stop_timer':
+        case 'cancel_timer':
+          return await _executeStopTimer(action);
+
         case 'query_timetable':
           return await _executeQueryTimetable(action);
 
@@ -1332,6 +1342,39 @@ class EpiToolExecutor {
       action: action,
       status: ActionExecutionStatus.success,
       message: 'Started $durationNum-minute timer for "$label"',
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executePauseTimer(EpiActionCall action) async {
+    final alarmNotifier = ref.read(alarmTimerProvider.notifier);
+    alarmNotifier.pauseTimer();
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Paused active focus timer',
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeResumeTimer(EpiActionCall action) async {
+    final alarmNotifier = ref.read(alarmTimerProvider.notifier);
+    alarmNotifier.resumeTimer();
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Resumed active focus timer',
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<EpiActionExecutionRecord> _executeStopTimer(EpiActionCall action) async {
+    final alarmNotifier = ref.read(alarmTimerProvider.notifier);
+    alarmNotifier.stopTimer();
+    return EpiActionExecutionRecord(
+      action: action,
+      status: ActionExecutionStatus.success,
+      message: 'Stopped focus timer',
       timestamp: DateTime.now(),
     );
   }

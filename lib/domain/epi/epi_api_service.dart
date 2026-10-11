@@ -8,6 +8,8 @@ import '../../domain/models/note_model.dart';
 import '../../domain/models/task_subitem.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_attachment_model.dart';
+import '../../presentation/notifiers/alarm_timer_provider.dart';
+import '../models/in_app_timer_model.dart';
 import 'epi_models.dart';
 
 final epiApiServiceProvider = Provider<EpiApiService>((ref) {
@@ -297,6 +299,19 @@ class EpiApiService {
     final localIso = '${now.toIso8601String()}$offsetStr';
     final humanReadable = _formatHumanReadableLocalTime(now);
 
+    final activeTimer = ref.read(alarmTimerProvider).activeTimer;
+    Map<String, dynamic>? activeTimerContext;
+    if (activeTimer.state != TimerState.idle) {
+      activeTimerContext = {
+        'label': activeTimer.label ?? 'Focus Timer',
+        'state': activeTimer.state.name,
+        'remainingSeconds': activeTimer.remainingDuration.inSeconds,
+        'formattedRemaining': activeTimer.formattedRemaining,
+        'totalMinutes': activeTimer.totalDuration.inMinutes,
+        'linkedTaskId': activeTimer.linkedTaskId,
+      };
+    }
+
     return {
       'currentTime': localIso,
       'formattedLocalTime': humanReadable,
@@ -309,6 +324,7 @@ class EpiApiService {
       'todayTaskCount': todayTaskCount,
       'urgentTaskTitles': urgentTasks,
       'aboutMe': aboutMeContent,
+      'activeTimer': activeTimerContext,
       'tasks': taskContextList,
       'notes': noteContextList,
       'scheduleSlots': scheduleSlots,

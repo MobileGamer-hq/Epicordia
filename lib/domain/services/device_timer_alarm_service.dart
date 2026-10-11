@@ -24,6 +24,7 @@ class DeviceTimerAlarmService {
     required int minutes,
     String? title,
     String? taskId,
+    List<String>? taskIds,
   }) async {
     final useSystem = _ref?.read(alarmSettingsProvider) ?? true;
 
@@ -49,6 +50,7 @@ class DeviceTimerAlarmService {
               duration: Duration(minutes: minutes),
               label: title ?? 'Focus Timer',
               taskId: taskId,
+              taskIds: taskIds,
             );
         return TimerActionResult.inAppTimerStarted;
       }
@@ -68,6 +70,19 @@ class DeviceTimerAlarmService {
   }) async {
     final useSystem = _ref?.read(alarmSettingsProvider) ?? true;
 
+    if (_ref != null) {
+      final newAlarm = InAppAlarm(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title ?? 'Task Alarm',
+        hour: hour,
+        minute: minute,
+        repeatDays: repeatDays,
+        isEnabled: true,
+        taskId: taskId,
+      );
+      await _ref.read(alarmTimerProvider.notifier).addAlarm(newAlarm);
+    }
+
     if (useSystem) {
       if (defaultTargetPlatform == TargetPlatform.android) {
         try {
@@ -85,21 +100,7 @@ class DeviceTimerAlarmService {
         return TimerActionResult.iosNotificationScheduled;
       }
     } else {
-      // In-App Engine
-      if (_ref != null) {
-        final newAlarm = InAppAlarm(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: title ?? 'Task Alarm',
-          hour: hour,
-          minute: minute,
-          repeatDays: repeatDays,
-          isEnabled: true,
-          taskId: taskId,
-        );
-        await _ref.read(alarmTimerProvider.notifier).addAlarm(newAlarm);
-        return TimerActionResult.inAppAlarmCreated;
-      }
-      return TimerActionResult.error;
+      return TimerActionResult.inAppAlarmCreated;
     }
   }
 

@@ -6,7 +6,6 @@ import '../../../domain/epi/floating_epi_chat_provider.dart';
 import '../layout/navigation_item.dart';
 import '../core/epicordia_brand.dart';
 import '../../screens/search_screen.dart';
-import '../tutorial/spotlight_tour_overlay.dart';
 
 /// Helper to trigger global search screen overlay
 void _showSearchOverlay(BuildContext context) {
@@ -94,12 +93,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           );
         }
 
-        return Stack(
-          children: [
-            scaffoldContent,
-            const SpotlightTourOverlay(),
-          ],
-        );
+        return scaffoldContent;
       },
     );
   }

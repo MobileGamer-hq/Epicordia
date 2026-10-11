@@ -9,15 +9,16 @@ import '../../core/feedback_service.dart';
 class TimerPickerPopover extends ConsumerStatefulWidget {
   final String? taskTitle;
   final String? taskId;
+  final List<String>? taskIds;
 
-  const TimerPickerPopover({super.key, this.taskTitle, this.taskId});
+  const TimerPickerPopover({super.key, this.taskTitle, this.taskId, this.taskIds});
 
-  static Future<void> show(BuildContext context, {String? taskTitle, String? taskId}) {
+  static Future<void> show(BuildContext context, {String? taskTitle, String? taskId, List<String>? taskIds}) {
     return showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => TimerPickerPopover(taskTitle: taskTitle, taskId: taskId),
+      builder: (ctx) => TimerPickerPopover(taskTitle: taskTitle, taskId: taskId, taskIds: taskIds),
     );
   }
 
@@ -45,8 +46,9 @@ class _TimerPickerPopoverState extends ConsumerState<TimerPickerPopover> {
     final service = ref.read(deviceTimerAlarmServiceProvider);
     final result = await service.startTimer(
       minutes: minutes,
-      title: widget.taskTitle ?? 'Epicordia Task Timer',
+      title: widget.taskTitle ?? 'Epicordia Focus Timer',
       taskId: widget.taskId,
+      taskIds: widget.taskIds,
     );
 
     if (!mounted) return;

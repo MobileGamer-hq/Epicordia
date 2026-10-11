@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/in_app_alarm_model.dart';
 import '../../domain/models/in_app_timer_model.dart';
 import '../../domain/services/notification_service.dart';
+import 'alarm_settings_provider.dart';
 
 const String kSavedAlarmsKey = 'in_app_alarms_v1';
 
@@ -70,7 +71,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
       _alarmSubscription?.cancel();
     });
 
-    return const AlarmTimerState(
+    return AlarmTimerState(
       alarms: [],
       activeTimer: InAppTimer(
         totalDuration: Duration.zero,
@@ -81,16 +82,20 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   }
 
   void _subscribeToNativeAlarms() {
-    _alarmSubscription = Alarm.ringStream.stream.listen((alarmSettings) {
-      triggerRinging(
-        RingingEvent(
-          alarmId: alarmSettings.id,
-          title: alarmSettings.notificationSettings.title,
-          subtitle: alarmSettings.notificationSettings.body,
-          isAlarm: true,
-        ),
-      );
-    });
+    try {
+      _alarmSubscription = Alarm.ringStream.stream.listen((alarmSettings) {
+        triggerRinging(
+          RingingEvent(
+            alarmId: alarmSettings.id,
+            title: alarmSettings.notificationSettings.title,
+            subtitle: alarmSettings.notificationSettings.body,
+            isAlarm: true,
+          ),
+        );
+      });
+    } catch (e) {
+      debugPrint('Native alarm stream subscription error: $e');
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -127,6 +132,9 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   // ─────────────────────────────────────────────────────────────
   Future<void> _scheduleNativeAlarm(InAppAlarm alarm) async {
     if (!alarm.isEnabled) return;
+    final useSystem = ref.read(alarmSettingsProvider);
+    if (useSystem) return; // Native system clock handoff manages alarm ringing
+
     try {
       final nextDuration = alarm.timeUntilNextRing;
       final alarmSettings = AlarmSettings(
@@ -211,6 +219,9 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   void _startAlarmChecker() {
     _alarmCheckTicker?.cancel();
     _alarmCheckTicker = Timer.periodic(const Duration(seconds: 15), (_) {
+      final useSystem = ref.read(alarmSettingsProvider);
+      if (useSystem) return; // Native system clock handoff manages alarm ringing
+
       final now = DateTime.now();
       for (final alarm in state.alarms) {
         if (!alarm.isEnabled) continue;
@@ -235,14 +246,20 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   // ─────────────────────────────────────────────────────────────
   // Timer Logic
   // ─────────────────────────────────────────────────────────────
-  void startTimer({required Duration duration, String? label, String? taskId}) {
+  void startTimer({
+    required Duration duration,
+    String? label,
+    String? taskId,
+    List<String>? taskIds,
+  }) {
     _ticker?.cancel();
+    final ids = taskIds ?? (taskId != null && taskId.isNotEmpty ? [taskId] : state.activeTimer.linkedTaskIds);
     final newTimer = InAppTimer(
       totalDuration: duration,
       remainingDuration: duration,
       state: TimerState.running,
       label: label ?? 'Focus Timer',
-      linkedTaskId: taskId,
+      linkedTaskIds: ids,
     );
 
     state = state.copyWith(activeTimer: newTimer);
@@ -279,6 +296,35 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         state = state.copyWith(activeTimer: updatedTimer);
       }
     });
+  }
+
+  void addTaskToTimer(String taskId) {
+    if (taskId.isEmpty || state.activeTimer.linkedTaskIds.contains(taskId)) return;
+    final updatedIds = [...state.activeTimer.linkedTaskIds, taskId];
+    state = state.copyWith(
+      activeTimer: state.activeTimer.copyWith(linkedTaskIds: updatedIds),
+    );
+  }
+
+  void addTasksToTimer(List<String> taskIds) {
+    final current = Set<String>.from(state.activeTimer.linkedTaskIds);
+    current.addAll(taskIds.where((id) => id.isNotEmpty));
+    state = state.copyWith(
+      activeTimer: state.activeTimer.copyWith(linkedTaskIds: current.toList()),
+    );
+  }
+
+  void setTimerTasks(List<String> taskIds) {
+    state = state.copyWith(
+      activeTimer: state.activeTimer.copyWith(linkedTaskIds: taskIds),
+    );
+  }
+
+  void removeTaskFromTimer(String taskId) {
+    final updatedIds = state.activeTimer.linkedTaskIds.where((id) => id != taskId).toList();
+    state = state.copyWith(
+      activeTimer: state.activeTimer.copyWith(linkedTaskIds: updatedIds),
+    );
   }
 
   void pauseTimer() {
@@ -332,7 +378,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
         remainingDuration: state.activeTimer.totalDuration,
         state: TimerState.idle,
         label: state.activeTimer.label,
-        linkedTaskId: state.activeTimer.linkedTaskId,
+        linkedTaskIds: state.activeTimer.linkedTaskIds,
       ),
     );
   }
@@ -340,7 +386,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   void stopTimer() {
     _ticker?.cancel();
     state = state.copyWith(
-      activeTimer: const InAppTimer(
+      activeTimer: InAppTimer(
         totalDuration: Duration.zero,
         remainingDuration: Duration.zero,
         state: TimerState.idle,

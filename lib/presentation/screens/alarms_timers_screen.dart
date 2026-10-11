@@ -7,6 +7,8 @@ import '../../core/theme.dart';
 import '../../core/feedback_service.dart';
 import '../../domain/models/in_app_alarm_model.dart';
 import '../../domain/models/in_app_timer_model.dart';
+import '../../domain/models/task_subitem.dart';
+import '../widgets/core/custom_circular_checkbox.dart';
 import '../notifiers/alarm_settings_provider.dart';
 import '../notifiers/alarm_timer_provider.dart';
 import '../widgets/animated_progress_ring.dart';
@@ -28,6 +30,372 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
   int _currentIndex = 1;
   final TextEditingController _customMinutesController = TextEditingController();
   int _selectedPresetMinutes = 25;
+  final Set<String> _selectedScheduleTaskIds = {};
+
+  // ─────────────────────────────────────────────────────────────
+  // Task Multi-Selection Modal for Focus Period
+  // ─────────────────────────────────────────────────────────────
+  Future<void> _showTaskSelectorModal(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgCard = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
+    final currentTimer = ref.read(alarmTimerProvider).activeTimer;
+    final selectedIds = Set<String>.from(currentTimer.linkedTaskIds);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final tasksAsync = ref.watch(allTasksProvider);
+          final tasks = tasksAsync.value ?? [];
+          final boardsAsync = ref.watch(allBoardsProvider);
+          final boards = boardsAsync.value ?? [];
+          final boardsMap = {for (final b in boards) b.id: b};
+
+          return DraggableScrollableSheet(
+            initialChildSize: 0.75,
+            minChildSize: 0.5,
+            maxChildSize: 0.9,
+            builder: (ctx, scrollController) => Container(
+              decoration: BoxDecoration(
+                color: bgCard,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: borderSubtle),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Match Tasks to Focus Period',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Select one or multiple tasks for this session',
+                              style: TextStyle(fontSize: 12, color: textSecondary),
+                            ),
+                          ],
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: EpicordiaColors.blue600,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            ref.read(alarmTimerProvider.notifier).setTimerTasks(selectedIds.toList());
+                            Navigator.of(ctx).pop();
+                            FeedbackService.showSuccess('Matched ${selectedIds.length} tasks to focus period!');
+                          },
+                          child: Text(
+                            'Save (${selectedIds.length})',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: tasks.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No tasks found in your workspaces.',
+                              style: TextStyle(color: textSecondary, fontSize: 14),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            itemCount: tasks.length,
+                            itemBuilder: (ctx, idx) {
+                              final task = tasks[idx];
+                              final isSelected = selectedIds.contains(task.id);
+                              final board = boardsMap[task.boardId];
+                              final boardTitle = board?.title ?? 'Inbox';
+
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                color: isSelected
+                                    ? EpicordiaColors.blue600.withValues(alpha: isDark ? 0.15 : 0.08)
+                                    : (isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: BorderSide(
+                                    color: isSelected ? EpicordiaColors.blue600 : borderSubtle,
+                                    width: isSelected ? 1.5 : 1,
+                                  ),
+                                ),
+                                elevation: 0,
+                                child: CheckboxListTile(
+                                  value: isSelected,
+                                  activeColor: EpicordiaColors.blue600,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  title: Text(
+                                    task.title,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                      color: textPrimary,
+                                      decoration: task.status == 'done' ? TextDecoration.lineThrough : null,
+                                    ),
+                                  ),
+                                  subtitle: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: EpicordiaColors.blue600.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          boardTitle,
+                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        task.status == 'done' ? 'Completed' : (task.status == 'in_progress' ? 'In Progress' : 'To Do'),
+                                        style: TextStyle(fontSize: 11, color: textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                  onChanged: (val) {
+                                    setModalState(() {
+                                      if (val == true) {
+                                        selectedIds.add(task.id);
+                                      } else {
+                                        selectedIds.remove(task.id);
+                                      }
+                                    });
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Section for displaying tasks assigned to active focus period
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildFocusSessionTasksSection(BuildContext context, InAppTimer activeTimer, bool isDark) {
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final bgCard = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final borderSubtle = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+
+    final tasksAsync = ref.watch(allTasksProvider);
+    final allTasks = tasksAsync.value ?? [];
+    final boardsAsync = ref.watch(allBoardsProvider);
+    final boardsMap = {for (final b in (boardsAsync.value ?? [])) b.id: b};
+
+    final assignedTaskIds = activeTimer.linkedTaskIds;
+    final assignedTasks = allTasks.where((t) => assignedTaskIds.contains(t.id)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.center_focus_strong_rounded, size: 20, color: EpicordiaColors.blue600),
+                const SizedBox(width: 8),
+                Text(
+                  'Tasks Matched to Focus Period',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+                ),
+                if (assignedTasks.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: EpicordiaColors.blue600.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${assignedTasks.length}',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            TextButton.icon(
+              onPressed: () => _showTaskSelectorModal(context),
+              icon: Icon(Icons.playlist_add_rounded, size: 18, color: EpicordiaColors.blue600),
+              label: Text(
+                assignedTasks.isEmpty ? 'Assign Tasks' : 'Manage',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (assignedTasks.isEmpty)
+          InkWell(
+            onTap: () => _showTaskSelectorModal(context),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: bgCard,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: EpicordiaColors.blue600.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.add_task_rounded, color: EpicordiaColors.blue600, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'No Tasks Matched Yet',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Match tasks to this focus period to see and manage them here during your session.',
+                          style: TextStyle(fontSize: 12, color: textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: textSecondary),
+                ],
+              ),
+            ),
+          )
+        else
+          ...assignedTasks.map((task) {
+            final board = boardsMap[task.boardId];
+            final boardTitle = board?.title ?? 'Inbox';
+            final subitems = TaskSubitem.decodeNotes(task.notes).subitems;
+            final doneSub = subitems.where((s) => s.isDone).length;
+            final isDone = task.status == 'done';
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: bgCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  CustomCircularCheckbox(
+                    isChecked: isDone,
+                    size: 22,
+                    activeColor: EpicordiaColors.successLight,
+                    borderColor: textSecondary,
+                    onTap: () async {
+                      final newStatus = isDone ? 'todo' : 'done';
+                      await ref.read(taskRepositoryProvider).updateTask(task.copyWith(status: newStatus));
+                      HapticFeedback.selectionClick();
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task.title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                            decoration: isDone ? TextDecoration.lineThrough : null,
+                            decorationColor: textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: EpicordiaColors.blue600.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                boardTitle,
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                              ),
+                            ),
+                            if (subitems.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '$doneSub/${subitems.length} subtasks',
+                                style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.center_focus_strong_rounded, size: 20, color: EpicordiaColors.blue600),
+                    tooltip: 'Focus Mode',
+                    onPressed: () => context.push('/task/${task.id}/focus'),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, size: 18, color: textSecondary),
+                    tooltip: 'Remove from focus period',
+                    onPressed: () {
+                      ref.read(alarmTimerProvider.notifier).removeTaskFromTimer(task.id);
+                    },
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -979,6 +1347,14 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
             ),
           ),
         ],
+
+        const SizedBox(height: 28),
+        const Divider(height: 1),
+        const SizedBox(height: 24),
+
+        // ── Tasks Matched to Focus Period Section ─────────────────
+        _buildFocusSessionTasksSection(context, activeTimer, isDark),
+        const SizedBox(height: 32),
       ],
     );
   }
@@ -1008,16 +1384,77 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
             return ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               children: [
-                Text(
-                  'Tasks Scheduled for Today',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textPrimary),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tasks Scheduled for Today',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textPrimary),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Select tasks to match to your focus period session.',
+                            style: TextStyle(fontSize: 13, color: textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Start a focus session for any scheduled task due today.',
-                  style: TextStyle(fontSize: 13, color: textSecondary),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+
+                if (_selectedScheduleTaskIds.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: EpicordiaColors.blue600.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: EpicordiaColors.blue600.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.center_focus_strong_rounded, color: EpicordiaColors.blue600, size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${_selectedScheduleTaskIds.length} tasks selected for focus session',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: EpicordiaColors.blue600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            final minutes = _selectedPresetMinutes;
+                            final taskList = _selectedScheduleTaskIds.toList();
+                            ref.read(alarmTimerProvider.notifier).startTimer(
+                                  duration: Duration(minutes: minutes),
+                                  label: 'Focus Session ($minutes m)',
+                                  taskIds: taskList,
+                                );
+                            setState(() {
+                              _selectedScheduleTaskIds.clear();
+                              _currentIndex = 0;
+                            });
+                            _tabController.animateTo(0);
+                            FeedbackService.showSuccess('Started focus session with ${taskList.length} tasks!');
+                          },
+                          icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                          label: const Text('Start Session', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 if (tasks.isEmpty)
                   Container(
@@ -1049,13 +1486,19 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                     final board = boardsMap[task.boardId];
                     final boardTitle = board?.title ?? 'Workspace';
                     final boardColor = EpicordiaColors.blue600;
+                    final isSelected = _selectedScheduleTaskIds.contains(task.id);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: bgCard,
+                        color: isSelected
+                            ? EpicordiaColors.blue600.withValues(alpha: isDark ? 0.15 : 0.06)
+                            : bgCard,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: borderSubtle),
+                        border: Border.all(
+                          color: isSelected ? EpicordiaColors.blue600 : borderSubtle,
+                          width: isSelected ? 1.5 : 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
@@ -1067,39 +1510,79 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          InteractiveTaskCard(
-                            task: task,
-                            boardTitle: boardTitle,
-                            boardColor: boardColor,
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: isSelected,
+                                activeColor: EpicordiaColors.blue600,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                onChanged: (val) {
+                                  setState(() {
+                                    if (val == true) {
+                                      _selectedScheduleTaskIds.add(task.id);
+                                    } else {
+                                      _selectedScheduleTaskIds.remove(task.id);
+                                    }
+                                  });
+                                },
+                              ),
+                              Expanded(
+                                child: InteractiveTaskCard(
+                                  task: task,
+                                  boardTitle: boardTitle,
+                                  boardColor: boardColor,
+                                ),
+                              ),
+                            ],
                           ),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: EpicordiaColors.blue600.withValues(alpha: 0.08),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  side: BorderSide(color: EpicordiaColors.blue600.withValues(alpha: 0.3)),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      backgroundColor: EpicordiaColors.blue600.withValues(alpha: 0.08),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      side: BorderSide(color: EpicordiaColors.blue600.withValues(alpha: 0.3)),
+                                    ),
+                                    onPressed: () {
+                                      ref.read(alarmTimerProvider.notifier).startTimer(
+                                            duration: const Duration(minutes: 25),
+                                            label: task.title,
+                                            taskId: task.id,
+                                          );
+                                      _tabController.animateTo(0);
+                                      setState(() {
+                                        _currentIndex = 0;
+                                      });
+                                    },
+                                    icon: Icon(Icons.timer_outlined, size: 18, color: EpicordiaColors.blue600),
+                                    label: Text(
+                                      'Start 25m Focus Session',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                                    ),
+                                  ),
                                 ),
-                                onPressed: () {
-                                  ref.read(alarmTimerProvider.notifier).startTimer(
-                                        duration: const Duration(minutes: 25),
-                                        label: task.title,
-                                        taskId: task.id,
-                                      );
-                                  _tabController.animateTo(0);
-                                  setState(() {
-                                    _currentIndex = 0;
-                                  });
-                                },
-                                icon: Icon(Icons.timer_outlined, size: 18, color: EpicordiaColors.blue600),
-                                label: Text(
-                                  'Start 25m Focus Session',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: EpicordiaColors.blue600),
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    side: BorderSide(color: borderSubtle),
+                                  ),
+                                  onPressed: () {
+                                    ref.read(alarmTimerProvider.notifier).addTaskToTimer(task.id);
+                                    FeedbackService.showSuccess('Added task to focus period');
+                                  },
+                                  icon: Icon(Icons.playlist_add, size: 18, color: textPrimary),
+                                  label: Text(
+                                    'Add to Timer',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
                         ],

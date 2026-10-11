@@ -357,14 +357,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _Card(
               child: Consumer(
                 builder: (context, ref, _) {
-                  final tutorialState = ref.watch(tutorialProvider);
-                  final tutorialNotifier = ref.read(tutorialProvider.notifier);
-
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tutorial Mode Preference',
+                        'Feature Tour & Onboarding',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -373,46 +370,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Choose your preferred tutorial experience when testing or onboarding.',
+                        'Replay the visual slide feature walkthrough or reset onboarding status.',
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      _SegmentedToggle(
-                        options: const ['Slides', 'Spotlight', 'Hybrid'],
-                        selected: tutorialState.mode == TutorialMode.slides
-                            ? 'Slides'
-                            : (tutorialState.mode == TutorialMode.spotlight ? 'Spotlight' : 'Hybrid'),
-                        onSelect: (val) {
-                          if (val == 'Slides') tutorialNotifier.setTutorialMode(TutorialMode.slides);
-                          if (val == 'Spotlight') tutorialNotifier.setTutorialMode(TutorialMode.spotlight);
-                          if (val == 'Hybrid') tutorialNotifier.setTutorialMode(TutorialMode.hybrid);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(height: 1, color: EpicordiaColors.borderSubtleLight),
                       const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () {
-                                if (tutorialState.mode == TutorialMode.spotlight) {
-                                  tutorialNotifier.startSpotlightTour();
-                                  context.go('/');
-                                } else {
-                                  FeatureWalkthroughDialog.show(
-                                    context,
-                                    onFinish: () {
-                                      if (tutorialState.mode == TutorialMode.hybrid) {
-                                        tutorialNotifier.startSpotlightTour();
-                                        context.go('/');
-                                      }
-                                    },
-                                  );
-                                }
+                                FeatureWalkthroughDialog.show(context);
                               },
                               icon: const Icon(Icons.play_circle_outline, size: 20),
                               label: const Text('Replay Feature Tour'),

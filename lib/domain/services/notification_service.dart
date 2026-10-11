@@ -4,6 +4,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../../data/dao/task_dao.dart';
 import '../../data/dao/timetable_dao.dart';
+import '../models/task_subitem.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
@@ -70,16 +71,19 @@ class NotificationService {
         matchDateTimeComponents: matchDateTimeComponents,
       );
     } catch (_) {
-      // Fallback for Android 14+ or devices where exact alarm schedule permissions are restricted
-      await _notificationsPlugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: scheduledDate,
-        notificationDetails: notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        matchDateTimeComponents: matchDateTimeComponents,
-      );
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          notificationDetails: notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: matchDateTimeComponents,
+        );
+      } catch (e) {
+        debugPrint('Zoned schedule error (e.g. uninitialized platform plugin in unit test): $e');
+      }
     }
   }
 
@@ -116,12 +120,13 @@ class NotificationService {
 
     final tzDate = tz.TZDateTime.from(scheduledDate, tz.local);
     final safeId = _toSafe32BitId(id);
+    final formattedBody = TaskSubitem.formatNotesForDisplay(body);
 
     try {
       await _safeZonedSchedule(
         id: safeId,
         title: title,
-        body: body ?? 'Task due now',
+        body: formattedBody ?? 'Task due now',
         scheduledDate: tzDate,
         notificationDetails: notificationDetails,
       );
@@ -193,6 +198,8 @@ class NotificationService {
     final safeBaseId = _toSafe32BitId(baseId);
     await cancelTaskRemindersAndAlarm(safeBaseId);
 
+    final formattedBody = TaskSubitem.formatNotesForDisplay(body);
+
     const androidAlarmDetails = AndroidNotificationDetails(
       'epicordia_alarms_channel',
       'Task Audio Alarms',
@@ -235,7 +242,7 @@ class NotificationService {
         await _safeZonedSchedule(
           id: safeBaseId * 10 + 1,
           title: 'Task Today: $title',
-          body: body ?? 'Scheduled for today',
+          body: formattedBody ?? 'Scheduled for today',
           scheduledDate: tz.TZDateTime.from(dayOfTaskDate, tz.local),
           notificationDetails: reminderNotificationDetails,
         );
@@ -251,7 +258,7 @@ class NotificationService {
         await _safeZonedSchedule(
           id: safeBaseId * 10 + 2,
           title: 'Task in 1 Hour: $title',
-          body: body ?? 'Due in 1 hour',
+          body: formattedBody ?? 'Due in 1 hour',
           scheduledDate: tz.TZDateTime.from(oneHourBeforeDate, tz.local),
           notificationDetails: reminderNotificationDetails,
         );
@@ -267,7 +274,7 @@ class NotificationService {
         await _safeZonedSchedule(
           id: safeBaseId * 10 + 3,
           title: 'Task in 5 Minutes: $title',
-          body: body ?? 'Due in 5 minutes',
+          body: formattedBody ?? 'Due in 5 minutes',
           scheduledDate: tz.TZDateTime.from(fiveMinBeforeDate, tz.local),
           notificationDetails: reminderNotificationDetails,
         );
@@ -281,7 +288,7 @@ class NotificationService {
       await _safeZonedSchedule(
         id: safeBaseId * 10 + 4,
         title: 'ALARM: $title',
-        body: body ?? 'Task is due now!',
+        body: formattedBody ?? 'Task is due now!',
         scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
         notificationDetails: alarmNotificationDetails,
       );

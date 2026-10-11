@@ -5,15 +5,19 @@ class InAppTimer {
   final Duration remainingDuration;
   final TimerState state;
   final String? label;
-  final String? linkedTaskId;
+  final List<String> linkedTaskIds;
 
-  const InAppTimer({
+  InAppTimer({
     required this.totalDuration,
     required this.remainingDuration,
     this.state = TimerState.idle,
     this.label,
-    this.linkedTaskId,
-  });
+    List<String>? linkedTaskIds,
+    String? linkedTaskId,
+  }) : linkedTaskIds = linkedTaskIds ??
+            (linkedTaskId != null && linkedTaskId.isNotEmpty ? [linkedTaskId] : const []);
+
+  String? get linkedTaskId => linkedTaskIds.isNotEmpty ? linkedTaskIds.first : null;
 
   double get progressFraction {
     if (totalDuration.inMilliseconds == 0) return 0.0;
@@ -37,6 +41,7 @@ class InAppTimer {
     Duration? remainingDuration,
     TimerState? state,
     String? label,
+    List<String>? linkedTaskIds,
     String? linkedTaskId,
   }) {
     return InAppTimer(
@@ -44,7 +49,8 @@ class InAppTimer {
       remainingDuration: remainingDuration ?? this.remainingDuration,
       state: state ?? this.state,
       label: label ?? this.label,
-      linkedTaskId: linkedTaskId ?? this.linkedTaskId,
+      linkedTaskIds: linkedTaskIds ??
+          (linkedTaskId != null ? [linkedTaskId] : this.linkedTaskIds),
     );
   }
 }

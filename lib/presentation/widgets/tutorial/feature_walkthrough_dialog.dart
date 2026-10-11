@@ -95,11 +95,11 @@ class FeatureWalkthroughDialog extends StatefulWidget {
     required this.onFinish,
   });
 
-  static Future<void> show(BuildContext context, {required VoidCallback onFinish}) {
+  static Future<void> show(BuildContext context, {VoidCallback? onFinish}) {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => FeatureWalkthroughDialog(onFinish: onFinish),
+      builder: (ctx) => FeatureWalkthroughDialog(onFinish: onFinish ?? () {}),
     );
   }
 

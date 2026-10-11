@@ -288,6 +288,32 @@ void main() {
 
       expect(ratio, 0.5);
     });
+
+    test('formatNotesForDisplay formats JSON subtasks into readable text for notifications', () {
+      final subitems = [
+        const TaskSubitem(id: '1', title: 'Provisions', isDone: true),
+        const TaskSubitem(id: '2', title: 'Toiletries', isDone: false),
+      ];
+      final rawNotes = TaskSubitem.encodeNotes(subitems: subitems);
+
+      final formatted = TaskSubitem.formatNotesForDisplay(rawNotes);
+      expect(formatted, contains('Subtasks (1/2 done):'));
+      expect(formatted, contains('✓ Provisions'));
+      expect(formatted, contains('☐ Toiletries'));
+      expect(formatted, isNot(contains('{')));
+    });
+
+    test('formatNotesForDisplay formats both user notes and subtasks cleanly', () {
+      final subitems = [
+        const TaskSubitem(id: '1', title: 'Buy tickets', isDone: false),
+      ];
+      final rawNotes = TaskSubitem.encodeNotes(userNotes: 'Remember to pack early!', subitems: subitems);
+
+      final formatted = TaskSubitem.formatNotesForDisplay(rawNotes);
+      expect(formatted, startsWith('Remember to pack early!'));
+      expect(formatted, contains('Subtasks (0/1 done):'));
+      expect(formatted, contains('☐ Buy tickets'));
+    });
   });
 
   group('Unified Task Creation & Type Inference Tests', () {
