@@ -499,5 +499,80 @@ void main() {
       expect(task.dueDate, DateTime(2026, 10, 14, 14, 0));
     });
   });
+
+  group('Top Priority Tasks Self-Syncing Tests', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
+      container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          taskDaoProvider.overrideWithValue(TaskDao(db)),
+        ],
+      );
+    });
+
+    tearDown(() async {
+      await db.close();
+      container.dispose();
+    });
+
+    test('watchTopPriorityTasks filters done tasks and orders by priority descending then due date', () async {
+      final repo = container.read(taskRepositoryProvider);
+      final taskDao = container.read(taskDaoProvider);
+
+      // Low priority task (0)
+      await taskDao.insertTask(
+        TasksCompanion.insert(
+          id: 'task-low',
+          title: 'Low Priority Task',
+          priority: const drift.Value(0),
+          status: const drift.Value('todo'),
+          dueDate: drift.Value(DateTime(2026, 10, 14, 18, 0)),
+        ),
+      );
+
+      // High priority task (2)
+      await taskDao.insertTask(
+        TasksCompanion.insert(
+          id: 'task-high',
+          title: 'High Priority Task',
+          priority: const drift.Value(2),
+          status: const drift.Value('todo'),
+          dueDate: drift.Value(DateTime(2026, 10, 15, 12, 0)),
+        ),
+      );
+
+      // Medium priority task (1)
+      await taskDao.insertTask(
+        TasksCompanion.insert(
+          id: 'task-med',
+          title: 'Medium Priority Task',
+          priority: const drift.Value(1),
+          status: const drift.Value('in_progress'),
+          dueDate: drift.Value(DateTime(2026, 10, 14, 15, 0)),
+        ),
+      );
+
+      // Completed High priority task (should be excluded)
+      await taskDao.insertTask(
+        TasksCompanion.insert(
+          id: 'task-high-done',
+          title: 'Completed High Priority',
+          priority: const drift.Value(2),
+          status: const drift.Value('done'),
+        ),
+      );
+
+      final topTasks = await repo.watchTopPriorityTasks().first;
+
+      expect(topTasks.length, 3);
+      expect(topTasks[0].id, 'task-high');
+      expect(topTasks[1].id, 'task-med');
+      expect(topTasks[2].id, 'task-low');
+    });
+  });
 }
 

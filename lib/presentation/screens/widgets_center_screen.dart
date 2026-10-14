@@ -12,6 +12,7 @@ import '../../core/widgets/widget_service.dart';
 import '../../domain/models/task_subitem.dart';
 import '../../domain/models/note_model.dart';
 import '../notifiers/alarm_timer_provider.dart';
+import '../widgets/top_priority_tasks_widget.dart';
 
 class WidgetsCenterScreen extends ConsumerStatefulWidget {
   const WidgetsCenterScreen({super.key});
@@ -37,7 +38,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
               ? const Center(child: Text('No notes available'))
               : ListView.separated(
                   itemCount: notes.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, idx) {
                     final note = notes[idx];
                     final lines = (note.content ?? '').split('\n');
@@ -78,7 +79,7 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
               ? const Center(child: Text('No tasks available'))
               : ListView.separated(
                   itemCount: tasks.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, idx) {
                     final task = tasks[idx];
                     final boardTitle = boardsMap[task.boardId]?.title ?? 'Inbox';
@@ -174,6 +175,24 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
               'Customize widgets to display specific notes, featured tasks, task subtasks, focus heatmaps, daily schedule, and session countdowns on your device home screen.',
               style: TextStyle(fontSize: 13, color: textSecondary, height: 1.4),
             ),
+            const SizedBox(height: 20),
+
+            // Top Priority Tasks Widget Preview & Control (Self-syncing)
+            _buildWidgetPreviewCard(
+              context: context,
+              title: 'Top Priority Tasks Widget',
+              icon: Icons.priority_high_rounded,
+              cardBg: cardBg,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              borderClr: borderClr,
+              previewWidget: const TopPriorityTasksWidget(maxTasks: 3),
+              onSelect: () => context.push('/tasks'),
+              onSync: () {
+                FeedbackService.showSuccess('Top Priority Tasks Widget auto-syncs continuously in real-time!');
+              },
+            ),
+
             const SizedBox(height: 20),
 
             // 1. Quick Capture Widget Preview & Action
