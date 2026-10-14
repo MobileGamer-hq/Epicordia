@@ -69,7 +69,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
     if (!widget.isEmbedded) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.read(isFullScreenEpiActiveProvider.notifier).state = true;
+          ref.read(isFullScreenEpiActiveProvider.notifier).setActive(true);
         }
       });
     }
@@ -99,7 +99,7 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
   void dispose() {
     if (!widget.isEmbedded) {
       Future.microtask(() {
-        ref.read(isFullScreenEpiActiveProvider.notifier).state = false;
+        ref.read(isFullScreenEpiActiveProvider.notifier).setActive(false);
       });
     }
     _pulseController.dispose();

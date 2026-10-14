@@ -92,6 +92,13 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/task_subtasks_app_widget_info" />
         </receiver>
 
+        <receiver android:name="com.epicordia.live.widgets.TopPriorityAppWidget" android:exported="true" android:label="Top Priority Tasks">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/top_priority_app_widget_info" />
+        </receiver>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

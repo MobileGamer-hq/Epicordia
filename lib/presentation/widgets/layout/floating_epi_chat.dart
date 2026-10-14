@@ -263,7 +263,7 @@ class _FloatingEpiChatOverlayState extends ConsumerState<FloatingEpiChatOverlay>
                                           .collapse();
                                       ref
                                           .read(isFullScreenEpiActiveProvider.notifier)
-                                          .state = true;
+                                          .setActive(true);
                                       _controller.value = 0.0;
                                       ref.read(routerProvider).push('/epi');
                                     },

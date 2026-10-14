@@ -21,7 +21,6 @@ import '../../core/feedback_service.dart';
 import '../../core/theme_provider.dart';
 import '../../domain/epi/epi_api_service.dart';
 import '../widgets/proactive_checkin_card.dart';
-import '../widgets/top_priority_tasks_widget.dart';
 import 'search_screen.dart';
 
 final epiDailyThoughtProvider = FutureProvider.autoDispose<String?>((ref) async {
@@ -159,10 +158,6 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
 
               // Proactive Cold-Start Check-in Card (Appears if items present, silent if clear)
               const ProactiveCheckinCard(),
-
-              // Top Priority Tasks Widget (Auto-syncs in real-time & clicks through to Tasks Tab)
-              const TopPriorityTasksWidget(),
-              const SizedBox(height: 18),
 
               // Activity Heatmap
               Hero(
