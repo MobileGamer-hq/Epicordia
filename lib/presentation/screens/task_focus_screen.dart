@@ -96,7 +96,8 @@ class _TaskFocusScreenState extends ConsumerState<TaskFocusScreen> {
     final updated = List<TaskSubitem>.from(_subitems);
     final current = updated[index];
     updated[index] = current.copyWith(isDone: !current.isDone);
-    _persistSubitems(updated);
+    final sorted = TaskSubitem.sortSubtasks(updated);
+    _persistSubitems(sorted);
   }
 
   void _reorderSubitems(int oldIndex, int newIndex) {
@@ -173,7 +174,7 @@ class _TaskFocusScreenState extends ConsumerState<TaskFocusScreen> {
     HapticFeedback.lightImpact();
     final newId = '${DateTime.now().millisecondsSinceEpoch}_${_subitems.length}';
     final newItem = TaskSubitem(id: newId, title: text, isDone: false);
-    final updated = List<TaskSubitem>.from(_subitems)..add(newItem);
+    final updated = TaskSubitem.sortSubtasks([..._subitems, newItem]);
 
     _newSubtaskController.clear();
     _persistSubitems(updated);

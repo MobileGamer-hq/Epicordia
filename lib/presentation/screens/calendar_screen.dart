@@ -28,6 +28,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _selectedDate = DateTime.now();
   int _activeViewIndex = 0; // 0 = Calendar, 1 = Timetable (Kanban)
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(taskRepositoryProvider).resetCompletedRecurringTasks();
+    });
+  }
+
   Future<void> _handleExport(String type) async {
     final db = ref.read(databaseProvider);
     final tasks = ref.read(allTasksProvider).value ?? [];

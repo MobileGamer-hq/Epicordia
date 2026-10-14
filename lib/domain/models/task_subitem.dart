@@ -39,6 +39,15 @@ class TaskSubitem {
     );
   }
 
+  /// Sorts a list of [TaskSubitem] so that incomplete items appear on top
+  /// and completed items are pushed to the bottom, preserving relative order.
+  static List<TaskSubitem> sortSubtasks(List<TaskSubitem> subitems) {
+    if (subitems.length <= 1) return subitems;
+    final notDone = subitems.where((s) => !s.isDone).toList();
+    final done = subitems.where((s) => s.isDone).toList();
+    return [...notDone, ...done];
+  }
+
   /// Encodes a list of [TaskSubitem] along with optional markdown notes into a raw string for `task.notes`.
   static String encodeNotes({String? userNotes, List<TaskSubitem>? subitems}) {
     final Map<String, dynamic> data = {};
@@ -46,7 +55,8 @@ class TaskSubitem {
       data['userNotes'] = userNotes.trim();
     }
     if (subitems != null && subitems.isNotEmpty) {
-      data['subitems'] = subitems.map((e) => e.toJson()).toList();
+      final sorted = sortSubtasks(subitems);
+      data['subitems'] = sorted.map((e) => e.toJson()).toList();
     }
     if (data.isEmpty) return '';
     return jsonEncode(data);
@@ -65,7 +75,7 @@ class TaskSubitem {
         final userNotes = decoded['userNotes'] as String?;
         final subitemsJson = decoded['subitems'] as List<dynamic>?;
         final subitems = subitemsJson != null
-            ? subitemsJson.map((item) => TaskSubitem.fromJson(item as Map<String, dynamic>)).toList()
+            ? sortSubtasks(subitemsJson.map((item) => TaskSubitem.fromJson(item as Map<String, dynamic>)).toList())
             : <TaskSubitem>[];
         return TaskNotesPayload(userNotes: userNotes, subitems: subitems);
       } catch (_) {

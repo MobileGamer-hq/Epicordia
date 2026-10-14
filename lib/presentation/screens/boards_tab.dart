@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_card.dart';
+import '../widgets/core/item_interaction_dialogs.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/database/database.dart';
 import '../../domain/models/note_model.dart';
 import '../../core/theme.dart';
+import '../../core/feedback_service.dart';
 
 
 class BoardsTab extends ConsumerStatefulWidget {
@@ -169,6 +172,15 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
               _isGrid
                   ? _GridView(boards: boards)
                   : _ListView(boards: boards),
+              if (_isGrid)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                  sliver: SliverToBoxAdapter(
+                    child: _CreateBoardButton(
+                      onTap: () => context.push('/create/board'),
+                    ),
+                  ),
+                ),
             ],
           );
         },
@@ -188,40 +200,47 @@ class _EmptyBoardsState extends StatelessWidget {
     final sunkenBg = isDark ? EpicordiaColors.surfaceSunkenDark : EpicordiaColors.surfaceSunkenLight;
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: sunkenBg,
-              borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: sunkenBg,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.space_dashboard_outlined,
+                size: 32,
+                color: textTertiary,
+              ),
             ),
-            child: Icon(
-              Icons.space_dashboard_outlined,
-              size: 32,
-              color: textTertiary,
+            const SizedBox(height: 16),
+            Text(
+              'No boards yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No boards yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: textPrimary,
+            const SizedBox(height: 8),
+            Text(
+              'Create a board to start organizing visually',
+              style: TextStyle(
+                fontSize: 14,
+                color: textSecondary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Create a board to start organizing visually',
-            style: TextStyle(
-              fontSize: 14,
-              color: textSecondary,
+            const SizedBox(height: 20),
+            _CreateBoardButton(
+              onTap: () => context.push('/create/board'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -229,7 +248,7 @@ class _EmptyBoardsState extends StatelessWidget {
 
 // ── Grid Layout ──────────────────────────────────────────────────
 class _GridView extends StatelessWidget {
-  final List<dynamic> boards;
+  final List<BoardEntity> boards;
   const _GridView({required this.boards});
 
   @override
@@ -266,7 +285,7 @@ class _GridView extends StatelessWidget {
 }
 
 class _BoardGridCard extends ConsumerWidget {
-  final dynamic board;
+  final BoardEntity board;
   final Color color;
   const _BoardGridCard({required this.board, required this.color});
 
@@ -296,6 +315,63 @@ class _BoardGridCard extends ConsumerWidget {
             return EpicordiaCard(
               padding: EdgeInsets.zero,
               onTap: () => context.push('/board/${board.id}'),
+              onLongPress: () {
+                HapticFeedback.mediumImpact();
+                ItemInteractionDialogs.showBoardDetailDialog(
+                  context: context,
+                  ref: ref,
+                  board: board,
+                  boardColor: color,
+                );
+              },
+              onDoubleTap: () {
+                HapticFeedback.lightImpact();
+                ItemInteractionDialogs.showDoubleTapMenu(
+                  context: context,
+                  title: board.title,
+                  subtitle: '$countLabel on board',
+                  items: [
+                    DoubleTapMenuItem(
+                      icon: Icons.launch_rounded,
+                      label: 'Open Board',
+                      color: color,
+                      onTap: () => context.push('/board/${board.id}'),
+                    ),
+                    DoubleTapMenuItem(
+                      icon: Icons.edit_rounded,
+                      label: 'Rename Board',
+                      onTap: () => ItemInteractionDialogs.showRenameBoardDialog(
+                        context: context,
+                        ref: ref,
+                        board: board,
+                      ),
+                    ),
+                    DoubleTapMenuItem(
+                      icon: Icons.copy_rounded,
+                      label: 'Copy Board Info',
+                      onTap: () => ItemInteractionDialogs.copyToClipboard(
+                        context,
+                        'Board: ${board.title} ($countLabel)',
+                      ),
+                    ),
+                    DoubleTapMenuItem(
+                      icon: Icons.delete_outline_rounded,
+                      label: 'Delete Board',
+                      color: EpicordiaColors.errorLight,
+                      onTap: () async {
+                        final confirm = await ItemInteractionDialogs.showDeleteConfirmDialog(
+                          context,
+                          'Board',
+                        );
+                        if (confirm == true) {
+                          await ref.read(boardRepositoryProvider).deleteBoard(board.id);
+                          FeedbackService.showSuccess('Board "${board.title}" deleted');
+                        }
+                      },
+                    ),
+                  ],
+                );
+              },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -321,15 +397,26 @@ class _BoardGridCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          board.title,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                board.title,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Icon(
+                              Icons.more_horiz,
+                              size: 16,
+                              color: textTertiary,
+                            ),
+                          ],
                         ),
                         Text(
                           countLabel,
@@ -353,17 +440,22 @@ class _BoardGridCard extends ConsumerWidget {
 
 // ── List Layout ──────────────────────────────────────────────────
 class _ListView extends StatelessWidget {
-  final List<dynamic> boards;
+  final List<BoardEntity> boards;
   const _ListView({required this.boards});
 
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       sliver: SliverList.separated(
-        itemCount: boards.length,
+        itemCount: boards.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
+          if (index == boards.length) {
+            return _CreateBoardButton(
+              onTap: () => context.push('/create/board'),
+            );
+          }
           final board = boards[index];
           return _CollapsibleBoardListCard(board: board);
         },
@@ -373,7 +465,7 @@ class _ListView extends StatelessWidget {
 }
 
 class _CollapsibleBoardListCard extends ConsumerStatefulWidget {
-  final dynamic board;
+  final BoardEntity board;
   const _CollapsibleBoardListCard({required this.board});
 
   @override
@@ -448,6 +540,64 @@ class _CollapsibleBoardListCardState extends ConsumerState<_CollapsibleBoardList
 
             return EpicordiaCard(
               padding: const EdgeInsets.all(16),
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              onLongPress: () {
+                HapticFeedback.mediumImpact();
+                ItemInteractionDialogs.showBoardDetailDialog(
+                  context: context,
+                  ref: ref,
+                  board: board,
+                  boardColor: iconClr,
+                );
+              },
+              onDoubleTap: () {
+                HapticFeedback.lightImpact();
+                ItemInteractionDialogs.showDoubleTapMenu(
+                  context: context,
+                  title: board.title,
+                  subtitle: '$itemCount items on board',
+                  items: [
+                    DoubleTapMenuItem(
+                      icon: Icons.launch_rounded,
+                      label: 'Open Board Canvas',
+                      color: iconClr,
+                      onTap: () => context.push('/board/${board.id}'),
+                    ),
+                    DoubleTapMenuItem(
+                      icon: Icons.edit_rounded,
+                      label: 'Rename Board',
+                      onTap: () => ItemInteractionDialogs.showRenameBoardDialog(
+                        context: context,
+                        ref: ref,
+                        board: board,
+                      ),
+                    ),
+                    DoubleTapMenuItem(
+                      icon: Icons.copy_rounded,
+                      label: 'Copy Board Info',
+                      onTap: () => ItemInteractionDialogs.copyToClipboard(
+                        context,
+                        'Board: ${board.title} ($itemCount items)',
+                      ),
+                    ),
+                    DoubleTapMenuItem(
+                      icon: Icons.delete_outline_rounded,
+                      label: 'Delete Board',
+                      color: EpicordiaColors.errorLight,
+                      onTap: () async {
+                        final confirm = await ItemInteractionDialogs.showDeleteConfirmDialog(
+                          context,
+                          'Board',
+                        );
+                        if (confirm == true) {
+                          await ref.read(boardRepositoryProvider).deleteBoard(board.id);
+                          FeedbackService.showSuccess('Board "${board.title}" deleted');
+                        }
+                      },
+                    ),
+                  ],
+                );
+              },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -497,6 +647,84 @@ class _CollapsibleBoardListCardState extends ConsumerState<_CollapsibleBoardList
                             ],
                           ),
                         ),
+                      ),
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert, size: 20, color: textTertiary),
+                        tooltip: 'Board Options',
+                        onSelected: (val) async {
+                          switch (val) {
+                            case 'open':
+                              context.push('/board/${board.id}');
+                              break;
+                            case 'details':
+                              ItemInteractionDialogs.showBoardDetailDialog(
+                                context: context,
+                                ref: ref,
+                                board: board,
+                                boardColor: iconClr,
+                              );
+                              break;
+                            case 'rename':
+                              ItemInteractionDialogs.showRenameBoardDialog(
+                                context: context,
+                                ref: ref,
+                                board: board,
+                              );
+                              break;
+                            case 'delete':
+                              final confirm = await ItemInteractionDialogs.showDeleteConfirmDialog(
+                                context,
+                                'Board',
+                              );
+                              if (confirm == true) {
+                                await ref.read(boardRepositoryProvider).deleteBoard(board.id);
+                                FeedbackService.showSuccess('Board "${board.title}" deleted');
+                              }
+                              break;
+                          }
+                        },
+                        itemBuilder: (ctx) => [
+                          const PopupMenuItem(
+                            value: 'open',
+                            child: Row(
+                              children: [
+                                Icon(Icons.launch_rounded, size: 18),
+                                SizedBox(width: 8),
+                                Text('Open Board'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'details',
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline_rounded, size: 18),
+                                SizedBox(width: 8),
+                                Text('Quick View & Details'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'rename',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined, size: 18),
+                                SizedBox(width: 8),
+                                Text('Rename Board'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Delete Board', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       IconButton(
                         icon: Icon(
@@ -674,3 +902,53 @@ class _StatChip extends StatelessWidget {
     );
   }
 }
+
+class _CreateBoardButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _CreateBoardButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+    final borderStrong = isDark ? EpicordiaColors.borderStrongDark : EpicordiaColors.borderStrongLight;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderStrong,
+              style: BorderStyle.solid,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add,
+                size: 18,
+                color: textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Create New Board',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

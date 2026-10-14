@@ -51,15 +51,16 @@ class _InteractiveTaskCardState extends ConsumerState<InteractiveTaskCard> {
     final subitems = List<TaskSubitem>.from(payload.subitems);
     final current = subitems[index];
     subitems[index] = current.copyWith(isDone: !current.isDone);
+    final sorted = TaskSubitem.sortSubtasks(subitems);
 
     final updatedNotes = TaskSubitem.encodeNotes(
       userNotes: payload.userNotes,
-      subitems: subitems,
+      subitems: sorted,
     );
 
     // Auto-update overall task status if subitems are completed
-    final allDone = subitems.isNotEmpty && subitems.every((s) => s.isDone);
-    final anyDone = subitems.any((s) => s.isDone);
+    final allDone = sorted.isNotEmpty && sorted.every((s) => s.isDone);
+    final anyDone = sorted.any((s) => s.isDone);
     final newStatus = allDone
         ? 'done'
         : (anyDone ? 'in_progress' : (widget.task.status == 'done' ? 'todo' : widget.task.status));

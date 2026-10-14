@@ -85,11 +85,12 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return (delete(tasks)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Deletes completed tasks with modifiedAt older than [cutoff] and returns their IDs.
+  /// Deletes completed non-recurring tasks with modifiedAt older than [cutoff] and returns their IDs.
   Future<List<String>> deleteCompletedTasksOlderThan(DateTime cutoff) async {
     final toDelete = await (select(tasks)
           ..where((t) =>
               t.status.equals('done') &
+              (t.recurrenceRule.isNull() | t.recurrenceRule.equals('') | t.recurrenceRule.equals('none')) &
               t.modifiedAt.isSmallerThanValue(cutoff)))
         .get();
 

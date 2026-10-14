@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:alarm/alarm.dart';
@@ -31,10 +32,13 @@ class EpicordiaApp extends ConsumerStatefulWidget {
   ConsumerState<EpicordiaApp> createState() => _EpicordiaAppState();
 }
 
-class _EpicordiaAppState extends ConsumerState<EpicordiaApp> {
+class _EpicordiaAppState extends ConsumerState<EpicordiaApp> with WidgetsBindingObserver {
+  Timer? _recurrenceTimer;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(widgetServiceProvider);
       final router = ref.read(routerProvider);
@@ -47,13 +51,30 @@ class _EpicordiaAppState extends ConsumerState<EpicordiaApp> {
       await notificationService.syncAllTaskNotifications(taskDao);
       await notificationService.syncAllTimetableSlotNotifications(timetableDao);
 
+      // Reset completed recurring tasks whose frequency period has arrived
+      await ref.read(taskRepositoryProvider).resetCompletedRecurringTasks();
+
       // Clean up completed tasks exceeding auto-delete retention period
       await ref.read(taskRepositoryProvider).cleanUpCompletedTasks();
+    });
+
+    // Check periodically for recurring tasks crossing period boundaries
+    _recurrenceTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      ref.read(taskRepositoryProvider).resetCompletedRecurringTasks();
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(taskRepositoryProvider).resetCompletedRecurringTasks();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _recurrenceTimer?.cancel();
     WidgetDeepLinkHandler.dispose();
     super.dispose();
   }

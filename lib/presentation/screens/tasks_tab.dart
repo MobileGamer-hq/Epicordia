@@ -43,6 +43,9 @@ class _TasksTabState extends ConsumerState<TasksTab> {
     _searchController.addListener(() {
       setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(taskRepositoryProvider).resetCompletedRecurringTasks();
+    });
   }
 
   @override

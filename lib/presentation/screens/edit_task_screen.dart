@@ -128,10 +128,30 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
   void _toggleSubitem(int index) {
     setState(() {
       _subitemDoneStates[index] = !_subitemDoneStates[index];
+      final ctrl = _subitemControllers.removeAt(index);
+      final done = _subitemDoneStates.removeAt(index);
+      final id = _subitemIds.removeAt(index);
+      if (done) {
+        _subitemControllers.add(ctrl);
+        _subitemDoneStates.add(done);
+        _subitemIds.add(id);
+      } else {
+        final firstDoneIndex = _subitemDoneStates.indexOf(true);
+        if (firstDoneIndex == -1) {
+          _subitemControllers.add(ctrl);
+          _subitemDoneStates.add(done);
+          _subitemIds.add(id);
+        } else {
+          _subitemControllers.insert(firstDoneIndex, ctrl);
+          _subitemDoneStates.insert(firstDoneIndex, done);
+          _subitemIds.insert(firstDoneIndex, id);
+        }
+      }
+
       if (_subitemDoneStates.isNotEmpty) {
-        if (_subitemDoneStates.every((done) => done)) {
+        if (_subitemDoneStates.every((d) => d)) {
           _selectedStatus = 'done';
-        } else if (_subitemDoneStates.any((done) => done)) {
+        } else if (_subitemDoneStates.any((d) => d)) {
           _selectedStatus = 'in_progress';
         } else if (_selectedStatus == 'done') {
           _selectedStatus = 'todo';

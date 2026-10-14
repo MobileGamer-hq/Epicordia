@@ -46,6 +46,11 @@ class WidgetService {
     taskRepo.watchAllTasks().listen((allTasks) {
       _updateHeatmapWidget(allTasks);
     });
+
+    // Automatically Watch & Sync Top Priority Tasks in real-time
+    taskRepo.watchTopPriorityTasks().listen((topTasks) {
+      _updateTopPriorityWidget(topTasks);
+    });
   }
 
   Future<void> _updateTodayWidget(List<TaskEntity> tasks) async {
@@ -328,6 +333,65 @@ class WidgetService {
       );
     } catch (e) {
       developer.log('Error updating Session Widget: $e');
+    }
+  }
+
+  /// Automatically syncs Top Priority Tasks data to HomeWidget
+  Future<void> _updateTopPriorityWidget(List<TaskEntity> tasks) async {
+    try {
+      final activeTasks = tasks.where((t) => t.status != 'done').toList();
+      final tasksJson = activeTasks.take(5).map((t) {
+        String priorityLabel = 'Low';
+        if (t.priority >= 2) {
+          priorityLabel = 'High';
+        } else if (t.priority == 1) {
+          priorityLabel = 'Med';
+        }
+
+        String timeStr = '';
+        if (t.dueDate != null) {
+          final dt = t.dueDate!;
+          final now = DateTime.now();
+          final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+          final isTomorrow = dt.year == now.year && dt.month == now.month && dt.day == now.day + 1;
+          final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+          final period = dt.hour >= 12 ? 'PM' : 'AM';
+          final minuteStr = dt.minute.toString().padLeft(2, '0');
+          final time = '$hour:$minuteStr $period';
+          timeStr = isToday ? 'Today, $time' : (isTomorrow ? 'Tomorrow, $time' : '${dt.month}/${dt.day}, $time');
+        }
+
+        final subPayload = TaskSubitem.decodeNotes(t.notes);
+        final subCount = subPayload.subitems.length;
+        final subDone = subPayload.subitems.where((s) => s.isDone).length;
+
+        return {
+          'id': t.id,
+          'title': t.title,
+          'priority': t.priority,
+          'priority_label': priorityLabel,
+          'time': timeStr,
+          'completed': t.status == 'done',
+          'subtasks_total': subCount,
+          'subtasks_done': subDone,
+          'deep_link': 'epicordia://tasks',
+        };
+      }).toList();
+
+      final payload = {
+        'count': activeTasks.length,
+        'tasks': tasksJson,
+        'deep_link': 'epicordia://tasks',
+      };
+
+      await HomeWidget.saveWidgetData('top_priority_data', jsonEncode(payload));
+      await HomeWidget.updateWidget(
+        name: 'TopPriorityAppWidget',
+        androidName: 'widgets.TopPriorityAppWidget',
+        iOSName: 'TopPriorityWidget',
+      );
+    } catch (e) {
+      developer.log('Error updating Top Priority Widget snapshot: $e');
     }
   }
 }

@@ -571,12 +571,13 @@ class ItemInteractionDialogs {
                                           onTap: () {
                                             final subitems = List<TaskSubitem>.from(notesPayload.subitems);
                                             subitems[idx] = sub.copyWith(isDone: !sub.isDone);
+                                            final sorted = TaskSubitem.sortSubtasks(subitems);
                                             final enc = TaskSubitem.encodeNotes(
                                               userNotes: notesPayload.userNotes,
-                                              subitems: subitems,
+                                              subitems: sorted,
                                             );
-                                            final allDone = subitems.isNotEmpty && subitems.every((s) => s.isDone);
-                                            final anyDone = subitems.any((s) => s.isDone);
+                                            final allDone = sorted.isNotEmpty && sorted.every((s) => s.isDone);
+                                            final anyDone = sorted.any((s) => s.isDone);
                                             final newStatus = allDone
                                                 ? 'done'
                                                 : (anyDone ? 'in_progress' : (task.status == 'done' ? 'todo' : task.status));
@@ -955,6 +956,326 @@ class ItemInteractionDialogs {
     );
   }
 
+  /// Displays a floating detail popup for a Board over a blurred background.
+  static void showBoardDetailDialog({
+    required BuildContext context,
+    required WidgetRef ref,
+    required BoardEntity board,
+    Color? boardColor,
+  }) {
+    showGeneralDialog(
+      context: rootNavigatorKey.currentContext ?? context,
+      barrierDismissible: true,
+      barrierLabel: 'Board Details',
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+        final borderClr = isDark ? EpicordiaColors.borderSubtleDark : EpicordiaColors.borderSubtleLight;
+        final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+        final textSecondary = isDark ? EpicordiaColors.textSecondaryDark : EpicordiaColors.textSecondaryLight;
+        final textTertiary = isDark ? EpicordiaColors.textTertiaryDark : EpicordiaColors.textTertiaryLight;
+        final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+        final clr = boardColor ?? activeBlue;
+
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: FadeTransition(
+            opacity: anim1,
+            child: ScaleTransition(
+              scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: borderClr, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: StreamBuilder<List<PinEntity>>(
+                    stream: ref.watch(pinRepositoryProvider).watchPinsForBoard(board.id),
+                    builder: (context, pinSnapshot) {
+                      final pins = pinSnapshot.data ?? const <PinEntity>[];
+
+                      return StreamBuilder<List<TaskEntity>>(
+                        stream: ref.watch(taskRepositoryProvider).watchTasksForBoard(board.id),
+                        builder: (context, taskSnapshot) {
+                          final tasks = taskSnapshot.data ?? const <TaskEntity>[];
+                          final pinIds = pins.map((p) => p.id).toSet();
+                          final standaloneTasks = tasks.where((t) => t.pinId == null || !pinIds.contains(t.pinId)).toList();
+
+                          final noteCount = pins.where((p) => p.type == 'note').length;
+                          final taskCount = pins.where((p) => p.type == 'task' || p.type == 'tasklist' || p.type == 'checklist').length + standaloneTasks.length;
+                          final frameCount = pins.where((p) => p.type == 'frame').length;
+                          final totalCount = pins.length + standaloneTasks.length;
+
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header Badge & Close
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: clr.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(color: clr.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.dashboard_outlined, size: 14, color: clr),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          'BOARD',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                            color: clr,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  IconButton(
+                                    icon: const Icon(Icons.close_rounded, size: 20),
+                                    color: textTertiary,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () => Navigator.of(ctx).pop(),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Board Title
+                              Text(
+                                board.title,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+
+                              // Stats Summary
+                              Text(
+                                '$totalCount items • $noteCount notes • $taskCount tasks • $frameCount frames',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Preview Box
+                              Expanded(
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceSunkenLight,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: borderClr),
+                                  ),
+                                  child: pins.isEmpty && standaloneTasks.isEmpty
+                                      ? Center(
+                                          child: Text(
+                                            'No items on this board canvas yet.',
+                                            style: TextStyle(fontSize: 12, color: textTertiary),
+                                          ),
+                                        )
+                                      : ListView(
+                                          children: [
+                                            ...pins.take(5).map((pin) {
+                                              return Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      pin.type == 'note'
+                                                          ? Icons.sticky_note_2_outlined
+                                                          : pin.type == 'frame'
+                                                              ? Icons.view_column_outlined
+                                                              : Icons.check_circle_outline,
+                                                      size: 15,
+                                                      color: clr,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        pin.content?.split('\n').first ?? 'Untitled item',
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: TextStyle(fontSize: 12, color: textPrimary),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }),
+                                            ...standaloneTasks.take(3).map((t) {
+                                              return Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.check_circle_outline, size: 15, color: clr),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        t.title,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: TextStyle(fontSize: 12, color: textPrimary),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Quick Action Toolbar
+                              Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: isDark ? EpicordiaColors.surfaceAppDark : EpicordiaColors.surfaceSunkenLight,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: borderClr),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _ActionButton(
+                                      icon: Icons.launch_rounded,
+                                      label: 'Open',
+                                      color: activeBlue,
+                                      onTap: () {
+                                        Navigator.of(ctx).pop();
+                                        ref.read(routerProvider).push('/board/${board.id}');
+                                      },
+                                    ),
+                                    _ActionButton(
+                                      icon: Icons.edit_rounded,
+                                      label: 'Rename',
+                                      onTap: () {
+                                        Navigator.of(ctx).pop();
+                                        showRenameBoardDialog(context: rootNavigatorKey.currentContext ?? context, ref: ref, board: board);
+                                      },
+                                    ),
+                                    _ActionButton(
+                                      icon: Icons.copy_rounded,
+                                      label: 'Copy Info',
+                                      onTap: () {
+                                        Navigator.of(ctx).pop();
+                                        copyToClipboard(context, 'Board: ${board.title} ($totalCount items)');
+                                      },
+                                    ),
+                                    _ActionButton(
+                                      icon: Icons.delete_outline_rounded,
+                                      label: 'Delete',
+                                      color: EpicordiaColors.errorLight,
+                                      onTap: () async {
+                                        Navigator.of(ctx).pop();
+                                        final confirm = await _showDeleteConfirmDialog(rootNavigatorKey.currentContext ?? context, 'Board');
+                                        if (confirm == true) {
+                                          await ref.read(boardRepositoryProvider).deleteBoard(board.id);
+                                          FeedbackService.showSuccess('Board "${board.title}" deleted');
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Displays a dialog to edit/rename a board's title.
+  static Future<void> showRenameBoardDialog({
+    required BuildContext context,
+    required WidgetRef ref,
+    required BoardEntity board,
+  }) async {
+    final controller = TextEditingController(text: board.title);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? EpicordiaColors.surfaceCardDark : EpicordiaColors.surfaceCardLight;
+    final textPrimary = isDark ? EpicordiaColors.textPrimaryDark : EpicordiaColors.textPrimaryLight;
+    final activeBlue = isDark ? EpicordiaColors.blue300 : EpicordiaColors.blue600;
+
+    final newTitle = await showDialog<String>(
+      context: rootNavigatorKey.currentContext ?? context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Rename Board', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: TextStyle(color: textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'Board name...',
+            isDense: true,
+          ),
+          onSubmitted: (val) => Navigator.of(ctx).pop(val.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            style: ElevatedButton.styleFrom(backgroundColor: activeBlue, foregroundColor: Colors.white),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newTitle != null && newTitle.isNotEmpty && newTitle != board.title) {
+      await ref.read(boardRepositoryProvider).updateBoard(
+        board.copyWith(
+          title: newTitle,
+          modifiedAt: DateTime.now(),
+        ),
+      );
+      FeedbackService.showSuccess('Board renamed to "$newTitle"');
+    }
+  }
+
   /// Displays a double-tap action menu modal sheet over a blurred background.
   static void showDoubleTapMenu({
     required BuildContext context,
@@ -1087,7 +1408,7 @@ class ItemInteractionDialogs {
     FeedbackService.showInfo('Content ready to share (copied to clipboard)!');
   }
 
-  static Future<bool?> _showDeleteConfirmDialog(BuildContext context, String itemType) {
+  static Future<bool?> showDeleteConfirmDialog(BuildContext context, String itemType) {
     return showDialog<bool>(
       context: rootNavigatorKey.currentContext ?? context,
       builder: (ctx) => AlertDialog(
@@ -1107,6 +1428,9 @@ class ItemInteractionDialogs {
       ),
     );
   }
+
+  static Future<bool?> _showDeleteConfirmDialog(BuildContext context, String itemType) =>
+      showDeleteConfirmDialog(context, itemType);
 
   /// Displays a modal sheet to pin a note/item to a board or move it to Inbox (Unpinned).
   static void showPinToBoardModal({

@@ -36,6 +36,13 @@ class TodayDashboard extends ConsumerStatefulWidget {
 }
 
 class _TodayDashboardState extends ConsumerState<TodayDashboard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(taskRepositoryProvider).resetCompletedRecurringTasks();
+    });
+  }
 
   String _formatModified(DateTime date) {
     final now = DateTime.now();

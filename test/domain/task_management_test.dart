@@ -357,5 +357,147 @@ void main() {
       expect(decoded.userNotes, 'Checklist note');
     });
   });
+
+  group('Subtasks Reordering Tests', () {
+    test('Completed subtasks are pushed to bottom while undone appear on top', () {
+      final subitems = [
+        const TaskSubitem(id: '1', title: 'Task 1 (Done)', isDone: true),
+        const TaskSubitem(id: '2', title: 'Task 2 (Pending)', isDone: false),
+        const TaskSubitem(id: '3', title: 'Task 3 (Done)', isDone: true),
+        const TaskSubitem(id: '4', title: 'Task 4 (Pending)', isDone: false),
+      ];
+
+      final sorted = TaskSubitem.sortSubtasks(subitems);
+      expect(sorted[0].title, 'Task 2 (Pending)');
+      expect(sorted[1].title, 'Task 4 (Pending)');
+      expect(sorted[2].title, 'Task 1 (Done)');
+      expect(sorted[3].title, 'Task 3 (Done)');
+    });
+
+    test('Decoding notes automatically sorts subtasks with undone first', () {
+      final subitems = [
+        const TaskSubitem(id: '1', title: 'Done first', isDone: true),
+        const TaskSubitem(id: '2', title: 'Undone second', isDone: false),
+      ];
+      final encoded = TaskSubitem.encodeNotes(subitems: subitems);
+      final decoded = TaskSubitem.decodeNotes(encoded);
+
+      expect(decoded.subitems.first.title, 'Undone second');
+      expect(decoded.subitems.first.isDone, isFalse);
+      expect(decoded.subitems.last.title, 'Done first');
+      expect(decoded.subitems.last.isDone, isTrue);
+    });
+  });
+
+  group('Recurring Task Completion Reset Tests', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      db = AppDatabase(NativeDatabase.memory());
+      container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          taskDaoProvider.overrideWithValue(TaskDao(db)),
+        ],
+      );
+    });
+
+    tearDown(() async {
+      await db.close();
+      container.dispose();
+    });
+
+    test('Daily recurring task completed yesterday resets to todo today with undone subtasks and updated due date', () async {
+      final repo = container.read(taskRepositoryProvider);
+      final taskDao = container.read(taskDaoProvider);
+
+      final now = DateTime(2026, 10, 14, 10, 0); // Wednesday 10:00 AM
+      final yesterday = DateTime(2026, 10, 13, 15, 0); // Tuesday 3:00 PM
+      final yesterdayDue = DateTime(2026, 10, 13, 18, 0); // Tuesday 6:00 PM
+
+      final subitems = [
+        const TaskSubitem(id: 'sub-1', title: 'Step 1', isDone: true),
+        const TaskSubitem(id: 'sub-2', title: 'Step 2', isDone: true),
+      ];
+      final encodedNotes = TaskSubitem.encodeNotes(userNotes: 'Daily workout', subitems: subitems);
+
+      await taskDao.insertTask(
+        TasksCompanion.insert(
+          id: 'daily-task-1',
+          title: 'Daily Workout',
+          status: const drift.Value('done'),
+          recurrenceRule: const drift.Value('daily'),
+          dueDate: drift.Value(yesterdayDue),
+          notes: drift.Value(encodedNotes),
+          modifiedAt: drift.Value(yesterday),
+        ),
+      );
+
+      final resetCount = await repo.resetCompletedRecurringTasks(nowOverride: now);
+      expect(resetCount, 1);
+
+      final task = await taskDao.getTask('daily-task-1');
+      expect(task, isNotNull);
+      expect(task!.status, 'todo');
+      expect(task.dueDate, DateTime(2026, 10, 14, 18, 0)); // Today at 6:00 PM
+
+      final decoded = TaskSubitem.decodeNotes(task.notes);
+      expect(decoded.subitems.every((s) => !s.isDone), isTrue);
+    });
+
+    test('Recurring task completed on the same day does not reset prematurely', () async {
+      final repo = container.read(taskRepositoryProvider);
+      final taskDao = container.read(taskDaoProvider);
+
+      final now = DateTime(2026, 10, 14, 12, 0);
+      final completedToday = DateTime(2026, 10, 14, 9, 0);
+
+      await taskDao.insertTask(
+        TasksCompanion.insert(
+          id: 'daily-task-today',
+          title: 'Daily Meditation',
+          status: const drift.Value('done'),
+          recurrenceRule: const drift.Value('daily'),
+          dueDate: drift.Value(DateTime(2026, 10, 14, 20, 0)),
+          modifiedAt: drift.Value(completedToday),
+        ),
+      );
+
+      final resetCount = await repo.resetCompletedRecurringTasks(nowOverride: now);
+      expect(resetCount, 0);
+
+      final task = await taskDao.getTask('daily-task-today');
+      expect(task!.status, 'done');
+    });
+
+    test('Weekly recurring task resets when the next week arrives', () async {
+      final repo = container.read(taskRepositoryProvider);
+      final taskDao = container.read(taskDaoProvider);
+
+      final now = DateTime(2026, 10, 14, 10, 0); // Oct 14
+      final completedOct7 = DateTime(2026, 10, 7, 10, 0); // Oct 7
+      final dueOct7 = DateTime(2026, 10, 7, 14, 0);
+
+      await taskDao.insertTask(
+        TasksCompanion.insert(
+          id: 'weekly-task-1',
+          title: 'Weekly Review',
+          status: const drift.Value('done'),
+          recurrenceRule: const drift.Value('weekly'),
+          dueDate: drift.Value(dueOct7),
+          modifiedAt: drift.Value(completedOct7),
+        ),
+      );
+
+      final resetCount = await repo.resetCompletedRecurringTasks(nowOverride: now);
+      expect(resetCount, 1);
+
+      final task = await taskDao.getTask('weekly-task-1');
+      expect(task!.status, 'todo');
+      expect(task.dueDate, DateTime(2026, 10, 14, 14, 0));
+    });
+  });
 }
 
