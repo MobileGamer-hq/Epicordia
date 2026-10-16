@@ -255,7 +255,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // ],
       ),
       body: SelectionArea(
-        child: ListView(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 48),
           children: [
             // ── Profile ──────────────────────────────────────────
@@ -1166,7 +1170,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

@@ -714,36 +714,42 @@ class _AlarmsTimersScreenState extends ConsumerState<AlarmsTimersScreen>
           ),
         ),
       ),
-      body: Column(
-        children: [
-          // Sub-Tab Segment Switcher (Timers / Alarms / Schedule)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                _buildSegmentTab(0, 'Timers'),
-                _buildSegmentTab(1, 'Alarms'),
-                _buildSegmentTab(2, 'Schedule'),
-              ],
-            ),
-          ),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 860),
+          child: Column(
+            children: [
+              // Sub-Tab Segment Switcher (Timers / Alarms / Schedule)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    _buildSegmentTab(0, 'Timers'),
+                    _buildSegmentTab(1, 'Alarms'),
+                    _buildSegmentTab(2, 'Schedule'),
+                  ],
+                ),
+              ),
 
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTimersTab(context, activeTimer, isDark),
-                _buildActiveAlarmsTab(context, timerAlarmState.alarms, isDark),
-                _buildTaskSchedulesTab(context, isDark),
-              ],
-            ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildTimersTab(context, activeTimer, isDark),
+                    _buildActiveAlarmsTab(context, timerAlarmState.alarms, isDark),
+                    _buildTaskSchedulesTab(context, isDark),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
 
       // Reference 1 Style Bottom Nav Bar

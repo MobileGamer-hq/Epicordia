@@ -86,7 +86,11 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
             // Title
@@ -225,7 +229,9 @@ class _CreateBoardScreenState extends ConsumerState<CreateBoardScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

@@ -85,7 +85,21 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     bottom: true,
                     left: false,
                     right: true,
-                    child: SelectionArea(child: widget.child),
+                    child: SelectionArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1100),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: widget.child,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],

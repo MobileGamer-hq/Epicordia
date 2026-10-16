@@ -213,9 +213,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             const SizedBox(height: 12),
             // View Mode Switcher: Calendar vs Weekly Schedule (Kanban)
             Center(
@@ -344,7 +348,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildHeatmapHero({

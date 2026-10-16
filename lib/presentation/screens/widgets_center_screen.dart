@@ -166,11 +166,15 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Text(
               'Customize widgets to display specific notes, featured tasks, task subtasks, focus heatmaps, daily schedule, and session countdowns on your device home screen.',
               style: TextStyle(fontSize: 13, color: textSecondary, height: 1.4),
@@ -615,7 +619,9 @@ class _WidgetsCenterScreenState extends ConsumerState<WidgetsCenterScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildWidgetPreviewCard({

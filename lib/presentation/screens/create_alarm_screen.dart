@@ -264,9 +264,13 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
           children: [
             const SizedBox(height: 10),
 
@@ -709,7 +713,9 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildDayCircle(int dayNum, String label, bool isDark) {

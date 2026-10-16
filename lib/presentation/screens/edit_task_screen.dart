@@ -375,7 +375,11 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
         body: SafeArea(
           child: _task == null
               ? const Center(child: CircularProgressIndicator())
-              : ListView(
+              : Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: ListView(
                   padding: const EdgeInsets.all(24),
                   children: [
                     // Title field
@@ -866,6 +870,8 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                     ],
                   ],
                 ),
+              ),
+            ),
         ),
       ),
     );

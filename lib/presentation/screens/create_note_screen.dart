@@ -579,7 +579,11 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
         body: _isLoadingNote
             ? const Center(child: CircularProgressIndicator())
             : SafeArea(
-                child: Column(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 900),
+                    child: Column(
                   children: [
                     // Date Picker + Board Picker + Tag Chips Row
                     Padding(
@@ -875,6 +879,8 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> {
                   ],
                 ),
               ),
+            ),
+          ),
       ),
     );
   }
