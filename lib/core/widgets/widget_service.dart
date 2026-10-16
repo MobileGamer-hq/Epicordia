@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,6 +27,7 @@ class WidgetService {
   WidgetService(this.ref);
 
   void init() {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     HomeWidget.setAppGroupId(kAppGroupId);
     _listenToStreams();
   }
@@ -194,6 +197,7 @@ class WidgetService {
 
   /// Syncs a user-selected note to the Pinned Note Widget
   Future<void> syncPinnedNoteWidget(PinEntity note, String boardTitle) async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('pinned_note_id', note.id);
@@ -222,6 +226,7 @@ class WidgetService {
 
   /// Syncs a user-selected task to the Pinned Task Widget
   Future<void> syncPinnedTaskWidget(TaskEntity task, String boardTitle) async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('pinned_task_id', task.id);
@@ -256,6 +261,7 @@ class WidgetService {
 
   /// Syncs a user-selected task along with its subtasks to the Task & Subtasks Widget
   Future<void> syncTaskWithSubtasks(TaskEntity task, String boardTitle) async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('pinned_subtask_task_id', task.id);
@@ -286,6 +292,7 @@ class WidgetService {
 
   /// Syncs Daily Schedule slots to Daily Schedule Widget
   Future<void> syncDailyScheduleWidget(List<TimetableSlotEntity> slots) async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     try {
       final slotsJson = slots.map((s) => {
         'id': s.id,
@@ -313,6 +320,7 @@ class WidgetService {
 
   /// Syncs Active Session / Alarm data to Sessions Widget
   Future<void> syncSessionWidget(InAppAlarm alarm) async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     try {
       final h = alarm.hour % 12 == 0 ? 12 : alarm.hour % 12;
       final m = alarm.minute.toString().padLeft(2, '0');

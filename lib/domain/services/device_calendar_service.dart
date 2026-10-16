@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:device_calendar_plus/device_calendar_plus.dart';
 import 'package:flutter/foundation.dart';
 import '../models/task_subitem.dart';
@@ -10,6 +11,9 @@ class DeviceCalendarService {
 
   /// Check and request calendar permissions from the OS.
   Future<bool> requestPermissions() async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return false;
+    }
     final status = await _plugin.hasPermissions();
     if (status == CalendarPermissionStatus.granted) {
       return true;

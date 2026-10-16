@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:home_widget/home_widget.dart';
@@ -8,6 +10,8 @@ class WidgetDeepLinkHandler {
   static StreamSubscription? _sub;
 
   static void init(BuildContext context, GoRouter router) {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+
     // Check initial launch payload from widget tap
     HomeWidget.initiallyLaunchedFromHomeWidget().then((Uri? uri) {
       if (uri != null) {

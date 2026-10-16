@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,6 +60,8 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   StreamSubscription<AlarmSettings>? _alarmSubscription;
   final NotificationService _notificationService = NotificationService();
 
+  bool get _isNativeAlarmSupported => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
   @override
   AlarmTimerState build() {
     _loadAlarms();
@@ -82,6 +85,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   }
 
   void _subscribeToNativeAlarms() {
+    if (!_isNativeAlarmSupported) return;
     try {
       _alarmSubscription = Alarm.ringStream.stream.listen((alarmSettings) {
         triggerRinging(
@@ -131,6 +135,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   // Alarms Logic
   // ─────────────────────────────────────────────────────────────
   Future<void> _scheduleNativeAlarm(InAppAlarm alarm) async {
+    if (!_isNativeAlarmSupported) return;
     if (!alarm.isEnabled) return;
     final useSystem = ref.read(alarmSettingsProvider);
     if (useSystem) return; // Native system clock handoff manages alarm ringing
@@ -178,7 +183,9 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
     state = state.copyWith(alarms: updatedList);
     await _saveAlarms(updatedList);
 
-    await Alarm.stop(updatedAlarm.id.hashCode);
+    if (_isNativeAlarmSupported) {
+      await Alarm.stop(updatedAlarm.id.hashCode);
+    }
     if (updatedAlarm.isEnabled) {
       await _scheduleNativeAlarm(updatedAlarm);
     }
@@ -200,7 +207,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
     if (target != null) {
       if (target!.isEnabled) {
         await _scheduleNativeAlarm(target!);
-      } else {
+      } else if (_isNativeAlarmSupported) {
         await Alarm.stop(target!.id.hashCode);
       }
     }
@@ -208,7 +215,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
 
   Future<void> deleteAlarm(String id) async {
     final target = state.alarms.firstWhere((a) => a.id == id, orElse: () => const InAppAlarm(id: '', title: '', hour: 0, minute: 0));
-    if (target.id.isNotEmpty) {
+    if (target.id.isNotEmpty && _isNativeAlarmSupported) {
       await Alarm.stop(target.id.hashCode);
     }
     final updated = state.alarms.where((a) => a.id != id).toList();
@@ -415,7 +422,7 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
 
   Future<void> dismissRinging() async {
     final event = state.ringingEvent;
-    if (event?.alarmId != null) {
+    if (event?.alarmId != null && _isNativeAlarmSupported) {
       await Alarm.stop(event!.alarmId!);
     }
     state = state.copyWith(clearRinging: true);
@@ -424,10 +431,12 @@ class AlarmTimerNotifier extends Notifier<AlarmTimerState> {
   Future<void> snoozeRinging(Duration snoozeDuration) async {
     final event = state.ringingEvent;
     final alarmId = event?.alarmId;
-    if (alarmId != null) {
+    if (alarmId != null && _isNativeAlarmSupported) {
       await Alarm.stop(alarmId);
     }
     state = state.copyWith(clearRinging: true);
+
+    if (!_isNativeAlarmSupported) return;
 
     try {
       final snoozedSettings = AlarmSettings(

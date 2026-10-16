@@ -34,11 +34,17 @@ class NotificationService {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
+    const windowsSettings = WindowsInitializationSettings(
+      appName: 'Epicordia',
+      appUserModelId: 'com.epicordia.app',
+      guid: 'e931b26c-829d-4767-a02e-c5341275bb9a',
+    );
 
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,
+      windows: windowsSettings,
     );
 
     await _notificationsPlugin.initialize(settings: initSettings);
@@ -116,6 +122,7 @@ class NotificationService {
     const notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: darwinDetails,
+      windows: WindowsNotificationDetails(),
     );
 
     final tzDate = tz.TZDateTime.from(scheduledDate, tz.local);
@@ -162,6 +169,7 @@ class NotificationService {
     const details = NotificationDetails(
       android: androidDetails,
       iOS: darwinDetails,
+      windows: WindowsNotificationDetails(),
     );
 
     final safeId = _toSafe32BitId(id);
@@ -228,11 +236,17 @@ class NotificationService {
     const alarmNotificationDetails = NotificationDetails(
       android: androidAlarmDetails,
       iOS: darwinDetails,
+      windows: WindowsNotificationDetails(
+        scenario: WindowsNotificationScenario.alarm,
+      ),
     );
 
     const reminderNotificationDetails = NotificationDetails(
       android: androidReminderDetails,
       iOS: darwinDetails,
+      windows: WindowsNotificationDetails(
+        scenario: WindowsNotificationScenario.reminder,
+      ),
     );
 
     // 1. Day of task (9:00 AM on due date)
@@ -340,6 +354,9 @@ class NotificationService {
     const notificationDetails = NotificationDetails(
       android: androidSlotDetails,
       iOS: darwinDetails,
+      windows: WindowsNotificationDetails(
+        scenario: WindowsNotificationScenario.reminder,
+      ),
     );
 
     final locText = (location != null && location.isNotEmpty) ? ' ($location)' : '';
@@ -483,6 +500,9 @@ class NotificationService {
     const details = NotificationDetails(
       android: androidDetails,
       iOS: darwinDetails,
+      windows: WindowsNotificationDetails(
+        scenario: WindowsNotificationScenario.reminder,
+      ),
     );
 
     final targetDays = daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7];
@@ -537,6 +557,9 @@ class NotificationService {
     const alarmNotificationDetails = NotificationDetails(
       android: androidAlarmDetails,
       iOS: darwinDetails,
+      windows: WindowsNotificationDetails(
+        scenario: WindowsNotificationScenario.alarm,
+      ),
     );
 
     try {

@@ -215,15 +215,7 @@ class _FloatingEpiChatOverlayState extends ConsumerState<FloatingEpiChatOverlay>
                                       letterSpacing: 0.2,
                                     ),
                                   ),
-                                  const SizedBox(width: 7),
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF34D399),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
+                                  const SizedBox(width: 15),
                                 ],
                               ),
                             ),

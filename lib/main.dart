@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:alarm/alarm.dart';
@@ -17,7 +19,9 @@ import 'core/feedback_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Alarm.init();
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await Alarm.init();
+  }
 
   final notificationService = NotificationService();
   await notificationService.initialize();
@@ -40,9 +44,11 @@ class _EpicordiaAppState extends ConsumerState<EpicordiaApp> with WidgetsBinding
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      ref.read(widgetServiceProvider);
-      final router = ref.read(routerProvider);
-      WidgetDeepLinkHandler.init(context, router);
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        ref.read(widgetServiceProvider);
+        final router = ref.read(routerProvider);
+        WidgetDeepLinkHandler.init(context, router);
+      }
 
       // Perform initial background sync of task and timetable notifications
       final notificationService = NotificationService();
