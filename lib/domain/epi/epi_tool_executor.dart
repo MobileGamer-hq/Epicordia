@@ -266,10 +266,14 @@ class EpiToolExecutor {
       },
     ));
 
+    final successMessage = subitems.isNotEmpty
+        ? 'Created task "$title" with ${subitems.length} subtask${subitems.length > 1 ? "s" : ""}'
+        : 'Created task "$title"';
+
     return EpiActionExecutionRecord(
       action: action,
       status: ActionExecutionStatus.success,
-      message: 'Created task "$title"',
+      message: successMessage,
       createdEntityId: newTaskId,
       entityIds: [newTaskId],
       outputData: {
@@ -279,6 +283,9 @@ class EpiToolExecutor {
         'dueDate': dueDate?.toIso8601String(),
         'priority': priority,
         'type': 'task',
+        'subtasks': subitems.map((s) => s.title).toList(),
+        'subtasksCount': subitems.length,
+        'verified': true,
       },
       timestamp: DateTime.now(),
     );
@@ -368,6 +375,7 @@ class EpiToolExecutor {
         'dueDate': updated.dueDate?.toIso8601String(),
         'priority': updated.priority,
         'type': 'task',
+        'verified': true,
       },
       timestamp: DateTime.now(),
     );
@@ -1586,6 +1594,7 @@ class EpiToolExecutor {
         'endTime': endTime,
         'location': location,
         'type': 'schedule',
+        'verified': true,
       },
       timestamp: DateTime.now(),
     );
@@ -1681,6 +1690,7 @@ class EpiToolExecutor {
         'location': location,
         'type': 'schedule',
         'updatedFields': updatedFields,
+        'verified': true,
         if (conflictSlot != null)
           'conflict': {
             'title': conflictSlot.title,

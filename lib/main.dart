@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, File, FileMode;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,16 +17,38 @@ import 'data/providers.dart';
 import 'data/repository/task_repository.dart';
 import 'core/feedback_service.dart';
 
+void _logError(String msg) {
+  try {
+    debugPrint(msg);
+    final file = File('epicordia_crash.log');
+    file.writeAsStringSync('${DateTime.now()}: $msg\n\n', mode: FileMode.append);
+  } catch (_) {}
+}
+
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    await Alarm.init();
-  }
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  final notificationService = NotificationService();
-  await notificationService.initialize();
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      _logError('FlutterError: ${details.exceptionAsString()}\n${details.stack}');
+    };
 
-  runApp(const ProviderScope(child: EpicordiaApp()));
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      await Alarm.init();
+    }
+
+    try {
+      final notificationService = NotificationService();
+      await notificationService.initialize();
+    } catch (e, st) {
+      _logError('NotificationService initialization failed: $e\n$st');
+    }
+
+    runApp(const ProviderScope(child: EpicordiaApp()));
+  }, (error, stack) {
+    _logError('Uncaught error in zone: $error\n$stack');
+  });
 }
 
 class EpicordiaApp extends ConsumerStatefulWidget {
