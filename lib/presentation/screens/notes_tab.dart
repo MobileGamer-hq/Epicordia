@@ -5,7 +5,6 @@ import '../../data/repository/pin_repository.dart';
 import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../domain/models/note_model.dart';
-import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/interactive_note_card.dart';
 import '../../core/theme.dart';
 
@@ -75,9 +74,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
         ) ??
         {};
 
-    return ResponsiveScaffold(
-      child: CustomScrollView(
-        slivers: [
+    return CustomScrollView(
+      slivers: [
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,8 +316,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
             },
           ),
         ],
-      ),
-    );
+      );
   }
 
 

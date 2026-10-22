@@ -64,4 +64,41 @@ class ImageAttachmentService {
       return null;
     }
   }
+
+  /// Processes raw image bytes (e.g. from clipboard paste), compresses it,
+  /// and returns a [ChatAttachment].
+  static Future<ChatAttachment?> processImageBytes(
+    Uint8List rawBytes, {
+    String fileName = 'pasted_image.jpg',
+  }) async {
+    try {
+      Uint8List bytes = rawBytes;
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
+        try {
+          final compressedBytes = await FlutterImageCompress.compressWithList(
+            rawBytes,
+            minWidth: 800,
+            minHeight: 800,
+            quality: 75,
+            format: CompressFormat.jpeg,
+          );
+          if (compressedBytes.isNotEmpty) {
+            bytes = compressedBytes;
+          }
+        } catch (_) {}
+      }
+
+      final base64Str = base64Encode(bytes);
+      return ChatAttachment(
+        bytes: bytes,
+        base64Data: base64Str,
+        mimeType: 'image/jpeg',
+        fileSize: bytes.length,
+        fileName: fileName,
+      );
+    } catch (e) {
+      debugPrint('Error processing image bytes: $e');
+      return null;
+    }
+  }
 }

@@ -6,7 +6,6 @@ import '../../data/database/database.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
 import '../../domain/state/journaling_provider.dart';
-import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../widgets/core/interactive_note_card.dart';
 import '../widgets/core/interactive_task_card.dart';
@@ -249,9 +248,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     final totalTasks = completedCount + missedCount;
     final completionRate = totalTasks > 0 ? ((completedCount / totalTasks) * 100).round() : 100;
 
-    return ResponsiveScaffold(
-      child: Scaffold(
-        backgroundColor: bgApp,
+    return Scaffold(
+      backgroundColor: bgApp,
         appBar: AppBar(
           backgroundColor: bgApp,
           elevation: 0,
@@ -539,8 +537,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

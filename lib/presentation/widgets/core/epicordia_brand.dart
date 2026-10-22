@@ -24,14 +24,17 @@ class EpicordiaLogo extends ConsumerWidget {
         //   fit: BoxFit.contain,
         // ),
         // const SizedBox(width: 8),
-        Text(
-          'Epicordia',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: size,
-            fontWeight: FontWeight.w800,
-            color: logoColor,
-            letterSpacing: -0.3,
+        Flexible(
+          child: Text(
+            'Epicordia',
+            overflow: TextOverflow.clip,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: size,
+              fontWeight: FontWeight.w800,
+              color: logoColor,
+              letterSpacing: -0.3,
+            ),
           ),
         ),
       ],

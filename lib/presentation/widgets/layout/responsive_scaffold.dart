@@ -56,9 +56,18 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
         // ── Mobile (<600px): Bottom navigation & Top AppBar ──────────
         if (w < 600) {
+          final location = GoRouterState.of(context).uri.path;
+          final isHome = location == '/';
+          final effectiveAppBar = widget.appBar ??
+              (isHome
+                  ? EpicordiaAppBar(
+                      onSearch: () => _showSearchOverlay(context),
+                    )
+                  : null);
+
           scaffoldContent = Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
-            appBar: widget.appBar,
+            appBar: effectiveAppBar,
             body: SafeArea(child: SelectionArea(child: widget.child)),
             bottomNavigationBar: const _MobileBottomNav(),
           );
@@ -169,20 +178,22 @@ class _ExpandableSidebar extends StatelessWidget {
                 12,
               ),
               child: isExpanded
-                  ? Row(
-                      children: [
-                        EpicordiaLogo(size: 20),
-                        const Spacer(),
-                        IconButton(
-                          icon: Icon(
-                            Icons.menu_open,
-                            size: 20,
-                            color: textSecondary,
+                  ? ClipRect(
+                      child: Row(
+                        children: [
+                          const Flexible(child: EpicordiaLogo(size: 20)),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(
+                              Icons.menu_open,
+                              size: 20,
+                              color: textSecondary,
+                            ),
+                            onPressed: onToggleExpand,
+                            tooltip: 'Collapse Sidebar',
                           ),
-                          onPressed: onToggleExpand,
-                          tooltip: 'Collapse Sidebar',
-                        ),
-                      ],
+                        ],
+                      ),
                     )
                   : Column(
                       children: [
@@ -825,8 +836,10 @@ class _QuickAccessItem extends ConsumerWidget {
     void handleTap() {
       if (isEpi) {
         ref.read(floatingEpiChatProvider.notifier).toggle();
+      } else if (item.route == '/report') {
+        context.go('/report');
       } else {
-        context.go(item.route);
+        context.push(item.route);
       }
     }
 

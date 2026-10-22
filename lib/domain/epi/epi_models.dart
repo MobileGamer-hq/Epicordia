@@ -285,6 +285,7 @@ class EpiChatMessage {
   final bool isStreaming;
   final bool isWorking;
   final ChatAttachment? attachment;
+  final List<EpiAttachedItem>? attachedItems;
 
   const EpiChatMessage({
     required this.id,
@@ -297,6 +298,7 @@ class EpiChatMessage {
     this.isStreaming = false,
     this.isWorking = false,
     this.attachment,
+    this.attachedItems,
   });
 
   EpiChatMessage copyWith({
@@ -307,6 +309,7 @@ class EpiChatMessage {
     bool? isStreaming,
     bool? isWorking,
     ChatAttachment? attachment,
+    List<EpiAttachedItem>? attachedItems,
   }) {
     return EpiChatMessage(
       id: id,
@@ -319,6 +322,7 @@ class EpiChatMessage {
       isStreaming: isStreaming ?? this.isStreaming,
       isWorking: isWorking ?? this.isWorking,
       attachment: attachment ?? this.attachment,
+      attachedItems: attachedItems ?? this.attachedItems,
     );
   }
 }
@@ -395,6 +399,7 @@ class EpiAttachedItem {
   final String title;
   final EpiAttachedItemType type;
   final String? preview;
+  final String? content;
   final Map<String, dynamic>? extraData;
 
   const EpiAttachedItem({
@@ -402,6 +407,32 @@ class EpiAttachedItem {
     required this.title,
     required this.type,
     this.preview,
+    this.content,
     this.extraData,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'type': type.name,
+      if (preview != null) 'preview': preview,
+      if (content != null) 'content': content,
+      if (extraData != null) 'extraData': extraData,
+    };
+  }
+
+  factory EpiAttachedItem.fromJson(Map<String, dynamic> json) {
+    return EpiAttachedItem(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      type: EpiAttachedItemType.values.firstWhere(
+        (t) => t.name == json['type'],
+        orElse: () => EpiAttachedItemType.note,
+      ),
+      preview: json['preview'] as String?,
+      content: json['content'] as String?,
+      extraData: json['extraData'] as Map<String, dynamic>?,
+    );
+  }
 }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/layout/responsive_scaffold.dart';
-import '../widgets/core/epicordia_brand.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../../data/repository/task_repository.dart';
 import '../../data/repository/pin_repository.dart';
@@ -21,7 +19,6 @@ import '../../core/feedback_service.dart';
 import '../../core/theme_provider.dart';
 import '../../domain/epi/epi_api_service.dart';
 import '../widgets/proactive_checkin_card.dart';
-import 'search_screen.dart';
 
 final epiDailyThoughtProvider = FutureProvider.autoDispose<String?>((ref) async {
   final apiService = ref.watch(epiApiServiceProvider);
@@ -59,24 +56,6 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
   }
 
 
-  void _showSearchScreen(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const EpicordiaSearchScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final tween = Tween(begin: const Offset(0.0, -1.0), end: Offset.zero)
-              .chain(CurveTween(curve: Curves.fastOutSlowIn));
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Color _getBoardColor(String? boardId) {
     if (boardId == null) return Colors.grey;
@@ -119,12 +98,8 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
     final dailyThoughtAsync = ref.watch(epiDailyThoughtProvider);
     final subtitleText = dailyThoughtAsync.value ?? "Here's your workspace overview for this week.";
 
-    return ResponsiveScaffold(
-      appBar: EpicordiaAppBar(
-        onSearch: () => _showSearchScreen(context),
-      ),
-      child: SingleChildScrollView(
-        child: Padding(
+    return SingleChildScrollView(
+      child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,8 +331,7 @@ class _TodayDashboardState extends ConsumerState<TodayDashboard> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -992,10 +966,17 @@ class _QuickCaptureCard extends ConsumerWidget {
               if (time != null) ...[
                 const Spacer(),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.access_time, size: 11, color: textTertiary),
                     const SizedBox(width: 4),
-                    Text(time!, style: TextStyle(fontSize: 10, color: textTertiary)),
+                    Flexible(
+                      child: Text(
+                        time!,
+                        style: TextStyle(fontSize: 10, color: textTertiary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ],

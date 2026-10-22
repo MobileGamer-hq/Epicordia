@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/epicordia_card.dart';
 import '../widgets/core/item_interaction_dialogs.dart';
 import '../../data/repository/board_repository.dart';
@@ -133,9 +132,8 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
       ),
     );
 
-    return ResponsiveScaffold(
-      child: StreamBuilder(
-        stream: boardsAsync,
+    return StreamBuilder(
+      stream: boardsAsync,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return CustomScrollView(
@@ -184,8 +182,7 @@ class _BoardsTabState extends ConsumerState<BoardsTab> {
             ],
           );
         },
-      ),
-    );
+      );
   }
 }
 

@@ -19,7 +19,9 @@ import '../../domain/epi/epi_models.dart';
 import '../../domain/epi/floating_epi_chat_provider.dart';
 import '../widgets/edit_timetable_slot_dialog.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:pasteboard/pasteboard.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../domain/models/chat_attachment_model.dart';
@@ -77,6 +79,46 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
+
+    _focusNode.onKeyEvent = (node, event) {
+      if (event is KeyDownEvent) {
+        final isEnter = event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.numpadEnter;
+        if (isEnter) {
+          if (HardwareKeyboard.instance.isShiftPressed) {
+            final text = _textController.text;
+            final selection = _textController.selection;
+            final start = selection.start >= 0 ? selection.start : text.length;
+            final end = selection.end >= 0 ? selection.end : text.length;
+            final newText = text.replaceRange(start, end, '\n');
+            _textController.value = TextEditingValue(
+              text: newText,
+              selection: TextSelection.collapsed(offset: start + 1),
+            );
+            return KeyEventResult.handled;
+          } else {
+            _handleSend();
+            return KeyEventResult.handled;
+          }
+        }
+
+        final isModifier = HardwareKeyboard.instance.isControlPressed ||
+            HardwareKeyboard.instance.isMetaPressed;
+        if (isModifier && event.logicalKey == LogicalKeyboardKey.keyV) {
+          Pasteboard.image.then((bytes) {
+            if (bytes != null && bytes.isNotEmpty) {
+              ImageAttachmentService.processImageBytes(bytes).then((attachment) {
+                if (attachment != null && mounted) {
+                  setState(() => _attachedImage = attachment);
+                  FeedbackService.showSuccess('Image pasted from clipboard');
+                }
+              });
+            }
+          });
+        }
+      }
+      return KeyEventResult.ignored;
+    };
 
     if (widget.initialAttachedItems != null && widget.initialAttachedItems!.isNotEmpty) {
       _attachedItems.addAll(widget.initialAttachedItems!);
@@ -228,6 +270,53 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
     );
   }
 
+  Future<void> _pasteImageFromClipboard() async {
+    try {
+      final imageBytes = await Pasteboard.image;
+      if (imageBytes != null && imageBytes.isNotEmpty) {
+        final attachment = await ImageAttachmentService.processImageBytes(imageBytes);
+        if (attachment != null && mounted) {
+          setState(() => _attachedImage = attachment);
+          FeedbackService.showSuccess('Image pasted from clipboard');
+          return;
+        }
+      }
+
+      final files = await Pasteboard.files();
+      if (files.isNotEmpty) {
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
+        final firstImage = files.firstWhere(
+          (f) => imageExtensions.any((ext) => f.toLowerCase().endsWith(ext)),
+          orElse: () => '',
+        );
+        if (firstImage.isNotEmpty) {
+          final file = File(firstImage);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            final fileName = file.uri.pathSegments.isNotEmpty
+                ? file.uri.pathSegments.last
+                : 'pasted_image.jpg';
+            final attachment = await ImageAttachmentService.processImageBytes(bytes, fileName: fileName);
+            if (attachment != null && mounted) {
+              setState(() => _attachedImage = attachment);
+              FeedbackService.showSuccess('Image pasted from clipboard');
+              return;
+            }
+          }
+        }
+      }
+
+      if (mounted) {
+        FeedbackService.showInfo('No image found on clipboard');
+      }
+    } catch (e) {
+      debugPrint('Error pasting image: $e');
+      if (mounted) {
+        FeedbackService.showError('Could not paste image from clipboard');
+      }
+    }
+  }
+
   Future<void> _handleImageAttachment(
     Color cardBg,
     Color textPrimary,
@@ -309,14 +398,15 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                         Expanded(
                           child: GestureDetector(
                             onTap: () async {
-            Navigator.pop(ctx);
-            final attachment = await ImageAttachmentService.pickAndCompressImage(ImageSource.camera);
-            if (attachment != null && mounted) {
-              setState(() => _attachedImage = attachment);
-            }},
-          child: AnimatedContainer(
+                              Navigator.pop(ctx);
+                              final attachment = await ImageAttachmentService.pickAndCompressImage(ImageSource.camera);
+                              if (attachment != null && mounted) {
+                                setState(() => _attachedImage = attachment);
+                              }
+                            },
+                            child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(vertical: 22),
+                              padding: const EdgeInsets.symmetric(vertical: 20),
                               decoration: BoxDecoration(
                                 color: selectedSource == ImageSource.camera ? selectedColor : cardColor,
                                 borderRadius: BorderRadius.circular(14),
@@ -328,13 +418,13 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Remix.camera_line, size: 32, color: activeBlue),
-                                  const SizedBox(height: 10),
+                                  Icon(Remix.camera_line, size: 28, color: activeBlue),
+                                  const SizedBox(height: 8),
                                   Text(
-                                    'Take a Picture',
+                                    'Camera',
                                     style: TextStyle(
                                       color: textPrimary,
-                                      fontSize: 12.5,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -343,19 +433,19 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: GestureDetector(
-                            // onTap: () => setModalState(() => selectedSource = ImageSource.gallery),
                             onTap: () async {
-            Navigator.pop(ctx);
-            final attachment = await ImageAttachmentService.pickAndCompressImage(ImageSource.gallery);
-            if (attachment != null && mounted) {
-              setState(() => _attachedImage = attachment);
-            }},
+                              Navigator.pop(ctx);
+                              final attachment = await ImageAttachmentService.pickAndCompressImage(ImageSource.gallery);
+                              if (attachment != null && mounted) {
+                                setState(() => _attachedImage = attachment);
+                              }
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(vertical: 22),
+                              padding: const EdgeInsets.symmetric(vertical: 20),
                               decoration: BoxDecoration(
                                 color: selectedSource == ImageSource.gallery ? selectedColor : cardColor,
                                 borderRadius: BorderRadius.circular(14),
@@ -367,13 +457,49 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Remix.image_circle_line, size: 32, color: activeBlue),
-                                  const SizedBox(height: 10),
+                                  Icon(Remix.image_circle_line, size: 28, color: activeBlue),
+                                  const SizedBox(height: 8),
                                   Text(
                                     'Gallery',
                                     style: TextStyle(
                                       color: textPrimary,
-                                      fontSize: 12.5,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              Navigator.pop(ctx);
+                              await _pasteImageFromClipboard();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              decoration: BoxDecoration(
+                                color: cardColor,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.transparent,
+                                  width: 1.8,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Remix.clipboard_line, size: 28, color: activeBlue),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Paste',
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -430,8 +556,9 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
 
     final rawText = textOverride ?? _textController.text;
     final imageToSend = _attachedImage;
+    final hasAttachedItems = _attachedItems.isNotEmpty;
 
-    if (rawText.trim().isEmpty && imageToSend == null) return;
+    if (rawText.trim().isEmpty && imageToSend == null && !hasAttachedItems) return;
 
     final textToSend = rawText.trim();
 
@@ -1128,6 +1255,163 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
     );
   }
 
+  Widget _buildSentAttachedItemCard(
+    EpiAttachedItem item,
+    Color cardBg,
+    Color textPrimary,
+    Color textSecondary,
+    Color borderClr,
+    Color activeBlue,
+    bool isDark,
+  ) {
+    final IconData icon;
+    final Color accentColor;
+    final String typeBadge;
+
+    switch (item.type) {
+      case EpiAttachedItemType.note:
+        icon = Icons.description_outlined;
+        accentColor = isDark ? Colors.amber.shade300 : Colors.amber.shade800;
+        typeBadge = 'NOTE';
+        break;
+      case EpiAttachedItemType.task:
+        icon = Icons.check_circle_outline_rounded;
+        accentColor = activeBlue;
+        typeBadge = 'TASK';
+        break;
+      case EpiAttachedItemType.schedule:
+        icon = Icons.calendar_today_outlined;
+        accentColor = isDark ? Colors.tealAccent.shade200 : Colors.teal.shade700;
+        typeBadge = 'SCHEDULE';
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      constraints: const BoxConstraints(maxWidth: 300),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderClr),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            if (item.type == EpiAttachedItemType.task) {
+              final task = await ref.read(taskDaoProvider).getTask(item.id);
+              if (mounted) {
+                if (task != null) {
+                  _pushRoute('/task/${item.id}');
+                } else {
+                  FeedbackService.showError('This task no longer exists');
+                }
+              }
+            } else if (item.type == EpiAttachedItemType.note) {
+              final pin = await ref.read(pinDaoProvider).getPin(item.id);
+              if (mounted) {
+                if (pin != null) {
+                  _pushRoute('/note/${item.id}');
+                } else {
+                  FeedbackService.showError('This note no longer exists');
+                }
+              }
+            } else if (item.type == EpiAttachedItemType.schedule) {
+              if (item.id == 'sched_today' || item.id == 'sched_week') {
+                _pushRoute('/calendar');
+              } else {
+                _openScheduleSlotById(item.id);
+              }
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 18, color: accentColor),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              typeBadge,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: accentColor,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 10,
+                            color: textSecondary.withValues(alpha: 0.5),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary,
+                        ),
+                      ),
+                      if (item.preview != null && item.preview!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          item.preview!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: textSecondary,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMessageItem(
     EpiChatMessage message,
     bool isDark,
@@ -1163,6 +1447,11 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                     ),
                   ),
                   const SizedBox(height: 6),
+                ],
+                if (message.attachedItems != null && message.attachedItems!.isNotEmpty) ...[
+                  for (final item in message.attachedItems!)
+                    _buildSentAttachedItemCard(item, cardBg, textPrimary, textSecondary, borderClr, activeBlue, isDark),
+                  const SizedBox(height: 4),
                 ],
                 if (message.text.isNotEmpty)
                   Container(
@@ -1960,12 +2249,17 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                         trailing: isAttached ? Icon(Icons.check_rounded, color: activeBlue) : null,
                         onTap: () {
                           if (!isAttached) {
+                            final fullContent = NoteDocument.exportToMarkdown(blocks);
                             setState(() {
                               _attachedItems.add(EpiAttachedItem(
                                 id: n.id,
                                 title: title,
                                 type: EpiAttachedItemType.note,
-                                preview: preview,
+                                preview: preview.isNotEmpty ? preview : title,
+                                content: fullContent,
+                                extraData: {
+                                  'tags': n.tags,
+                                },
                               ));
                             });
                           }
@@ -2053,12 +2347,38 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                         trailing: isAttached ? Icon(Icons.check_rounded, color: activeBlue) : null,
                         onTap: () {
                           if (!isAttached) {
+                            final decodedNotes = TaskSubitem.decodeNotes(t.notes);
+                            final subtasksFormatted = decodedNotes.subitems
+                                .map((s) => '${s.isDone ? "[x]" : "[ ]"} ${s.title}')
+                                .toList();
+                            final contentLines = [
+                              'Task: ${t.title}',
+                              'Status: ${t.status}',
+                              'Priority: ${t.priority}',
+                              if (t.dueDate != null) 'Due Date: ${t.dueDate!.toIso8601String().split("T")[0]}',
+                              if (decodedNotes.userNotes != null && decodedNotes.userNotes!.trim().isNotEmpty)
+                                'Notes: ${decodedNotes.userNotes!.trim()}',
+                              if (subtasksFormatted.isNotEmpty)
+                                'Subtasks:\n${subtasksFormatted.map((s) => '  $s').join('\n')}',
+                            ];
+                            final fullTaskSummary = contentLines.join('\n');
+                            final preview = 'Status: ${t.status} • Priority: ${t.priority}' +
+                                (t.dueDate != null ? ' • Due: ${t.dueDate!.toIso8601String().split("T")[0]}' : '');
+
                             setState(() {
                               _attachedItems.add(EpiAttachedItem(
                                 id: t.id,
                                 title: t.title,
                                 type: EpiAttachedItemType.task,
-                                preview: t.notes,
+                                preview: preview,
+                                content: fullTaskSummary,
+                                extraData: {
+                                  'status': t.status,
+                                  'priority': t.priority,
+                                  'dueDate': t.dueDate?.toIso8601String(),
+                                  'subtasks': subtasksFormatted,
+                                  'notes': decodedNotes.userNotes,
+                                },
                               ));
                             });
                           }
@@ -2122,12 +2442,43 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                   ),
                   subtitle: Text("Attach today's timetable blocks and routine", style: TextStyle(color: textSecondary, fontSize: 12)),
                   onTap: () {
+                    final now = DateTime.now();
+                    final todayDayOfWeek = now.weekday; // 1 = Mon, 7 = Sun
+                    final todaySlots = allSlots.where((s) => s.dayOfWeek == todayDayOfWeek).toList();
+                    todaySlots.sort((a, b) => a.startTime.compareTo(b.startTime));
+                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    final dayName = days[todayDayOfWeek - 1];
+
+                    final slotDescriptions = todaySlots.map((s) =>
+                      '- ${s.startTime} - ${s.endTime}: ${s.title}${s.location != null && s.location!.isNotEmpty ? " (${s.location})" : ""}${s.notes != null && s.notes!.isNotEmpty ? " [${s.notes}]" : ""}'
+                    ).toList();
+
+                    final content = slotDescriptions.isNotEmpty
+                        ? "Today's Schedule ($dayName, ${now.month}/${now.day}/${now.year}):\n${slotDescriptions.join('\n')}"
+                        : "Today's Schedule ($dayName, ${now.month}/${now.day}/${now.year}):\nNo scheduled timetable events for today.";
+
+                    final preview = slotDescriptions.isNotEmpty
+                        ? '${todaySlots.length} event${todaySlots.length > 1 ? "s" : ""}: ${todaySlots.first.title}...'
+                        : 'No events scheduled for today';
+
                     setState(() {
                       if (!_attachedItems.any((a) => a.id == 'sched_today')) {
-                        _attachedItems.add(const EpiAttachedItem(
+                        _attachedItems.add(EpiAttachedItem(
                           id: 'sched_today',
                           title: "Today's Schedule",
                           type: EpiAttachedItemType.schedule,
+                          preview: preview,
+                          content: content,
+                          extraData: {
+                            'day': dayName,
+                            'slots': todaySlots.map((s) => {
+                              'id': s.id,
+                              'title': s.title,
+                              'startTime': s.startTime,
+                              'endTime': s.endTime,
+                              'location': s.location,
+                            }).toList(),
+                          },
                         ));
                       }
                     });
@@ -2142,12 +2493,36 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                   ),
                   subtitle: Text("Attach full weekly timetable schedule", style: TextStyle(color: textSecondary, fontSize: 12)),
                   onTap: () {
+                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    final sortedSlots = List.of(allSlots)..sort((a, b) {
+                      final d = a.dayOfWeek.compareTo(b.dayOfWeek);
+                      return d != 0 ? d : a.startTime.compareTo(b.startTime);
+                    });
+
+                    final lines = <String>['Full Weekly Timetable Schedule:'];
+                    for (var day = 1; day <= 7; day++) {
+                      final daySlots = sortedSlots.where((s) => s.dayOfWeek == day).toList();
+                      if (daySlots.isNotEmpty) {
+                        lines.add('${days[day - 1]}:');
+                        for (final s in daySlots) {
+                          lines.add('  - ${s.startTime} - ${s.endTime}: ${s.title}${s.location != null && s.location!.isNotEmpty ? " (${s.location})" : ""}${s.notes != null && s.notes!.isNotEmpty ? " [${s.notes}]" : ""}');
+                        }
+                      }
+                    }
+                    final content = lines.length > 1 ? lines.join('\n') : 'No timetable slots scheduled.';
+                    final preview = '${allSlots.length} routine event${allSlots.length != 1 ? "s" : ""} across the week';
+
                     setState(() {
                       if (!_attachedItems.any((a) => a.id == 'sched_week')) {
-                        _attachedItems.add(const EpiAttachedItem(
+                        _attachedItems.add(EpiAttachedItem(
                           id: 'sched_week',
                           title: "Weekly Timetable",
                           type: EpiAttachedItemType.schedule,
+                          preview: preview,
+                          content: content,
+                          extraData: {
+                            'totalSlots': allSlots.length,
+                          },
                         ));
                       }
                     });
@@ -2182,12 +2557,26 @@ class _EpiChatScreenState extends ConsumerState<EpiChatScreen>
                           trailing: isAttached ? Icon(Icons.check_rounded, color: activeBlue, size: 18) : null,
                           onTap: () {
                             if (!isAttached) {
+                              final slotDetail = 'Schedule Slot: ${slot.title}\nDay: $dayLabel\nTime: ${slot.startTime} - ${slot.endTime}' +
+                                  (slot.location != null && slot.location!.isNotEmpty ? '\nLocation: ${slot.location}' : '') +
+                                  (slot.notes != null && slot.notes!.isNotEmpty ? '\nNotes: ${slot.notes}' : '');
+
                               setState(() {
                                 _attachedItems.add(EpiAttachedItem(
                                   id: slot.id,
                                   title: '${slot.title} ($dayLabel)',
                                   type: EpiAttachedItemType.schedule,
-                                  preview: '${slot.startTime}-${slot.endTime} ${slot.location ?? ""}',
+                                  preview: '${slot.startTime}-${slot.endTime}${slot.location != null ? " • " + slot.location! : ""}',
+                                  content: slotDetail,
+                                  extraData: {
+                                    'id': slot.id,
+                                    'title': slot.title,
+                                    'dayOfWeek': slot.dayOfWeek,
+                                    'startTime': slot.startTime,
+                                    'endTime': slot.endTime,
+                                    'location': slot.location,
+                                    'notes': slot.notes,
+                                  },
                                 ));
                               });
                             }

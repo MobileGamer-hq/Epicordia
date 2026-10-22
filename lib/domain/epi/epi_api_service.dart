@@ -285,11 +285,16 @@ class EpiApiService {
           noteTitle.toLowerCase().contains(tok) || notePreview.toLowerCase().contains(tok));
 
       if (isAttached || matchesQuery) {
+        final noteFullText = isAttached ? NoteDocument.exportToMarkdown(blocks) : null;
         noteContextList.add({
           'id': note.id,
           'title': noteTitle,
-          'preview': notePreview.isNotEmpty ? notePreview : noteTitle,
+          'preview': (noteFullText != null && noteFullText.isNotEmpty)
+              ? noteFullText
+              : (notePreview.isNotEmpty ? notePreview : noteTitle),
+          if (noteFullText != null) 'content': noteFullText,
           'tags': note.tags,
+          if (isAttached) 'isAttached': true,
         });
       }
       if (noteContextList.length >= 10) break;
@@ -329,7 +334,43 @@ class EpiApiService {
       'notes': noteContextList,
       'scheduleSlots': scheduleSlots,
       'recentActions': <String>[],
+      if (attachedItems != null && attachedItems.isNotEmpty)
+        'attachedItems': attachedItems.map((a) => a.toJson()).toList(),
     };
+  }
+
+  /// Builds a formatted prompt string that explicitly carries all attached
+  /// items (notes, tasks, schedules) and their contents with the user's prompt.
+  static String buildPromptWithAttachments(
+    String userText,
+    List<EpiAttachedItem>? attachedItems,
+  ) {
+    if (attachedItems == null || attachedItems.isEmpty) {
+      return userText;
+    }
+    final buffer = StringBuffer();
+    buffer.writeln('### USER ATTACHED CONTEXT ITEMS:');
+    for (final item in attachedItems) {
+      final typeLabel = switch (item.type) {
+        EpiAttachedItemType.note => 'Note',
+        EpiAttachedItemType.task => 'Task',
+        EpiAttachedItemType.schedule => 'Schedule',
+      };
+      buffer.writeln('--- Attached $typeLabel: "${item.title}" (ID: ${item.id}) ---');
+      if (item.content != null && item.content!.trim().isNotEmpty) {
+        buffer.writeln(item.content!.trim());
+      } else if (item.preview != null && item.preview!.trim().isNotEmpty) {
+        buffer.writeln(item.preview!.trim());
+      }
+      buffer.writeln('--------------------------------------------------');
+    }
+    buffer.writeln();
+    if (userText.trim().isNotEmpty) {
+      buffer.writeln('User Instruction: ${userText.trim()}');
+    } else {
+      buffer.writeln('User Instruction: Please review the attached item(s) above and let me know what you can do with them or summarize them.');
+    }
+    return buffer.toString().trim();
   }
 
   /// Sends a user message to Epi.
@@ -391,16 +432,20 @@ class EpiApiService {
     final cleanEndpoint = endpoint.replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.parse('$cleanEndpoint/chat');
 
+    final effectiveMessage = buildPromptWithAttachments(message, attachedItems);
+
     final contextSnapshot = await buildContextSnapshot(
-      userQuery: message,
+      userQuery: effectiveMessage,
       attachedItems: attachedItems,
     );
 
     final body = jsonEncode({
-      'message': message,
+      'message': effectiveMessage,
       'sessionId': sessionId,
       'userId': 'epicordia_user',
       'context': contextSnapshot,
+      if (attachedItems != null && attachedItems.isNotEmpty)
+        'attachedItems': attachedItems.map((a) => a.toJson()).toList(),
       if (attachment != null)
         'image': {
           'base64': attachment.base64Data,
@@ -448,15 +493,19 @@ class EpiApiService {
       statusMessage: 'Connecting to Epi...',
     );
 
+    final effectiveMessage = buildPromptWithAttachments(message, attachedItems);
+
     final contextSnapshot = await buildContextSnapshot(
-      userQuery: message,
+      userQuery: effectiveMessage,
       attachedItems: attachedItems,
     );
     final body = jsonEncode({
-      'message': message,
+      'message': effectiveMessage,
       'sessionId': sessionId,
       'userId': 'epicordia_user',
       'context': contextSnapshot,
+      if (attachedItems != null && attachedItems.isNotEmpty)
+        'attachedItems': attachedItems.map((a) => a.toJson()).toList(),
       if (attachment != null)
         'image': {
           'base64': attachment.base64Data,

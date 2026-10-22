@@ -172,7 +172,9 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
     List<EpiAttachedItem>? attachedItems,
   }) async {
     final trimmed = text.trim();
-    if ((trimmed.isEmpty && attachment == null) || state.isLoading) return;
+    final hasAttachment = attachment != null;
+    final hasAttachedItems = attachedItems != null && attachedItems.isNotEmpty;
+    if ((trimmed.isEmpty && !hasAttachment && !hasAttachedItems) || state.isLoading) return;
 
     final userMsg = EpiChatMessage(
       id: const Uuid().v4(),
@@ -180,6 +182,7 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
       isUser: true,
       timestamp: DateTime.now(),
       attachment: attachment,
+      attachedItems: attachedItems,
     );
 
     final assistantMsgId = const Uuid().v4();
@@ -205,9 +208,14 @@ class EpiChatNotifier extends Notifier<EpiChatState> {
       final existing = await repo.getConversations();
       final hasConv = existing.any((c) => c.id == state.sessionId);
       if (!hasConv) {
-        final title = trimmed.isNotEmpty
-            ? (trimmed.length > 30 ? '${trimmed.substring(0, 30)}...' : trimmed)
-            : 'Image Attachment';
+        final String title;
+        if (trimmed.isNotEmpty) {
+          title = trimmed.length > 30 ? '${trimmed.substring(0, 30)}...' : trimmed;
+        } else if (attachedItems != null && attachedItems.isNotEmpty) {
+          title = 'Attached: ${attachedItems.first.title}';
+        } else {
+          title = 'Image Attachment';
+        }
         await repo.saveConversation(EpiConversation(
           id: state.sessionId,
           title: title,

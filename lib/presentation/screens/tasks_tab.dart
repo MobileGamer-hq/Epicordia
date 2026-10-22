@@ -6,7 +6,6 @@ import '../../data/repository/board_repository.dart';
 import '../../data/database/database.dart';
 import '../../domain/models/task_subitem.dart';
 import '../../core/utils/task_date_formatter.dart';
-import '../widgets/layout/responsive_scaffold.dart';
 import '../widgets/core/interactive_task_card.dart';
 import '../../core/theme.dart';
 
@@ -322,9 +321,8 @@ class _TasksTabState extends ConsumerState<TasksTab> {
         ) ??
         {};
 
-    return ResponsiveScaffold(
-      child: CustomScrollView(
-        slivers: [
+    return CustomScrollView(
+      slivers: [
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,8 +551,7 @@ class _TasksTabState extends ConsumerState<TasksTab> {
             },
           ),
         ],
-      ),
-    );
+      );
   }
 }
 

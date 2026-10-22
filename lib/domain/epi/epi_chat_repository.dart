@@ -36,10 +36,14 @@ class EpiChatRepository {
         is_user INTEGER NOT NULL,
         model_used TEXT,
         action_records_json TEXT,
+        attached_items_json TEXT,
         timestamp TEXT NOT NULL,
         FOREIGN KEY (conversation_id) REFERENCES epi_conversations (id) ON DELETE CASCADE
       );
     ''');
+    try {
+      await _db.customStatement('ALTER TABLE epi_messages ADD COLUMN attached_items_json TEXT;');
+    } catch (_) {}
     _initialized = true;
   }
 
@@ -94,7 +98,7 @@ class EpiChatRepository {
   Future<List<EpiChatMessage>> getMessages(String conversationId) async {
     await init();
     final rows = await _db.customSelect(
-      'SELECT id, text, is_user, model_used, action_records_json, timestamp FROM epi_messages WHERE conversation_id = ? ORDER BY timestamp ASC;',
+      'SELECT id, text, is_user, model_used, action_records_json, attached_items_json, timestamp FROM epi_messages WHERE conversation_id = ? ORDER BY timestamp ASC;',
       variables: [Variable<String>(conversationId)],
       readsFrom: {},
     ).get();
@@ -111,12 +115,24 @@ class EpiChatRepository {
         } catch (_) {}
       }
 
+      final attachedJson = row.readNullable<String>('attached_items_json');
+      List<EpiAttachedItem>? attachedItems;
+      if (attachedJson != null && attachedJson.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(attachedJson) as List<dynamic>;
+          attachedItems = decoded
+              .map((e) => EpiAttachedItem.fromJson(e as Map<String, dynamic>))
+              .toList();
+        } catch (_) {}
+      }
+
       return EpiChatMessage(
         id: row.read<String>('id'),
         text: row.read<String>('text'),
         isUser: row.read<int>('is_user') == 1,
         modelUsed: row.readNullable<String>('model_used'),
         actionRecords: actionRecords,
+        attachedItems: attachedItems,
         timestamp: DateTime.tryParse(row.read<String>('timestamp')) ?? DateTime.now(),
         isStreaming: false,
       );
@@ -129,13 +145,18 @@ class EpiChatRepository {
         ? jsonEncode(message.actionRecords.map((a) => a.toJson()).toList())
         : null;
 
+    final attachedJson = (message.attachedItems != null && message.attachedItems!.isNotEmpty)
+        ? jsonEncode(message.attachedItems!.map((a) => a.toJson()).toList())
+        : null;
+
     await _db.customStatement('''
-      INSERT INTO epi_messages (id, conversation_id, text, is_user, model_used, action_records_json, timestamp)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO epi_messages (id, conversation_id, text, is_user, model_used, action_records_json, attached_items_json, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         text = excluded.text,
         model_used = excluded.model_used,
-        action_records_json = excluded.action_records_json;
+        action_records_json = excluded.action_records_json,
+        attached_items_json = excluded.attached_items_json;
     ''', [
       message.id,
       conversationId,
@@ -143,6 +164,7 @@ class EpiChatRepository {
       message.isUser ? 1 : 0,
       message.modelUsed,
       actionsJson,
+      attachedJson,
       message.timestamp.toIso8601String(),
     ]);
   }

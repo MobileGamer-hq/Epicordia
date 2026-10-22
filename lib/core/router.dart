@@ -19,6 +19,7 @@ import '../presentation/screens/alarms_timers_screen.dart';
 import '../presentation/screens/inbox_screen.dart';
 import '../presentation/screens/report_screen.dart';
 import '../presentation/screens/widgets_center_screen.dart';
+import '../presentation/widgets/layout/responsive_scaffold.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,6 +30,7 @@ import '../presentation/screens/epi_chat_screen.dart';
 import '../domain/epi/epi_models.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
+final shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -46,14 +48,75 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
 
     routes: [
-      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
-      GoRoute(path: '/',       builder: (context, state) => const TodayDashboard()),
-      GoRoute(path: '/report',   builder: (context, state) => const ReportScreen()),
-      GoRoute(path: '/activity', builder: (context, state) => const InboxScreen()),
-      GoRoute(path: '/inbox',    builder: (context, state) => const InboxScreen()),
-      GoRoute(path: '/calendar', builder: (context, state) => const CalendarScreen()),
-      GoRoute(path: '/widgets',  builder: (context, state) => const WidgetsCenterScreen()),
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+
+      // ── Main Shell with Persistent Navigation Bar ──────────────────
+      ShellRoute(
+        navigatorKey: shellNavigatorKey,
+        builder: (context, state, child) {
+          return ResponsiveScaffold(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: TodayDashboard(),
+            ),
+          ),
+          GoRoute(
+            path: '/boards',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: BoardsTab(),
+            ),
+          ),
+          GoRoute(
+            path: '/notes',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: NotesTab(),
+            ),
+          ),
+          GoRoute(
+            path: '/tasks',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: TasksTab(),
+            ),
+          ),
+          GoRoute(
+            path: '/report',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ReportScreen(),
+            ),
+          ),
+        ],
+      ),
+
+      // ── Standalone Screens (Nav bar does NOT show) ─────────────────
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/activity',
+        builder: (context, state) => const InboxScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/inbox',
+        builder: (context, state) => const InboxScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/calendar',
+        builder: (context, state) => const CalendarScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/widgets',
+        builder: (context, state) => const WidgetsCenterScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/sessions',
         builder: (context, state) {
           final tab = state.uri.queryParameters['tab'];
@@ -65,6 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/alarms',
         builder: (context, state) {
           final tab = state.uri.queryParameters['tab'];
@@ -75,27 +139,28 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AlarmsTimersScreen(initialIndex: idx);
         },
       ),
-      GoRoute(path: '/boards', builder: (context, state) => const BoardsTab()),
-
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/board/:id',
         builder: (context, state) => BoardScreen(boardId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/notes',    builder: (context, state) => const NotesTab()),
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/note/:id',
         builder: (context, state) => CreateNoteScreen(noteId: state.pathParameters['id']),
       ),
-      GoRoute(path: '/tasks',    builder: (context, state) => const TasksTab()),
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/task/:id',
         builder: (context, state) => EditTaskScreen(taskId: state.pathParameters['id']!),
       ),
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/task/:id/focus',
         builder: (context, state) => TaskFocusScreen(taskId: state.pathParameters['id']!),
       ),
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/epi',
         builder: (context, state) {
           final boardContext = state.uri.queryParameters['boardContext'] ??
@@ -114,13 +179,34 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
-      // Create flow
-      GoRoute(path: '/create',       builder: (context, state) => const CreateScreen()),
-      GoRoute(path: '/create/note',  builder: (context, state) => const CreateNoteScreen()),
-      GoRoute(path: '/create/task',  builder: (context, state) => const CreateTaskScreen()),
-      GoRoute(path: '/create/board', builder: (context, state) => const CreateBoardScreen()),
       GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      // Create flow
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/create',
+        builder: (context, state) => const CreateScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/create/note',
+        builder: (context, state) => const CreateNoteScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/create/task',
+        builder: (context, state) => const CreateTaskScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '/create/board',
+        builder: (context, state) => const CreateBoardScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
         path: '/create/alarm',
         builder: (context, state) => CreateAlarmScreen(
           alarmToEdit: state.extra is InAppAlarm ? state.extra as InAppAlarm : null,
